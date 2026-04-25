@@ -1,11 +1,14 @@
-const APP_VERSION = "1.0.1";
-const APP_COMMIT_SHORT = "14b54a5";
+const APP_VERSION = "1.0.2";
+const APP_COMMIT_SHORT = "2b9c1d4";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./pages/lab/index.html",
+  "./pages/lab/styles.css",
+  "./pages/lab/page.js",
   "./mock-api.js",
   "./manifest.webmanifest",
   "./icons/icon-192.svg",

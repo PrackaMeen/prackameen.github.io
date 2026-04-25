@@ -17,13 +17,34 @@ This is a standalone static website for quick mobile testing.
 - API mock mode auto-enabled when hosted from GitHub Pages (`*.github.io`) or opened as local file (`file://`)
 - Live mode on non-GitHub hosts (for future .NET API)
 
+## No-Build Page Structure
+
+This app is split by page and still serves directly from GitHub Pages (no bundler/build required).
+
+- `index.html` is the static shell entry.
+- `app.js` is the main router/loader.
+- Each page lives in `pages/<page-name>/` with:
+	- `index.html` (page markup)
+	- `styles.css` (page styles)
+	- `page.js` (page behavior)
+
+Current route map:
+
+- `#/lab` -> `pages/lab/*`
+
+To add a page:
+
+1. Create `pages/<new-page>/index.html`, `pages/<new-page>/styles.css`, and `pages/<new-page>/page.js`.
+2. Add that page to the `PAGES` object in `app.js`.
+3. Add the three files to `APP_SHELL` in `sw.js`.
+
 ## Run From Repo
 
 Open `index.html` directly, or serve this folder with any static host.
 
 ## GitHub Pages
 
-1. Publish the `web-pwa/` folder via GitHub Pages.
+1. Publish this folder (`prackameen.github.io/`) via GitHub Pages.
 2. Open the published URL on mobile.
 3. The app will auto-use mock API endpoints for `/api/*` calls.
 
