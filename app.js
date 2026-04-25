@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.9";
+const APP_VERSION = "1.0.11";
 const APP_COMMIT_SHORT = "ccae28c";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -362,6 +362,7 @@ function renderNavigation(activeRoute) {
       <nav class="breadcrumb" aria-label="Breadcrumb">
         ${renderBreadcrumb(activePath)}
       </nav>
+      <span class="nav-version" title="Build ${APP_VERSION} (${APP_COMMIT_SHORT})">v${APP_VERSION}</span>
     </div>
   `;
 }
