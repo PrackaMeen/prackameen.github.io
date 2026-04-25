@@ -20,10 +20,20 @@
  *   2. Host receives peer-hello → registers peer → replies peer-ack (direct) +
  *      broadcasts peer-list update.
  *   3. Client receives peer-ack → marks itself connected.
+ *
+ * NOTE: BroadcastChannel works between same-origin contexts on the same device
+ * (tabs, installed PWA windows). It does NOT work cross-device or cross-origin.
  */
+
+const JOIN_TIMEOUT_MS = 15_000;
 
 function uuid() {
   return crypto.randomUUID();
+}
+
+function log(...args) {
+  // eslint-disable-next-line no-console
+  console.debug("[BroadcastChannelTransport]", ...args);
 }
 
 export class BroadcastChannelTransport {
@@ -68,12 +78,16 @@ export class BroadcastChannelTransport {
       this.peerId = config.peerId;
     }
 
-    this._channel = new BroadcastChannel(`game-${this._sessionId}`);
+    const channelName = `game-${this._sessionId}`;
+    log(`${this.isHost ? "host" : "client"} opening channel "${channelName}" as peerId=${this.peerId}`);
+
+    this._channel = new BroadcastChannel(channelName);
     this._channel.addEventListener("message", this._handleRaw);
 
     if (this.isHost) {
       // Host registers itself in its own peer map
       this._peers.set(this.peerId, { peerId: this.peerId, nickname: this._nickname });
+      log("host ready, waiting for peers");
     } else {
       // Client announces itself and waits for ack
       await this._joinAsClient();
@@ -100,6 +114,7 @@ export class BroadcastChannelTransport {
       this._channel.removeEventListener("message", this._handleRaw);
       this._channel.close();
       this._channel = null;
+      log("disconnected");
     }
   }
 
@@ -115,6 +130,8 @@ export class BroadcastChannelTransport {
     const msg = event.data;
     if (!msg || msg.sessionId !== this._sessionId) return;
 
+    log(`received frame="${msg.frame}" toPeerId=${msg.toPeerId || "-"} fromPeerId=${msg.fromPeerId || "-"}`);
+
     switch (msg.frame) {
       case "peer-hello":
         if (this.isHost) this._hostHandlePeerHello(msg);
@@ -124,9 +141,7 @@ export class BroadcastChannelTransport {
         if (!this.isHost && msg.toPeerId === this.peerId) {
           this._hostPeerId = msg.hostPeerId;
           this._connected = true;
-          if (msg.peerInfo) {
-            // ourselves — no need to fire onPeerJoined for self
-          }
+          log(`client connected, hostPeerId=${this._hostPeerId}`);
           if (Array.isArray(msg.existingPeers)) {
             msg.existingPeers.forEach((p) => {
               if (p.peerId !== this.peerId) {
@@ -163,11 +178,13 @@ export class BroadcastChannelTransport {
   }
 
   _hostHandlePeerHello(msg) {
+    log(`host received peer-hello from peerId=${msg.fromPeerId}`);
     const peerInfo = { peerId: msg.fromPeerId, nickname: msg.nickname };
     this._peers.set(msg.fromPeerId, peerInfo);
 
     // Ack directly to the joining peer, include existing peer list
     const existingPeers = Array.from(this._peers.values()).filter(p => p.peerId !== msg.fromPeerId);
+    log(`host sending peer-ack to peerId=${msg.fromPeerId}`);
     this._post({
       frame: "peer-ack",
       sessionId: this._sessionId,
@@ -200,15 +217,35 @@ export class BroadcastChannelTransport {
   }
 
   _joinAsClient() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      let timeoutId = null;
+
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        this._channel.removeEventListener("message", onMessage);
+      };
+
       const onMessage = (event) => {
         const msg = event.data;
         if (msg && msg.frame === "peer-ack" && msg.toPeerId === this.peerId) {
-          this._channel.removeEventListener("message", onMessage);
+          log("client received peer-ack, join complete");
+          cleanup();
           resolve();
         }
       };
+
       this._channel.addEventListener("message", onMessage);
+
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error(
+          `Could not reach host after ${JOIN_TIMEOUT_MS / 1000}s. ` +
+          "Ensure the host is on the same device and has this session open. " +
+          "BroadcastChannel only works between tabs/windows on the same device and origin."
+        ));
+      }, JOIN_TIMEOUT_MS);
+
+      log(`client sending peer-hello to channel game-${this._sessionId}`);
       this._post({
         frame: "peer-hello",
         sessionId: this._sessionId,
@@ -218,3 +255,4 @@ export class BroadcastChannelTransport {
     });
   }
 }
+
