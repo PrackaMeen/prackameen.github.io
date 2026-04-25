@@ -2,7 +2,9 @@ import { SessionManager } from "../../session/SessionManager.js";
 import { loadPlayerPreferences } from "../../player-preferences.js";
 
 const SIGNALING_URL_KEY = "game-signaling-server-url";
-const DEFAULT_SIGNALING_URL = "ws://localhost:5000/multiplayer/signaling";
+const AZURE_SIGNALING_URL = "wss://prackameen-game-d4gqengkdwggbgcd.westeurope-01.azurewebsites.net/multiplayer/signaling";
+const LOCAL_SIGNALING_URL = "ws://localhost:5000/multiplayer/signaling";
+const DEFAULT_SIGNALING_URL = AZURE_SIGNALING_URL;
 
 export function mountPage(context) {
   context.setTitle("Multiplayer / Network Host");
@@ -81,10 +83,13 @@ export function mountPage(context) {
       return;
     }
 
-    const signalingUrls = buildSignalingUrlCandidates({
-      baseSignalingUrl: signalingUrl,
-      extraHost: extraHostInputEl?.value
-    });
+
+    // Always prefer Azure, then user input, then local
+    const signalingUrls = [
+      AZURE_SIGNALING_URL,
+      signalingUrl,
+      LOCAL_SIGNALING_URL
+    ].filter((url, idx, arr) => url && arr.indexOf(url) === idx);
 
     // Build and display the join code.
     // `u` keeps backward compatibility; `us` carries full candidate list.

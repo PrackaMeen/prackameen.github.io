@@ -290,7 +290,12 @@ function parseJoinPayload(rawJoinCode) {
 }
 
 function normalizeSignalingUrls(parsedPayload) {
+  const AZURE_SIGNALING_URL = "wss://prackameen-game-d4gqengkdwggbgcd.westeurope-01.azurewebsites.net/multiplayer/signaling";
+  const LOCAL_SIGNALING_URL = "ws://localhost:5000/multiplayer/signaling";
   const list = [];
+
+  // Always prefer Azure, then join code, then local
+  list.push(AZURE_SIGNALING_URL);
 
   if (parsedPayload && typeof parsedPayload.u === "string") {
     list.push(parsedPayload.u);
@@ -303,6 +308,8 @@ function normalizeSignalingUrls(parsedPayload) {
       }
     }
   }
+
+  list.push(LOCAL_SIGNALING_URL);
 
   return dedupe(list.map((url) => String(url).trim()).filter(Boolean));
 }
