@@ -141,3 +141,25 @@ h2 {
   background: #86efac;
   cursor: not-allowed;
 }
+
+.primary-btn--secondary {
+  background: rgba(21, 95, 68, 0.1);
+  color: #2e6b58;
+  border: 1px solid rgba(21, 95, 68, 0.3);
+}
+
+.primary-btn--secondary:hover {
+  background: rgba(21, 95, 68, 0.18);
+}
+
+.primary-btn--secondary:disabled {
+  background: rgba(21, 95, 68, 0.05);
+  color: #86efac;
+  border-color: transparent;
+}
+
+.actions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

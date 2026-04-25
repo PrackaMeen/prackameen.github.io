@@ -13,6 +13,7 @@ export function mountPage(context) {
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
   const goBtn = document.getElementById("goToSettingsBtn");
+  const goChatBtn = document.getElementById("goToChatBtn");
 
   const prefs = loadPlayerPreferences();
   const nickname = prefs.nickname || "Player";
@@ -64,6 +65,11 @@ export function mountPage(context) {
   goBtn.addEventListener("click", () => {
     window.__GAME_MULTIPLAYER_SESSION__ = mgr;
     context.setRoute("multiplayer-lobby-joined-game-settings");
+  });
+
+  goChatBtn.addEventListener("click", () => {
+    window.__GAME_MULTIPLAYER_SESSION__ = mgr;
+    context.setRoute("multiplayer-chat");
   });
 
   return {

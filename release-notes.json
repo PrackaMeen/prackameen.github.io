@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.23",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Multiplayer chat — message delivery fix",
+      "businessSummary": "Fixed a bug where messages sent by the host were not appearing for any connected players, and messages sent by clients were not visible on the client's own screen. Chat now works correctly in both directions: every player sees every message in the order it was sent.",
+      "highlights": [
+        "Host messages are now correctly delivered to and displayed on all client screens.",
+        "Client messages are now displayed on the client's own screen after the host sequences and echoes them back.",
+        "Root cause was an off-by-one in the session message store that caused incoming messages to be silently buffered and never flushed."
+      ]
+    },
+    {
       "version": "1.0.22",
       "commit": "pending",
       "date": "2026-04-25",

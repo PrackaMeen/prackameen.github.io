@@ -129,8 +129,18 @@ h2 {
   cursor: not-allowed;
 }
 
-#settingsCard .primary-btn {
-  width: 100%;
-  font-size: 1rem;
-  padding: 0.75rem 1rem;
+.actions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.primary-btn--secondary {
+  background: rgba(30, 80, 110, 0.08);
+  color: #31627a;
+  border: 1px solid rgba(30, 80, 110, 0.25);
+}
+
+.primary-btn--secondary:hover {
+  background: rgba(30, 80, 110, 0.16);
 }
