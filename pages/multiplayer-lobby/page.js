@@ -50,11 +50,13 @@ export function mountPage(context) {
     const sessionId = sessionIdInput.value.trim();
     if (!sessionId) return;
     joinBtn.disabled = true;
-    statusEl.textContent = "Joining…";
+    statusEl.textContent = "Joining… (waiting for host, up to 15 s)";
+    statusEl.style.color = "";
     try {
       await mgr.join({ sessionId, nickname, transportType: "broadcast" });
     } catch (err) {
-      statusEl.textContent = `Error: ${err.message}`;
+      statusEl.textContent = `Could not join: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
       joinBtn.disabled = false;
     }
   });
