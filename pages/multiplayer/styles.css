@@ -38,6 +38,39 @@ h2 {
   font-family: "Syne", "Space Grotesk", sans-serif;
 }
 
+.profile-hint {
+  margin-top: 0;
+  color: rgba(38, 64, 98, 0.88);
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 1px solid rgba(45, 74, 114, 0.16);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+}
+
+.profile-row + .profile-row {
+  margin-top: 0.45rem;
+}
+
+.profile-key {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #355884;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.profile-value {
+  font-weight: 700;
+  color: #223954;
+}
+
 @media (min-width: 720px) {
   .card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

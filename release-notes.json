@@ -1,6 +1,19 @@
 {
   "items": [
     {
+      "version": "1.0.21",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Persistent player profile defaults",
+      "businessSummary": "Settings now lets each player save their nickname, preferred character, and preferred color as persistent defaults. These defaults automatically load in both Single Player and Multiplayer flows.",
+      "highlights": [
+        "Added Player Profile settings form with nickname, preferred character, and preferred color.",
+        "Saved defaults persist locally and survive app reloads.",
+        "Single Player now starts with your saved nickname, character, and color.",
+        "Multiplayer now shows your saved default profile for quick verification."
+      ]
+    },
+    {
       "version": "1.0.20",
       "commit": "pending",
       "date": "2026-04-25",
