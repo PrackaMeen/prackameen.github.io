@@ -30,10 +30,16 @@ This app is split by page and still serves directly from GitHub Pages (no bundle
 
 Current route map:
 
-- `#/lab` -> `pages/lab/*`
-- `#/replays` -> `pages/replays/*`
-- `#/loadout` -> `pages/loadout/*`
+- `#/single-player-game-settings` -> `pages/single-player-game-settings/*`
+- `#/multiplayer-lobby-joined-game-settings` -> `pages/multiplayer-lobby-joined-game-settings/*`
+- `#/multiplayer-host-game-settings` -> `pages/multiplayer-host-game-settings/*`
 - `#/settings` -> `pages/settings/*`
+- `#/release-notes` -> `pages/release-notes/*`
+
+Navigation hierarchy is rendered as breadcrumb + level selectors:
+
+- `menu > page > inner page`
+- Menu tree: Single Player, Multiplayer, Settings, Release Notes
 
 To add a page:
 

@@ -31,7 +31,7 @@ body {
   margin: 0 auto;
   padding: 0.7rem 1rem;
   display: grid;
-  gap: 0.65rem;
+  gap: 0.45rem;
 }
 
 .brand {
@@ -42,17 +42,46 @@ body {
   letter-spacing: 0.03em;
 }
 
-.hierarchy {
+.nav-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4b5860;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.crumb-link {
+  text-decoration: none;
+  color: #102a3c;
+  border-radius: 8px;
+  padding: 0.1rem 0.35rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(16, 42, 60, 0.14);
+}
+
+.crumb-sep {
+  color: #4f606d;
+  font-size: 0.75rem;
+}
+
+.nav-levels {
   display: grid;
   gap: 0.45rem;
 }
 
-.nav-group {
+.nav-level {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 
-.nav-group-label {
+.nav-level-label {
   margin: 0;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
@@ -64,6 +93,11 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+.nav-empty {
+  color: #67747f;
+  font-size: 0.85rem;
 }
 
 .nav-link {
@@ -105,7 +139,13 @@ body {
     gap: 1rem;
   }
 
-  .hierarchy {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .nav-hint,
+  .breadcrumb,
+  .nav-levels {
+    grid-column: 2;
+  }
+
+  .nav-levels {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
