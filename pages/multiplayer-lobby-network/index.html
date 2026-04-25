@@ -8,6 +8,14 @@
   <section class="card" id="joinFormCard">
     <h2>Join Code</h2>
     <p class="hint-text">The host's Join Code contains the session ID and signaling server address.</p>
+    <button id="scanQrBtn" class="primary-btn primary-btn--secondary" type="button">Scan QR in App</button>
+    <div id="scannerCard" class="scanner-card" hidden>
+      <video id="scannerVideo" class="scanner-video" autoplay playsinline muted></video>
+      <div class="scanner-actions">
+        <button id="stopScanBtn" class="primary-btn primary-btn--secondary" type="button">Stop Scan</button>
+      </div>
+      <p id="scannerStatus" class="hint-text">Point camera at host QR code.</p>
+    </div>
     <form id="joinForm">
       <textarea id="joinCodeInput" class="join-code-input" placeholder="Paste join code here…"
                 rows="3" autocomplete="off" spellcheck="false"></textarea>
