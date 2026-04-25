@@ -14,6 +14,72 @@ body {
 
 body {
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, #f7f5ef 0%, #f6ead7 100%);
+}
+
+.nav-root {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(247, 245, 239, 0.86);
+  backdrop-filter: blur(8px);
+}
+
+.nav-inner {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  padding: 0.7rem 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.brand {
+  text-decoration: none;
+  color: #112635;
+  font-family: "Syne", "Space Grotesk", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.hierarchy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.nav-group {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.nav-group-label {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4b5860;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #173548;
+  border: 1px solid rgba(23, 53, 72, 0.18);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.85rem;
+  background: #fff6;
+}
+
+.nav-link.active {
+  color: #ffffff;
+  border-color: #103349;
+  background: #103349;
 }
 
 .app-root {
@@ -30,4 +96,16 @@ body {
 .boot-error h1 {
   margin: 0 0 0.4rem;
   font-family: "Syne", "Space Grotesk", sans-serif;
+}
+
+@media (min-width: 860px) {
+  .nav-inner {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 1rem;
+  }
+
+  .hierarchy {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
