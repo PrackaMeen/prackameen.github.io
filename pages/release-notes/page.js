@@ -1,4 +1,4 @@
 export function mountPage(context) {
-  context.setTitle("Settings");
+  context.setTitle("Release Notes");
   return { dispose() {} };
 }

@@ -1,4 +1,4 @@
 export function mountPage(context) {
-  context.setTitle("Settings");
+  context.setTitle("Multiplayer / Lobby / Joined Game Settings");
   return { dispose() {} };
 }

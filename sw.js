@@ -1,23 +1,26 @@
-const APP_VERSION = "1.0.4";
-const APP_COMMIT_SHORT = "9ad31c8";
+const APP_VERSION = "1.0.5";
+const APP_COMMIT_SHORT = "a61d2c9";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
-  "./pages/lab/index.html",
-  "./pages/lab/styles.css",
-  "./pages/lab/page.js",
-  "./pages/replays/index.html",
-  "./pages/replays/styles.css",
-  "./pages/replays/page.js",
-  "./pages/loadout/index.html",
-  "./pages/loadout/styles.css",
-  "./pages/loadout/page.js",
+  "./pages/single-player-game-settings/index.html",
+  "./pages/single-player-game-settings/styles.css",
+  "./pages/single-player-game-settings/page.js",
+  "./pages/multiplayer-lobby-joined-game-settings/index.html",
+  "./pages/multiplayer-lobby-joined-game-settings/styles.css",
+  "./pages/multiplayer-lobby-joined-game-settings/page.js",
+  "./pages/multiplayer-host-game-settings/index.html",
+  "./pages/multiplayer-host-game-settings/styles.css",
+  "./pages/multiplayer-host-game-settings/page.js",
   "./pages/settings/index.html",
   "./pages/settings/styles.css",
   "./pages/settings/page.js",
+  "./pages/release-notes/index.html",
+  "./pages/release-notes/styles.css",
+  "./pages/release-notes/page.js",
   "./mock-api.js",
   "./manifest.webmanifest",
   "./icons/icon-192.svg",

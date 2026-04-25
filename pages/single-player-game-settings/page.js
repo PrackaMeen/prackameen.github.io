@@ -1,4 +1,4 @@
 export function mountPage(context) {
-  context.setTitle("Settings");
+  context.setTitle("Single Player / Game Settings");
   return { dispose() {} };
 }
