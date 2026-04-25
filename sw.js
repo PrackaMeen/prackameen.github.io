@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.21";
+const APP_VERSION = "1.0.22";
 const APP_COMMIT_SHORT = "ccae28c";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -34,6 +34,15 @@ const APP_SHELL = [
   "./pages/multiplayer-host-game-settings/index.html",
   "./pages/multiplayer-host-game-settings/styles.css",
   "./pages/multiplayer-host-game-settings/page.js",
+  "./pages/multiplayer-chat/index.html",
+  "./pages/multiplayer-chat/styles.css",
+  "./pages/multiplayer-chat/page.js",
+  "./session/ITransport.js",
+  "./session/MessageStore.js",
+  "./session/MessageBus.js",
+  "./session/PeerRegistry.js",
+  "./session/SessionManager.js",
+  "./session/transport/BroadcastChannelTransport.js",
   "./pages/settings/index.html",
   "./pages/settings/styles.css",
   "./pages/settings/page.js",

@@ -76,3 +76,33 @@ h2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.nav-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+
+.nav-btn:hover {
+  background: #1e40af;
+}
+
+.nav-btn--dev {
+  background: rgba(45, 74, 114, 0.12);
+  color: #355884;
+  border: 1px solid rgba(45, 74, 114, 0.25);
+}
+
+.nav-btn--dev:hover {
+  background: rgba(45, 74, 114, 0.2);
+}
+

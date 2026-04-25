@@ -1,16 +1,27 @@
 <main class="page-shell">
   <section class="card">
     <p class="kicker">Multiplayer / Host</p>
-    <h1>Host</h1>
-    <p>Prepare host flow before opening host game settings.</p>
+    <h1>Host a Session</h1>
+    <p id="hostStatus" class="host-status">Starting session…</p>
   </section>
 
   <section class="card">
-    <h2>Host Actions</h2>
-    <ul>
-      <li>Create room and invite players</li>
-      <li>Set room policy</li>
-      <li>Proceed to host game settings</li>
+    <h2>Session ID</h2>
+    <p class="host-hint">Share this code with players who want to join.</p>
+    <div class="session-id-row">
+      <code id="hostSessionId" class="session-id-code">—</code>
+      <button id="copySessionIdBtn" class="copy-btn" type="button">Copy</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Connected Peers <span id="peerCount" class="peer-count">(0)</span></h2>
+    <ul id="peerList" class="peer-list" aria-label="Connected peers">
+      <li class="peer-item peer-item--empty">Waiting for players…</li>
     </ul>
+  </section>
+
+  <section class="card">
+    <button id="goToSettingsBtn" class="primary-btn" type="button" disabled>Proceed to Game Settings</button>
   </section>
 </main>

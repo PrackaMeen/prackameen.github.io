@@ -1,6 +1,22 @@
 {
   "items": [
     {
+      "version": "1.0.22",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Multiplayer session infrastructure (Epic 1)",
+      "businessSummary": "The foundation for real-time multiplayer is now in place. Players on the same device or browser can create and join sessions, see who is connected, and exchange ordered chat messages that persist across disconnects and page reloads. Host and Lobby pages are now functional entry points into the session flow. A dedicated Chat page is available for testing the pipeline end-to-end before game actions are wired in.",
+      "highlights": [
+        "Host page now creates a live multiplayer session and displays a shareable session ID.",
+        "Lobby page lets players join a session by pasting the session ID.",
+        "Messages are delivered to all players in the same global order, regardless of which device sends them.",
+        "Full message history is preserved locally and replayed automatically when a player reconnects after a disconnect.",
+        "New Chat (Dev) page provides a quick pipeline test: open 3 tabs, one as host and two as clients, and exchange messages.",
+        "Transport layer is designed to be swappable — BroadcastChannel is used today; WebRTC (LAN) and WebSocket (internet) transports will be added next.",
+        "All session logic lives in the PWA with no server dependency."
+      ]
+    },
+    {
       "version": "1.0.21",
       "commit": "pending",
       "date": "2026-04-25",

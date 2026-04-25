@@ -32,3 +32,105 @@ h2 {
   margin: 0.35rem 0;
   font-family: "Syne", "Space Grotesk", sans-serif;
 }
+
+.lobby-status {
+  margin: 0.4rem 0 0;
+  font-size: 0.88rem;
+  color: #4a5568;
+}
+
+.join-form {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+
+.session-id-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(30, 80, 110, 0.25);
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-family: "Fira Code", "Cascadia Code", monospace;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e293b;
+  outline: none;
+}
+
+.session-id-input:focus {
+  border-color: rgba(30, 80, 110, 0.5);
+  box-shadow: 0 0 0 3px rgba(30, 80, 110, 0.1);
+}
+
+.peer-count {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.peer-list {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.peer-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: rgba(30, 80, 110, 0.04);
+}
+
+.peer-item--empty {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.peer-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(30, 80, 110, 0.12);
+  color: #31627a;
+  font-weight: 700;
+}
+
+.peer-badge--host {
+  background: rgba(234, 88, 12, 0.12);
+  color: #c2410c;
+}
+
+.primary-btn {
+  padding: 0.65rem 1.2rem;
+  border: none;
+  border-radius: 10px;
+  background: #0369a1;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primary-btn:hover {
+  background: #075985;
+}
+
+.primary-btn:disabled {
+  background: #7dd3fc;
+  cursor: not-allowed;
+}
+
+#settingsCard .primary-btn {
+  width: 100%;
+  font-size: 1rem;
+  padding: 0.75rem 1rem;
+}
