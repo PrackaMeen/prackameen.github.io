@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.0.11",
+      "commit": "ccae28c",
+      "date": "2026-04-25",
+      "title": "Top bar version placement",
+      "businessSummary": "The running app version is now shown in the top navigation row so testers can verify the active build at a glance from the main header area.",
+      "highlights": [
+        "Moved version label from menu content card to the sticky top bar.",
+        "Placed the label at the right side of the header row to match expected layout.",
+        "Kept a muted grey pill style for low-noise but always-visible build identification."
+      ]
+    },
+    {
+      "version": "1.0.10",
+      "commit": "ccae28c",
+      "date": "2026-04-25",
+      "title": "Menu build label visibility",
+      "businessSummary": "Players can now see the running app version directly from the main menu, making it easier to verify which build is open during testing and rollout checks.",
+      "highlights": [
+        "Main menu now shows the active app version in the header area.",
+        "The version label uses a muted grey treatment so it stays visible without competing with navigation.",
+        "Build identification is now easier before entering deeper app flows."
+      ]
+    },
+    {
       "version": "1.0.9",
       "commit": "ccae28c",
       "date": "2026-04-25",

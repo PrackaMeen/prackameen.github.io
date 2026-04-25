@@ -31,6 +31,9 @@ body {
   margin: 0 auto;
   padding: 0.7rem 1rem;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .breadcrumb {
@@ -52,6 +55,20 @@ body {
 .crumb-sep {
   color: #4f606d;
   font-size: 0.75rem;
+}
+
+.nav-version {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(67, 73, 78, 0.12);
+  color: rgba(44, 48, 52, 0.72);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
 
 .app-root {
