@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.13";
+const APP_VERSION = "1.0.20";
 const APP_COMMIT_SHORT = "ccae28c";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -16,6 +16,10 @@ const PAGES = {
   "single-player-game-settings": {
     title: "Single Player / Game Settings",
     basePath: "./pages/single-player-game-settings/"
+  },
+  "single-player-game": {
+    title: "Single Player / Game",
+    basePath: "./pages/single-player-game/"
   },
   multiplayer: {
     title: "Multiplayer",
@@ -66,6 +70,11 @@ const NAV_TREE = [
             id: "single-player-game-settings",
             label: "Game Settings",
             route: "single-player-game-settings"
+          },
+          {
+            id: "single-player-game",
+            label: "Game",
+            route: "single-player-game"
           }
         ]
       },
@@ -363,6 +372,25 @@ function renderBreadcrumb(path) {
   }).join('<span class="crumb-sep">&gt;</span>');
 }
 
+function syncNavVersionVisibility() {
+  const breadcrumb = NAV_ROOT.querySelector(".breadcrumb");
+  const versionEl = NAV_ROOT.querySelector(".nav-version");
+  if (!breadcrumb || !versionEl) return;
+
+  // Restore display so we measure the natural layout with version present.
+  versionEl.style.display = "";
+
+  // getBoundingClientRect() forces a synchronous layout (no visual flash).
+  // If the breadcrumb's bottom edge drops below the version's, items have wrapped.
+  const wraps = breadcrumb.getBoundingClientRect().bottom > versionEl.getBoundingClientRect().bottom + 4;
+
+  // Hiding with display:none frees the reserved space so the breadcrumb
+  // can expand to full width and fit on one line again.
+  versionEl.style.display = wraps ? "none" : "";
+}
+
+window.addEventListener("resize", syncNavVersionVisibility);
+
 function renderNavigation(activeRoute) {
   const activePath = findPathByRoute(NAV_TREE, activeRoute);
 
@@ -374,6 +402,8 @@ function renderNavigation(activeRoute) {
       <span class="nav-version" title="Build ${APP_VERSION} (${APP_COMMIT_SHORT})">v${APP_VERSION}</span>
     </div>
   `;
+
+  syncNavVersionVisibility();
 }
 
 async function loadPage(pageName) {

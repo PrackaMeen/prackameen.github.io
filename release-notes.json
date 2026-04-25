@@ -1,6 +1,89 @@
 {
   "items": [
     {
+      "version": "1.0.20",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Version label hides when breadcrumb is long",
+      "businessSummary": "The app version badge in the navigation bar now automatically hides when the breadcrumb trail is long enough to overlap it, keeping the header uncluttered on narrow screens or deep page hierarchies.",
+      "highlights": [
+        "Version badge hides automatically when the breadcrumb would overlap it.",
+        "Badge reappears immediately when space is available again (e.g. on resize)."
+      ]
+    },
+    {
+      "version": "1.0.19",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Start Game button and game page",
+      "businessSummary": "Players can now start the game from the Single Player roster screen. Clicking Start Game transitions to the game page showing the confirmed player lineup with their chosen colors and characters.",
+      "highlights": [
+        "Added Start Game button at the bottom of the Single Player roster screen.",
+        "Clicking Start Game navigates to a dedicated game page with the full player lineup.",
+        "Game page shows each player's color, character icon, name, and type."
+      ]
+    },
+    {
+      "version": "1.0.18",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Random option and expanded color palette",
+      "businessSummary": "Both the color and character pickers now include a Random option that is the default when a player is first added. The color palette has been expanded with yellow, orange, black, and purple.",
+      "highlights": [
+        "Random is the default selection for color and character on every new player.",
+        "Color picker now includes 8 colors: red, blue, green, brown, yellow, orange, black, purple.",
+        "Random option shown with a rainbow swatch (colors) or dice icon (character) in both pickers."
+      ]
+    },
+    {
+      "version": "1.0.17",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Player row layout ordering and alignment",
+      "businessSummary": "The player row layout has been reorganized for faster scanning and cleaner alignment. Color and character pickers are grouped on the left, player name fills the center area, and type/remove actions are anchored to the right.",
+      "highlights": [
+        "Changed row order to: color picker, character picker, player name, human/bot, remove player.",
+        "Aligned color and character controls to the left side of each row.",
+        "Aligned player type and remove action to the right while keeping name flexible in the middle."
+      ]
+    },
+    {
+      "version": "1.0.16",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Unique player color selection",
+      "businessSummary": "Single Player now supports color selection per player with strict uniqueness across the roster. Colors are selected from the same compact row interaction style to keep setup fast and readable.",
+      "highlights": [
+        "Added color selector per player with the four available colors: red, blue, green, and brown.",
+        "Color choice is unique across players; already used colors are disabled for others.",
+        "Add Player is capped by available unique colors so every player always has a distinct color."
+      ]
+    },
+    {
+      "version": "1.0.15",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Single-row player card with icon selector",
+      "businessSummary": "Each player now appears in one row with icon, name, type, and remove action. Clicking the icon opens character selection so the roster stays compact while still allowing quick class changes.",
+      "highlights": [
+        "Player row now shows icon, name, player type, and remove action in one horizontal line.",
+        "Character selector is opened by clicking the player icon.",
+        "Character choice updates icon immediately after selection."
+      ]
+    },
+    {
+      "version": "1.0.14",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Single Player character class selection",
+      "businessSummary": "Single Player now loads predefined character classes from API and assigns a random default character to each player. Players can change their character from the available classes at any time.",
+      "highlights": [
+        "Added API-backed character class catalog (icon and name) used by Single Player setup.",
+        "Every new player gets a random default character from API/mock response.",
+        "Character icon is now shown next to each player and updates when class is changed."
+      ]
+    },
+    {
       "version": "1.0.13",
       "commit": "pending",
       "date": "2026-04-25",
