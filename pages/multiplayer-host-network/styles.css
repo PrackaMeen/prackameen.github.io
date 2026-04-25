@@ -42,6 +42,21 @@
   outline-offset: 1px;
 }
 
+.server-option-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.server-option-field span {
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+.server-option-field--wide {
+  margin-top: 0.25rem;
+}
+
 .join-code-display {
   width: 100%;
   box-sizing: border-box;
