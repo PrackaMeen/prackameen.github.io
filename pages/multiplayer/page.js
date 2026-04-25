@@ -19,6 +19,8 @@ export function mountPage(context) {
   document.getElementById("goLobbyBtn").addEventListener("click", () => context.setRoute("multiplayer-lobby"));
   document.getElementById("goHostBtn").addEventListener("click", () => context.setRoute("multiplayer-host"));
   document.getElementById("goChatBtn").addEventListener("click", () => context.setRoute("multiplayer-chat"));
+    document.getElementById("goLobbyNetworkBtn").addEventListener("click", () => context.setRoute("multiplayer-lobby-network"));
+    document.getElementById("goHostNetworkBtn").addEventListener("click", () => context.setRoute("multiplayer-host-network"));
 
   return { dispose() {} };
 }

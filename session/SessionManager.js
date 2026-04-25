@@ -70,12 +70,12 @@ export class SessionManager {
 
   /**
    * Create a new session as host.
-   * @param {{ nickname: string, transportType?: string }} options
+   * @param {{ nickname: string, transportType?: string, signalingUrl?: string }} options
    * @returns {Promise<string>} sessionId
    */
-  async create({ nickname, transportType = "broadcast" }) {
+  async create({ nickname, transportType = "broadcast", signalingUrl = null }) {
     const sessionId = crypto.randomUUID();
-    await this._initTransport({ sessionId, nickname, isHost: true, transportType });
+    await this._initTransport({ sessionId, nickname, isHost: true, transportType, signalingUrl });
 
     // Register self in peer registry
     this.peers.upsert({ peerId: this._transport.peerId, nickname, isHost: true, joinedAt: Date.now() });
@@ -89,14 +89,14 @@ export class SessionManager {
 
   /**
    * Join an existing session as client.
-   * @param {{ sessionId: string, nickname: string, transportType?: string }} options
+   * @param {{ sessionId: string, nickname: string, transportType?: string, signalingUrl?: string }} options
    */
-  async join({ sessionId, nickname, transportType = "broadcast" }) {
+  async join({ sessionId, nickname, transportType = "broadcast", signalingUrl = null }) {
     if (this.peers.count >= MAX_PEERS) {
       throw new Error(`Session full (max ${MAX_PEERS} players)`);
     }
 
-    await this._initTransport({ sessionId, nickname, isHost: false, transportType });
+    await this._initTransport({ sessionId, nickname, isHost: false, transportType, signalingUrl });
 
     // Register self
     this.peers.upsert({ peerId: this._transport.peerId, nickname, isHost: false, joinedAt: Date.now() });
@@ -168,7 +168,7 @@ export class SessionManager {
 
   // ── internal ──────────────────────────────────────────────────────────────
 
-  async _initTransport({ sessionId, nickname, isHost, transportType, peerId }) {
+  async _initTransport({ sessionId, nickname, isHost, transportType, peerId, signalingUrl }) {
     this._transport = await createTransport(transportType);
     this.sessionId = sessionId;
     this.peerId = peerId || this._transport.peerId;
@@ -191,7 +191,7 @@ export class SessionManager {
       }
     });
 
-    await this._transport.connect({ sessionId, peerId: this.peerId, isHost, nickname });
+    await this._transport.connect({ sessionId, peerId: this.peerId, isHost, nickname, signalingUrl });
   }
 
   _saveState() {

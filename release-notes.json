@@ -1,6 +1,36 @@
 {
   "items": [
     {
+      "version": "1.0.25",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Hotfix: update loop stabilization",
+      "businessSummary": "Fixed a regression that could destabilize page startup and contribute to repeated reload behavior after updates. Multiplayer network routes and navigation were repaired, and update reload handling was hardened to reload only once per activation.",
+      "highlights": [
+        "Repaired page registry and navigation tree wiring for new network multiplayer routes.",
+        "Hardened service-worker activation reload path to prevent duplicate reload triggers.",
+        "Kept explicit user confirmation before applying a newer app version.",
+        "Stabilized startup routing and release-notes data format."
+      ]
+    },
+    {
+      "version": "1.0.24",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "LAN & internet multiplayer (WebRTC)",
+      "businessSummary": "Players can now join the same game session across devices on a local network or over the internet. The host generates a Join Code; anyone with the code and access to the signaling server can connect directly, peer-to-peer, with no cloud dependency beyond the signaling handshake.",
+      "highlights": [
+        "New 'Host via Network' and 'Join via Network' options on the Multiplayer page.",
+        "Host generates a compact Join Code that encodes both the session ID and signaling server address.",
+        "Joining players paste the Join Code — no manual IP or port configuration required.",
+        "Uses WebRTC DataChannels for direct peer-to-peer messaging after the initial handshake.",
+        "Signaling relay built into the G.A.M.E WebClient (ws://<server>/multiplayer/signaling).",
+        "For LAN: run the WebClient on any device on the network and use its local IP.",
+        "For internet: expose the WebClient publicly (port forward, ngrok, or cloud) and use its public URL.",
+        "All ordered message delivery, history persistence, and chat features work identically over the network."
+      ]
+    },
+    {
       "version": "1.0.23",
       "commit": "pending",
       "date": "2026-04-25",
