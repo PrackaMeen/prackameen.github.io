@@ -1,5 +1,5 @@
-const APP_VERSION = "1.0.2";
-const APP_COMMIT_SHORT = "2b9c1d4";
+const APP_VERSION = "1.0.3";
+const APP_COMMIT_SHORT = "4f7e9a2";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
   "./",
@@ -19,7 +19,6 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {

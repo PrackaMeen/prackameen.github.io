@@ -76,6 +76,7 @@ export function mountPage(context) {
     UPDATE_BUTTON.dataset.commit = commitShort;
     UPDATE_BUTTON.dataset.buildId = `${version}+${commitShort}`;
     UPDATE_BUTTON.textContent = `Update to v${version} (${commitShort})`;
+    UPDATE_BUTTON.disabled = false;
     UPDATE_BUTTON.classList.remove("hidden");
   }
 
@@ -84,7 +85,28 @@ export function mountPage(context) {
     UPDATE_BUTTON.dataset.commit = "";
     UPDATE_BUTTON.dataset.buildId = "";
     UPDATE_BUTTON.textContent = "";
+    UPDATE_BUTTON.disabled = false;
     UPDATE_BUTTON.classList.add("hidden");
+  }
+
+  function compareBuilds(currentBuild, candidateBuild) {
+    if (!currentBuild || !candidateBuild) {
+      return 0;
+    }
+
+    if (isVersionNewer(currentBuild.version, candidateBuild.version)) {
+      return 1;
+    }
+
+    if (isVersionNewer(candidateBuild.version, currentBuild.version)) {
+      return -1;
+    }
+
+    if (currentBuild.commit === candidateBuild.commit) {
+      return 0;
+    }
+
+    return -1;
   }
 
   function askWorkerBuildInfo(worker) {
@@ -112,26 +134,30 @@ export function mountPage(context) {
     });
   }
 
-  async function evaluateWaitingWorker(registration) {
+  async function getCurrentRunningBuild() {
+    const controllerBuild = await askWorkerBuildInfo(navigator.serviceWorker?.controller);
+    if (controllerBuild) {
+      return controllerBuild;
+    }
+
+    return { version: context.appVersion, commit: context.appCommitShort };
+  }
+
+  async function evaluateAvailableUpdate(registration) {
+    const runningBuild = await getCurrentRunningBuild();
     const waitingWorker = registration?.waiting;
-    if (!waitingWorker) {
-      return;
-    }
-
     const waitingBuild = await askWorkerBuildInfo(waitingWorker);
-    if (!waitingBuild) {
+
+    if (!waitingBuild || compareBuilds(runningBuild, waitingBuild) >= 0) {
+      state.latestAvailableVersion = null;
+      state.latestAvailableCommit = null;
+      hideUpdateButton();
       return;
     }
 
-    const waitingVersion = waitingBuild.version;
-    const waitingCommit = waitingBuild.commit;
-    const isSameVersionDifferentCommit = waitingVersion === context.appVersion && waitingCommit !== context.appCommitShort;
-
-    if (isVersionNewer(context.appVersion, waitingVersion) || isSameVersionDifferentCommit) {
-      state.latestAvailableVersion = waitingVersion;
-      state.latestAvailableCommit = waitingCommit;
-      showUpdateButton(waitingVersion, waitingCommit);
-    }
+    state.latestAvailableVersion = waitingBuild.version;
+    state.latestAvailableCommit = waitingBuild.commit;
+    showUpdateButton(waitingBuild.version, waitingBuild.commit);
   }
 
   function setInstallStatus(text) {
@@ -265,15 +291,28 @@ export function mountPage(context) {
     state.installPromptEvent = null;
   }
 
-  function activateWaitingUpdate() {
-    const waitingWorker = state.swRegistration?.waiting;
+  async function activateWaitingUpdate() {
+    if (!state.swRegistration) {
+      return;
+    }
+
+    UPDATE_BUTTON.disabled = true;
+    UPDATE_BUTTON.textContent = `Updating to v${UPDATE_BUTTON.dataset.version} (${UPDATE_BUTTON.dataset.commit})...`;
+
+    await state.swRegistration.update().catch(() => {
+      // Ignore transient update-check errors; we'll still try to activate if one is waiting.
+    });
+
+    await evaluateAvailableUpdate(state.swRegistration);
+    const waitingWorker = state.swRegistration.waiting;
+
     if (!waitingWorker) {
+      UPDATE_BUTTON.disabled = false;
+      LAST_UPDATED.textContent = "No pending update is ready yet. Try again in a moment.";
       return;
     }
 
     state.isReloadingForUpdate = true;
-    UPDATE_BUTTON.disabled = true;
-    UPDATE_BUTTON.textContent = `Updating to v${UPDATE_BUTTON.dataset.version} (${UPDATE_BUTTON.dataset.commit})...`;
     waitingWorker.postMessage({ type: "SKIP_WAITING" });
   }
 
@@ -285,7 +324,7 @@ export function mountPage(context) {
     navigator.serviceWorker.register("./sw.js").then(async (registration) => {
       state.swRegistration = registration;
 
-      await evaluateWaitingWorker(registration);
+      await evaluateAvailableUpdate(registration);
 
       registration.addEventListener("updatefound", () => {
         const installingWorker = registration.installing;
@@ -295,12 +334,14 @@ export function mountPage(context) {
 
         installingWorker.addEventListener("statechange", async () => {
           if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
-            await evaluateWaitingWorker(registration);
+            await evaluateAvailableUpdate(registration);
           }
         });
       });
 
-      registration.update().catch(() => {
+      registration.update().then(async () => {
+        await evaluateAvailableUpdate(registration);
+      }).catch(() => {
         // Ignore transient update-check errors; next refresh will retry.
       });
     }).catch((error) => {

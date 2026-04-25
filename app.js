@@ -1,5 +1,5 @@
-const APP_VERSION = "1.0.2";
-const APP_COMMIT_SHORT = "2b9c1d4";
+const APP_VERSION = "1.0.3";
+const APP_COMMIT_SHORT = "4f7e9a2";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 
 const PAGES = {
