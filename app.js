@@ -1,332 +1,94 @@
-const APP_VERSION = "1.0.1";
-const APP_COMMIT_SHORT = "14b54a5";
+const APP_VERSION = "1.0.2";
+const APP_COMMIT_SHORT = "2b9c1d4";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 
-const state = {
-  installPromptEvent: null,
-  installSupported: false,
-  swRegistration: null,
-  latestAvailableVersion: null,
-  latestAvailableCommit: null,
-  isReloadingForUpdate: false
+const PAGES = {
+  lab: {
+    title: "G.A.M.E Mobile Test Lab",
+    basePath: "./pages/lab/"
+  }
 };
 
-const REFRESH_BUTTON = document.querySelector("#refreshBtn");
-const ACTION_BUTTON = document.querySelector("#actionBtn");
-const NETWORK_MODE = document.querySelector("#networkMode");
-const INSTALL_STATE = document.querySelector("#installState");
-const APP_VERSION_PILL = document.querySelector("#appVersion");
-const UPDATE_BUTTON = document.querySelector("#updateBtn");
-const LAST_UPDATED = document.querySelector("#lastUpdated");
-const STATS_GRID = document.querySelector("#statsGrid");
-const EVENT_FEED = document.querySelector("#eventFeed");
-const CARD_TEMPLATE = document.querySelector("#statCardTemplate");
+const APP_ROOT = document.querySelector("#appRoot");
+const PAGE_STYLESHEET = document.querySelector("#pageStylesheet");
 
-function setAppVersion() {
-  APP_VERSION_PILL.textContent = `Version: ${APP_VERSION} (${APP_COMMIT_SHORT})`;
+let mountedPage = null;
+
+function getRouteName() {
+  const hash = window.location.hash.replace(/^#\/?/, "").trim();
+  return PAGES[hash] ? hash : "lab";
 }
 
-function parseVersion(version) {
-  const parts = String(version || "")
-    .replace(/^v/i, "")
-    .split(".")
-    .map((segment) => Number.parseInt(segment, 10));
-
-  if (parts.some((part) => Number.isNaN(part))) {
-    return [0, 0, 0];
-  }
-
-  return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
-}
-
-function isVersionNewer(currentVersion, candidateVersion) {
-  const current = parseVersion(currentVersion);
-  const candidate = parseVersion(candidateVersion);
-
-  for (let i = 0; i < 3; i += 1) {
-    if (candidate[i] > current[i]) {
-      return true;
-    }
-    if (candidate[i] < current[i]) {
-      return false;
-    }
-  }
-
-  return false;
-}
-
-function showUpdateButton(version, commitShort) {
-  UPDATE_BUTTON.dataset.version = version;
-  UPDATE_BUTTON.dataset.commit = commitShort;
-  UPDATE_BUTTON.dataset.buildId = `${version}+${commitShort}`;
-  UPDATE_BUTTON.textContent = `Update to v${version} (${commitShort})`;
-  UPDATE_BUTTON.classList.remove("hidden");
-}
-
-function hideUpdateButton() {
-  UPDATE_BUTTON.dataset.version = "";
-  UPDATE_BUTTON.dataset.commit = "";
-  UPDATE_BUTTON.dataset.buildId = "";
-  UPDATE_BUTTON.textContent = "";
-  UPDATE_BUTTON.classList.add("hidden");
-}
-
-function askWorkerBuildInfo(worker) {
-  return new Promise((resolve) => {
-    if (!worker) {
-      resolve(null);
-      return;
-    }
-
-    const channel = new MessageChannel();
-    const timeout = window.setTimeout(() => resolve(null), 1500);
-
-    channel.port1.onmessage = (event) => {
-      window.clearTimeout(timeout);
-      const version = event.data?.version;
-      const commit = event.data?.commit;
-      if (!version || !commit) {
-        resolve(null);
-        return;
-      }
-      resolve({ version, commit });
-    };
-
-    worker.postMessage({ type: "GET_VERSION" }, [channel.port2]);
-  });
-}
-
-async function evaluateWaitingWorker(registration) {
-  const waitingWorker = registration?.waiting;
-  if (!waitingWorker) {
+function setRoute(routeName) {
+  if (window.location.hash.replace(/^#/, "") === `/${routeName}`) {
     return;
   }
 
-  const waitingBuild = await askWorkerBuildInfo(waitingWorker);
-  if (!waitingBuild) {
-    return;
+  window.location.hash = `/${routeName}`;
+}
+
+async function loadPage(pageName) {
+  const page = PAGES[pageName];
+  if (!page) {
+    throw new Error(`Unknown page: ${pageName}`);
   }
 
-  const waitingVersion = waitingBuild.version;
-  const waitingCommit = waitingBuild.commit;
-  const isSameVersionDifferentCommit = waitingVersion === APP_VERSION && waitingCommit !== APP_COMMIT_SHORT;
+  APP_ROOT.innerHTML = "<p class=\"boot-message\">Loading page...</p>";
 
-  if (isVersionNewer(APP_VERSION, waitingVersion) || isSameVersionDifferentCommit) {
-    state.latestAvailableVersion = waitingVersion;
-    state.latestAvailableCommit = waitingCommit;
-    showUpdateButton(waitingVersion, waitingCommit);
-  }
-}
-
-function setInstallStatus(text) {
-  INSTALL_STATE.textContent = `Install: ${text}`;
-}
-
-function setNetworkStatus() {
-  const source = window.__GAME_API_MODE__ === "mock" ? "mocked (github)" : "live";
-  NETWORK_MODE.textContent = `API: ${source}`;
-}
-
-async function callApi(path, options = {}) {
-  const response = await fetch(path, {
-    headers: {
-      "Content-Type": "application/json"
-    },
-    ...options
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`);
+  const htmlResponse = await fetch(`${page.basePath}index.html`);
+  if (!htmlResponse.ok) {
+    throw new Error(`Failed to load ${pageName} page HTML`);
   }
 
-  return response.json();
-}
+  const pageMarkup = await htmlResponse.text();
+  APP_ROOT.innerHTML = pageMarkup;
+  PAGE_STYLESHEET.href = `${page.basePath}styles.css`;
 
-function renderStats(snapshot) {
-  STATS_GRID.textContent = "";
+  const module = await import(`${page.basePath}page.js`);
+  if (typeof mountedPage?.dispose === "function") {
+    mountedPage.dispose();
+  }
 
-  const cards = [
-    {
-      title: "Turn",
-      value: String(snapshot.turn),
-      caption: "Current turn number"
-    },
-    {
-      title: "Players",
-      value: `${snapshot.playersAlive}/${snapshot.playersTotal}`,
-      caption: "Alive / total"
-    },
-    {
-      title: "Energy Pool",
-      value: String(snapshot.energyPool),
-      caption: "Global available energy"
-    },
-    {
-      title: "Map Zone",
-      value: snapshot.zone,
-      caption: "Current focus area"
+  mountedPage = module.mountPage({
+    appVersion: APP_VERSION,
+    appCommitShort: APP_COMMIT_SHORT,
+    appBuildId: APP_BUILD_ID,
+    route: pageName,
+    setRoute,
+    setTitle: (title) => {
+      document.title = title;
     }
-  ];
+  }) || null;
 
-  for (const item of cards) {
-    const fragment = CARD_TEMPLATE.content.cloneNode(true);
-    fragment.querySelector("h3").textContent = item.title;
-    fragment.querySelector(".value").textContent = item.value;
-    fragment.querySelector(".caption").textContent = item.caption;
-    STATS_GRID.appendChild(fragment);
-  }
+  document.documentElement.dataset.page = pageName;
+  document.body.dataset.page = pageName;
+  document.title = page.title;
 }
 
-function renderEvents(events) {
-  EVENT_FEED.textContent = "";
-
-  for (const eventItem of events) {
-    const row = document.createElement("li");
-    const badgeClass = eventItem.type === "warning" ? "warn" : "ok";
-    row.innerHTML = `<time>${eventItem.time}</time><span class="${badgeClass}">${eventItem.type.toUpperCase()}</span> ${eventItem.message}`;
-    EVENT_FEED.appendChild(row);
-  }
+function renderLoadError(error) {
+  APP_ROOT.innerHTML = `
+    <section class="boot-error" role="alert">
+      <h1>Page failed to load</h1>
+      <p>${error.message}</p>
+    </section>
+  `;
 }
 
-function stampLastUpdated() {
-  LAST_UPDATED.textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-}
-
-async function refreshState() {
-  REFRESH_BUTTON.disabled = true;
-  REFRESH_BUTTON.textContent = "Refreshing...";
+async function bootCurrentRoute() {
+  const pageName = getRouteName();
 
   try {
-    const snapshot = await callApi("/api/game/state");
-    const events = await callApi("/api/game/events");
-    renderStats(snapshot);
-    renderEvents(events.items);
-    stampLastUpdated();
+    await loadPage(pageName);
   } catch (error) {
-    LAST_UPDATED.textContent = `Update failed: ${error.message}`;
-  } finally {
-    REFRESH_BUTTON.disabled = false;
-    REFRESH_BUTTON.textContent = "Refresh State";
+    renderLoadError(error);
+    console.error("Page bootstrap failed", error);
   }
 }
 
-async function performAction() {
-  ACTION_BUTTON.disabled = true;
-  ACTION_BUTTON.textContent = "Running...";
+window.addEventListener("hashchange", bootCurrentRoute);
 
-  try {
-    const result = await callApi("/api/game/action", {
-      method: "POST",
-      body: JSON.stringify({ action: "test-strike", source: "mobile-pwa" })
-    });
-
-    const firstItem = EVENT_FEED.firstElementChild;
-    const item = document.createElement("li");
-    item.innerHTML = `<time>${result.time}</time><span class="ok">OK</span> ${result.message}`;
-
-    if (firstItem) {
-      EVENT_FEED.insertBefore(item, firstItem);
-    } else {
-      EVENT_FEED.appendChild(item);
-    }
-  } catch (error) {
-    LAST_UPDATED.textContent = `Action failed: ${error.message}`;
-  } finally {
-    ACTION_BUTTON.disabled = false;
-    ACTION_BUTTON.textContent = "Perform Sample Action";
-  }
+if (!window.location.hash) {
+  setRoute("lab");
+} else {
+  bootCurrentRoute();
 }
-
-async function installApp() {
-  if (!state.installPromptEvent) {
-    setInstallStatus("not ready");
-    return;
-  }
-
-  state.installPromptEvent.prompt();
-  const choice = await state.installPromptEvent.userChoice;
-  setInstallStatus(choice.outcome === "accepted" ? "accepted" : "dismissed");
-  state.installPromptEvent = null;
-}
-
-function wireInstallPrompt() {
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    state.installPromptEvent = event;
-    state.installSupported = true;
-    setInstallStatus("ready");
-  });
-
-  window.addEventListener("appinstalled", () => {
-    setInstallStatus("installed");
-  });
-}
-
-function activateWaitingUpdate() {
-  const waitingWorker = state.swRegistration?.waiting;
-  if (!waitingWorker) {
-    return;
-  }
-
-  state.isReloadingForUpdate = true;
-  UPDATE_BUTTON.disabled = true;
-  UPDATE_BUTTON.textContent = `Updating to v${UPDATE_BUTTON.dataset.version} (${UPDATE_BUTTON.dataset.commit})...`;
-  waitingWorker.postMessage({ type: "SKIP_WAITING" });
-}
-
-function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) {
-    return;
-  }
-
-  navigator.serviceWorker.register("./sw.js").then(async (registration) => {
-    state.swRegistration = registration;
-
-    await evaluateWaitingWorker(registration);
-
-    registration.addEventListener("updatefound", () => {
-      const installingWorker = registration.installing;
-      if (!installingWorker) {
-        return;
-      }
-
-      installingWorker.addEventListener("statechange", async () => {
-        if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
-          await evaluateWaitingWorker(registration);
-        }
-      });
-    });
-
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (!state.isReloadingForUpdate) {
-        return;
-      }
-
-      window.location.reload();
-    });
-
-    registration.update().catch(() => {
-      // Ignore transient update-check errors; next refresh will retry.
-    });
-  }).catch((error) => {
-    console.warn("Service worker registration failed", error);
-  });
-}
-
-function init() {
-  setAppVersion();
-  setNetworkStatus();
-  setInstallStatus("unavailable");
-  hideUpdateButton();
-  wireInstallPrompt();
-  registerServiceWorker();
-
-  REFRESH_BUTTON.addEventListener("click", refreshState);
-  ACTION_BUTTON.addEventListener("click", performAction);
-  INSTALL_STATE.addEventListener("click", installApp);
-  UPDATE_BUTTON.addEventListener("click", activateWaitingUpdate);
-
-  refreshState();
-}
-
-init();
