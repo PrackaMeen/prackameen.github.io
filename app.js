@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.21";
+const APP_VERSION = "1.0.22";
 const APP_COMMIT_SHORT = "ccae28c";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -40,6 +40,10 @@ const PAGES = {
   "multiplayer-host-game-settings": {
     title: "Multiplayer / Host / Game Settings",
     basePath: "./pages/multiplayer-host-game-settings/"
+  },
+  "multiplayer-chat": {
+    title: "Multiplayer / Chat",
+    basePath: "./pages/multiplayer-chat/"
   },
   settings: {
     title: "Settings",
@@ -106,6 +110,11 @@ const NAV_TREE = [
                 route: "multiplayer-host-game-settings"
               }
             ]
+          },
+          {
+            id: "multiplayer-chat",
+            label: "Chat (Dev)",
+            route: "multiplayer-chat"
           }
         ]
       },

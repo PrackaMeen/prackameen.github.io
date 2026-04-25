@@ -1,16 +1,34 @@
 <main class="page-shell">
   <section class="card">
     <p class="kicker">Multiplayer / Lobby</p>
-    <h1>Lobby</h1>
-    <p>Manage joined-session flow before tuning joined game settings.</p>
+    <h1>Join a Session</h1>
+    <p id="lobbyStatus" class="lobby-status">Enter a session ID to join.</p>
   </section>
 
   <section class="card">
-    <h2>Lobby Actions</h2>
-    <ul>
-      <li>Join room and select slot</li>
-      <li>Mark readiness</li>
-      <li>Proceed to joined game settings</li>
+    <h2>Session ID</h2>
+    <form id="joinForm" class="join-form" autocomplete="off">
+      <input
+        id="sessionIdInput"
+        class="session-id-input"
+        type="text"
+        placeholder="Paste session ID here…"
+        required
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="joinBtn" class="primary-btn" type="submit">Join</button>
+    </form>
+  </section>
+
+  <section class="card" id="peersCard" hidden>
+    <h2>Connected Peers <span id="peerCount" class="peer-count">(0)</span></h2>
+    <ul id="peerList" class="peer-list" aria-label="Connected peers">
+      <li class="peer-item peer-item--empty">Connecting…</li>
     </ul>
+  </section>
+
+  <section class="card" id="settingsCard" hidden>
+    <button id="goToSettingsBtn" class="primary-btn" type="button">Proceed to Game Settings</button>
   </section>
 </main>
