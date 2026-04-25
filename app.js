@@ -1,15 +1,45 @@
-const APP_VERSION = "1.0.3";
-const APP_COMMIT_SHORT = "4f7e9a2";
+const APP_VERSION = "1.0.4";
+const APP_COMMIT_SHORT = "9ad31c8";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 
 const PAGES = {
   lab: {
     title: "G.A.M.E Mobile Test Lab",
     basePath: "./pages/lab/"
+  },
+  replays: {
+    title: "Replay Explorer",
+    basePath: "./pages/replays/"
+  },
+  loadout: {
+    title: "Loadout Planner",
+    basePath: "./pages/loadout/"
+  },
+  settings: {
+    title: "Lab Settings",
+    basePath: "./pages/settings/"
   }
 };
 
+const NAVIGATION_GROUPS = [
+  {
+    label: "Play",
+    items: [
+      { route: "lab", label: "Live Lab" },
+      { route: "replays", label: "Replays" }
+    ]
+  },
+  {
+    label: "Configure",
+    items: [
+      { route: "loadout", label: "Loadout" },
+      { route: "settings", label: "Settings" }
+    ]
+  }
+];
+
 const APP_ROOT = document.querySelector("#appRoot");
+const NAV_ROOT = document.querySelector("#navRoot");
 const PAGE_STYLESHEET = document.querySelector("#pageStylesheet");
 
 let mountedPage = null;
@@ -65,6 +95,27 @@ async function loadPage(pageName) {
   document.title = page.title;
 }
 
+function renderNavigation(activePage) {
+  NAV_ROOT.innerHTML = `
+    <div class="nav-inner">
+      <a class="brand" href="#/lab" aria-label="Go to lab">G.A.M.E</a>
+      <nav class="hierarchy" aria-label="Application sections">
+        ${NAVIGATION_GROUPS.map((group) => `
+          <section class="nav-group" aria-label="${group.label}">
+            <p class="nav-group-label">${group.label}</p>
+            <div class="nav-links">
+              ${group.items.map((item) => {
+                const isActive = item.route === activePage;
+                return `<a class="nav-link ${isActive ? "active" : ""}" href="#/${item.route}" ${isActive ? 'aria-current="page"' : ""}>${item.label}</a>`;
+              }).join("")}
+            </div>
+          </section>
+        `).join("")}
+      </nav>
+    </div>
+  `;
+}
+
 function renderLoadError(error) {
   APP_ROOT.innerHTML = `
     <section class="boot-error" role="alert">
@@ -76,6 +127,7 @@ function renderLoadError(error) {
 
 async function bootCurrentRoute() {
   const pageName = getRouteName();
+  renderNavigation(pageName);
 
   try {
     await loadPage(pageName);

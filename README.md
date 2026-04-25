@@ -31,6 +31,9 @@ This app is split by page and still serves directly from GitHub Pages (no bundle
 Current route map:
 
 - `#/lab` -> `pages/lab/*`
+- `#/replays` -> `pages/replays/*`
+- `#/loadout` -> `pages/loadout/*`
+- `#/settings` -> `pages/settings/*`
 
 To add a page:
 
