@@ -1,6 +1,7 @@
-const APP_VERSION = "1.0.8";
-const APP_COMMIT_SHORT = "f42c9a1";
+const APP_VERSION = "1.0.9";
+const APP_COMMIT_SHORT = "ccae28c";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
+const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_ROUTE = "menu";
 
 const PAGES = {
@@ -116,7 +117,9 @@ const PAGE_STYLESHEET = document.querySelector("#pageStylesheet");
 const updateState = {
   swRegistration: null,
   isReloadingForUpdate: false,
-  promptedBuildIds: new Set()
+  promptedBuildIds: new Set(),
+  isCheckingForUpdates: false,
+  lastHiddenAt: null
 };
 
 let mountedPage = null;
@@ -222,6 +225,56 @@ async function evaluateWaitingWorker(registration) {
   waitingWorker.postMessage({ type: "SKIP_WAITING" });
 }
 
+async function checkForAppUpdate() {
+  const registration = updateState.swRegistration;
+  if (!registration || updateState.isCheckingForUpdates || !navigator.onLine) {
+    return;
+  }
+
+  updateState.isCheckingForUpdates = true;
+
+  try {
+    await registration.update();
+    await evaluateWaitingWorker(registration);
+  } catch {
+    // Ignore transient connectivity/update-check failures; scheduled checks will retry.
+  } finally {
+    updateState.isCheckingForUpdates = false;
+  }
+}
+
+function startUpdateChecks() {
+  window.setInterval(() => {
+    if (document.visibilityState !== "visible") {
+      return;
+    }
+
+    void checkForAppUpdate();
+  }, UPDATE_CHECK_INTERVAL_MS);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      updateState.lastHiddenAt = Date.now();
+      return;
+    }
+
+    if (updateState.lastHiddenAt === null) {
+      return;
+    }
+
+    updateState.lastHiddenAt = null;
+    void checkForAppUpdate();
+  });
+
+  window.addEventListener("online", () => {
+    if (document.visibilityState !== "visible") {
+      return;
+    }
+
+    void checkForAppUpdate();
+  });
+}
+
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
     return;
@@ -244,9 +297,8 @@ function registerServiceWorker() {
       });
     });
 
-    registration.update().catch(() => {
-      // Ignore transient update-check failures; next check will retry.
-    });
+    startUpdateChecks();
+    void checkForAppUpdate();
   }).catch((error) => {
     console.warn("Service worker registration failed", error);
   });
