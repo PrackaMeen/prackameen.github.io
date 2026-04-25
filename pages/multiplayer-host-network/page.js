@@ -13,6 +13,8 @@ export function mountPage(context) {
   const joinCodeCard = document.getElementById("joinCodeCard");
   const joinCodeEl = document.getElementById("joinCode");
   const copyJoinCodeBtn = document.getElementById("copyJoinCodeBtn");
+  const qrCodeCard = document.getElementById("qrCodeCard");
+  const qrCodeContainer = document.getElementById("qrCodeContainer");
   const peersCard = document.getElementById("peersCard");
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
@@ -79,6 +81,11 @@ export function mountPage(context) {
     peersCard.hidden = false;
     actionsCard.hidden = false;
 
+    // QR now carries only session payload for in-app scanner flow.
+    const qrPayload = `GAMEJOIN:${joinCode}`;
+    generateQRCode(qrCodeContainer, qrPayload);
+    qrCodeCard.hidden = false;
+
     statusEl.textContent = "Session active — share the Join Code with players.";
 
     unsubs.push(mgr.peers.onChange(renderPeers));
@@ -116,9 +123,32 @@ export function mountPage(context) {
   };
 }
 
+function generateQRCode(container, text) {
+  container.innerHTML = "";
+  
+  // Use reliable QR code API - qr-server.com
+  const encodedText = encodeURIComponent(text);
+  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodedText}`;
+  
+  const img = document.createElement("img");
+  img.src = apiUrl;
+  img.alt = "QR Code for joining session";
+  img.style.border = "2px solid #d1d5db";
+  img.style.borderRadius = "0.375rem";
+  img.style.maxWidth = "100%";
+  img.style.height = "auto";
+  
+  img.onerror = function() {
+    container.innerHTML = '<p style="color:#666; font-size:0.85rem; margin:0;">Unable to generate QR code. Use the Join Code above instead.</p>';
+  };
+  
+  container.appendChild(img);
+}
+
 function escHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+

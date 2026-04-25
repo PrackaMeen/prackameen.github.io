@@ -10,6 +10,11 @@ export function mountPage(context) {
   const joinForm = document.getElementById("joinForm");
   const joinCodeInputEl = document.getElementById("joinCodeInput");
   const joinBtn = document.getElementById("joinBtn");
+  const scanQrBtn = document.getElementById("scanQrBtn");
+  const stopScanBtn = document.getElementById("stopScanBtn");
+  const scannerCard = document.getElementById("scannerCard");
+  const scannerVideo = document.getElementById("scannerVideo");
+  const scannerStatus = document.getElementById("scannerStatus");
   const peersCard = document.getElementById("peersCard");
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
@@ -21,6 +26,31 @@ export function mountPage(context) {
   const nickname = prefs.nickname || "Player";
   const mgr = new SessionManager();
   const unsubs = [];
+  let scanStream = null;
+  let scanFrameHandle = null;
+  let scanDetector = null;
+
+  // ── auto-fill from QR code URL param ──────────────────────────────────────
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const codeFromUrl = urlParams.get("code");
+  if (codeFromUrl) {
+    joinCodeInputEl.value = decodeURIComponent(codeFromUrl);
+  }
+
+  // ── in-app QR scanning ───────────────────────────────────────────────────
+
+  if (scanQrBtn) {
+    scanQrBtn.addEventListener("click", async () => {
+      await startScanner();
+    });
+  }
+
+  if (stopScanBtn) {
+    stopScanBtn.addEventListener("click", () => {
+      stopScanner();
+    });
+  }
 
   // ── peer rendering ────────────────────────────────────────────────────────
 
@@ -53,7 +83,7 @@ export function mountPage(context) {
 
     let sessionId, signalingUrl;
     try {
-      const parsed = JSON.parse(atob(raw));
+      const parsed = parseJoinPayload(raw);
       sessionId = parsed.s;
       signalingUrl = parsed.u;
       if (!sessionId || !signalingUrl) throw new Error("incomplete");
@@ -108,10 +138,138 @@ export function mountPage(context) {
 
   return {
     async dispose() {
+      stopScanner();
       unsubs.forEach(u => u?.());
       // mgr.leave() intentionally not called — session continues when navigating forward
     }
   };
+
+  async function startScanner() {
+    if (!supportsQrScanning()) {
+      statusEl.textContent = "In-app QR scanning is not supported on this device/browser. Paste Join Code instead.";
+      statusEl.style.color = "#b91c1c";
+      return;
+    }
+
+    try {
+      scanStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false
+      });
+      scannerVideo.srcObject = scanStream;
+      scanDetector = new BarcodeDetector({ formats: ["qr_code"] });
+      scannerCard.hidden = false;
+      scanQrBtn.disabled = true;
+      scannerStatus.textContent = "Scanning...";
+      scannerStatus.style.color = "";
+      runScanLoop();
+    } catch (err) {
+      statusEl.textContent = `Unable to start camera: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
+      stopScanner();
+    }
+  }
+
+  function stopScanner() {
+    if (scanFrameHandle) {
+      cancelAnimationFrame(scanFrameHandle);
+      scanFrameHandle = null;
+    }
+
+    if (scanStream) {
+      for (const track of scanStream.getTracks()) {
+        track.stop();
+      }
+      scanStream = null;
+    }
+
+    if (scannerVideo) {
+      scannerVideo.srcObject = null;
+    }
+
+    if (scannerCard) {
+      scannerCard.hidden = true;
+    }
+
+    if (scanQrBtn) {
+      scanQrBtn.disabled = false;
+    }
+  }
+
+  async function runScanLoop() {
+    if (!scanDetector || !scannerVideo || scannerVideo.readyState < 2) {
+      scanFrameHandle = requestAnimationFrame(runScanLoop);
+      return;
+    }
+
+    try {
+      const barcodes = await scanDetector.detect(scannerVideo);
+      if (barcodes.length > 0) {
+        const rawValue = barcodes[0].rawValue || "";
+        const joinCode = extractJoinCode(rawValue);
+
+        if (joinCode) {
+          joinCodeInputEl.value = joinCode;
+          scannerStatus.textContent = "QR scanned. Join code filled.";
+          scannerStatus.style.color = "#15803d";
+          stopScanner();
+          return;
+        }
+
+        scannerStatus.textContent = "QR detected, but format is not recognized for this app.";
+        scannerStatus.style.color = "#b91c1c";
+      }
+    } catch {
+      // Keep scanning; transient detector errors are common on camera startup.
+    }
+
+    scanFrameHandle = requestAnimationFrame(runScanLoop);
+  }
+}
+
+function supportsQrScanning() {
+  return !!(window.isSecureContext && navigator.mediaDevices?.getUserMedia && window.BarcodeDetector);
+}
+
+function extractJoinCode(scannedValue) {
+  const raw = String(scannedValue || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  if (raw.startsWith("GAMEJOIN:")) {
+    return raw.slice("GAMEJOIN:".length).trim() || null;
+  }
+
+  try {
+    const parsedUrl = new URL(raw);
+    const urlCode = parsedUrl.searchParams.get("code");
+    if (urlCode) {
+      return decodeURIComponent(urlCode);
+    }
+  } catch {
+    // Not a URL; continue.
+  }
+
+  try {
+    const parsed = parseJoinPayload(raw);
+    if (parsed?.s && parsed?.u) {
+      return raw;
+    }
+  } catch {
+    // Not a join code.
+  }
+
+  return null;
+}
+
+function parseJoinPayload(rawJoinCode) {
+  const normalized = String(rawJoinCode || "").trim();
+  const payload = normalized.startsWith("GAMEJOIN:")
+    ? normalized.slice("GAMEJOIN:".length).trim()
+    : normalized;
+
+  return JSON.parse(atob(payload));
 }
 
 function escHtml(str) {

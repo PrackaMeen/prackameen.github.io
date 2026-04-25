@@ -1,6 +1,45 @@
 {
   "items": [
     {
+      "version": "1.0.28",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "In-app QR scanner with session-only payload",
+      "businessSummary": "Players can now scan host QR codes directly inside the G.A.M.E PWA Join page. QR payloads now contain only session join data, removing dependency on opening a browser URL from the system camera app.",
+      "highlights": [
+        "Join (Network) now has a built-in camera scanner for QR codes.",
+        "Host QR codes encode session payload only (join code), not a site URL.",
+        "Scanner auto-fills the Join Code input when a valid app QR is detected.",
+        "Backward compatibility kept for previous URL-based QR codes."
+      ]
+    },
+    {
+      "version": "1.0.27",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "QR join links now use signaling host",
+      "businessSummary": "Network host QR codes now point to the signaling server host (public IP/domain) instead of localhost, so phones and remote devices can open the correct join URL directly after scanning.",
+      "highlights": [
+        "QR URL host is derived from the configured signaling server URL.",
+        "When signaling uses a public IP or domain, scanned QR links now open that same reachable host.",
+        "App routing, join-code prefill, and one-tap connect flow remain unchanged."
+      ]
+    },
+    {
+      "version": "1.0.26",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "QR code sharing for network multiplayer",
+      "businessSummary": "When hosting a network multiplayer session, players can now scan a QR code from the host's screen instead of copy-pasting the join code. Mobile clients scan → automatically land on the join page with code pre-filled → one click to connect.",
+      "highlights": [
+        "Host page displays both a text join code (for copy-paste) and a scannable QR code.",
+        "QR code encodes a full URL that auto-navigates clients to the join page with code pre-filled.",
+        "Mobile clients: scan QR → join page appears → click Connect.",
+        "QR code library bundled locally for offline capability.",
+        "Fallback copy-paste remains available for all devices."
+      ]
+    },
+    {
       "version": "1.0.25",
       "commit": "pending",
       "date": "2026-04-25",
