@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.11";
+const APP_VERSION = "1.0.12";
 const APP_COMMIT_SHORT = "ccae28c";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -44,6 +44,10 @@ const PAGES = {
   "release-notes": {
     title: "Release Notes",
     basePath: "./pages/release-notes/"
+  },
+  lab: {
+    title: "Lab",
+    basePath: "./pages/lab/"
   }
 };
 
@@ -105,6 +109,11 @@ const NAV_TREE = [
         id: "release-notes",
         label: "Release Notes",
         route: "release-notes"
+      },
+      {
+        id: "lab",
+        label: "Lab",
+        route: "lab"
       }
     ]
   }

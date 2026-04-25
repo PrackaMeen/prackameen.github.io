@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.12",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Lab added to menu; unreferenced pages removed",
+      "businessSummary": "The Lab section is now accessible directly from the main menu. Pages that were not part of the app navigation hierarchy (Replays, Loadout) have been removed to keep the app tidy.",
+      "highlights": [
+        "Lab page added to the main menu navigation.",
+        "Lab is now part of the official page hierarchy and breadcrumb trail.",
+        "Removed Replays and Loadout pages that were not linked from any menu."
+      ]
+    },
+    {
       "version": "1.0.11",
       "commit": "ccae28c",
       "date": "2026-04-25",
