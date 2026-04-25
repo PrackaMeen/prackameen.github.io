@@ -23,6 +23,16 @@
       <span>Extra Host (IP or Domain)</span>
       <input type="text" id="extraHostInput" class="url-input" placeholder="192.168.1.5 or game.example.com" autocomplete="off" spellcheck="false" />
     </label>
+
+    <div class="readonly-block" aria-live="polite">
+      <p class="hint-text">Detected Local LAN Host (read-only)</p>
+      <div class="readonly-row">
+        <input type="text" id="localLanHostDisplay" class="url-input" readonly value="Detecting..." />
+        <button id="copyLocalLanHostBtn" class="copy-btn" type="button">Copy</button>
+        <button id="useLocalLanHostBtn" class="copy-btn" type="button">Use</button>
+      </div>
+      <p class="hint-text" id="localLanHostHint">Copy this host/IP for mobile hosting or tap Use to fill Extra Host.</p>
+    </div>
   </section>
 
   <section class="card" id="joinCodeCard" hidden>

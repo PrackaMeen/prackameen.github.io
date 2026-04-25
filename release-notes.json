@@ -1,6 +1,44 @@
 {
   "items": [
     {
+      "version": "1.0.33",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Reliable LAN host detection via signaling server",
+      "businessSummary": "Network Host now detects LAN IP using the signaling server's local network interfaces, improving detection reliability on desktop browsers where WebRTC local-IP discovery may be restricted.",
+      "highlights": [
+        "Added WebClient endpoint to return local private IPv4 addresses.",
+        "Host page now queries signaling server for LAN IP before WebRTC fallback.",
+        "Read-only Local LAN Host block is now more reliable on PC.",
+        "CORS enabled for LAN-detection endpoint to support separate PWA origin during local development."
+      ]
+    },
+    {
+      "version": "1.0.32",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Read-only local LAN host helper on Network Host",
+      "businessSummary": "Network Host now shows a read-only local LAN host/IP block with quick Copy and Use actions, making it easier to host or share endpoint info from mobile and LAN devices.",
+      "highlights": [
+        "Added read-only Local LAN Host display on Host via Network page.",
+        "One-tap Copy action to paste LAN host/IP wherever needed.",
+        "One-tap Use action to fill the Extra Host field automatically.",
+        "Auto-detection uses signaling URL host first and device LAN detection when available."
+      ]
+    },
+    {
+      "version": "1.0.31",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "LAN host candidate prioritization and join diagnostics",
+      "businessSummary": "Network Join now prioritizes the manually entered IP/domain candidate before localhost, improving cross-device LAN connection success. Failed joins now report which signaling endpoints were attempted.",
+      "highlights": [
+        "Extra Host (IP/domain) is now tried before localhost in generated join candidates.",
+        "Join failure message includes the list of endpoint hosts that were attempted.",
+        "Helps diagnose LAN issues such as firewall blocks or unreachable signaling endpoints."
+      ]
+    },
+    {
       "version": "1.0.30",
       "commit": "pending",
       "date": "2026-04-25",
