@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.9",
+      "commit": "ccae28c",
+      "date": "2026-04-25",
+      "title": "Online-aware automatic update checks",
+      "businessSummary": "The app now looks for new builds when players return after inactivity and every five minutes while online, making updates visible without requiring a manual refresh.",
+      "highlights": [
+        "Service worker update checks now run automatically when the app becomes active again.",
+        "Foreground sessions re-check for updates every five minutes while internet access is available.",
+        "Offline sessions skip unnecessary update requests and retry automatically once connectivity returns."
+      ]
+    },
+    {
       "version": "1.0.8",
       "commit": "f42c9a1",
       "date": "2026-04-25",
