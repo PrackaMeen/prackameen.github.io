@@ -1,4 +1,6 @@
-const CACHE_NAME = "game-mobile-lab-v1.0.1";
+const APP_VERSION = "1.0.1";
+const APP_COMMIT_SHORT = "14b54a5";
+const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -58,4 +60,17 @@ self.addEventListener("fetch", (event) => {
         });
     })
   );
+});
+
+self.addEventListener("message", (event) => {
+  const messageType = event.data?.type;
+
+  if (messageType === "SKIP_WAITING") {
+    self.skipWaiting();
+    return;
+  }
+
+  if (messageType === "GET_VERSION") {
+    event.ports?.[0]?.postMessage({ version: APP_VERSION, commit: APP_COMMIT_SHORT });
+  }
 });

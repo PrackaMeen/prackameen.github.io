@@ -1,8 +1,14 @@
 const APP_VERSION = "1.0.1";
+const APP_COMMIT_SHORT = "14b54a5";
+const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 
 const state = {
   installPromptEvent: null,
-  installSupported: false
+  installSupported: false,
+  swRegistration: null,
+  latestAvailableVersion: null,
+  latestAvailableCommit: null,
+  isReloadingForUpdate: false
 };
 
 const REFRESH_BUTTON = document.querySelector("#refreshBtn");
@@ -10,13 +16,106 @@ const ACTION_BUTTON = document.querySelector("#actionBtn");
 const NETWORK_MODE = document.querySelector("#networkMode");
 const INSTALL_STATE = document.querySelector("#installState");
 const APP_VERSION_PILL = document.querySelector("#appVersion");
+const UPDATE_BUTTON = document.querySelector("#updateBtn");
 const LAST_UPDATED = document.querySelector("#lastUpdated");
 const STATS_GRID = document.querySelector("#statsGrid");
 const EVENT_FEED = document.querySelector("#eventFeed");
 const CARD_TEMPLATE = document.querySelector("#statCardTemplate");
 
 function setAppVersion() {
-  APP_VERSION_PILL.textContent = `Version: ${APP_VERSION}`;
+  APP_VERSION_PILL.textContent = `Version: ${APP_VERSION} (${APP_COMMIT_SHORT})`;
+}
+
+function parseVersion(version) {
+  const parts = String(version || "")
+    .replace(/^v/i, "")
+    .split(".")
+    .map((segment) => Number.parseInt(segment, 10));
+
+  if (parts.some((part) => Number.isNaN(part))) {
+    return [0, 0, 0];
+  }
+
+  return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
+}
+
+function isVersionNewer(currentVersion, candidateVersion) {
+  const current = parseVersion(currentVersion);
+  const candidate = parseVersion(candidateVersion);
+
+  for (let i = 0; i < 3; i += 1) {
+    if (candidate[i] > current[i]) {
+      return true;
+    }
+    if (candidate[i] < current[i]) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+function showUpdateButton(version, commitShort) {
+  UPDATE_BUTTON.dataset.version = version;
+  UPDATE_BUTTON.dataset.commit = commitShort;
+  UPDATE_BUTTON.dataset.buildId = `${version}+${commitShort}`;
+  UPDATE_BUTTON.textContent = `Update to v${version} (${commitShort})`;
+  UPDATE_BUTTON.classList.remove("hidden");
+}
+
+function hideUpdateButton() {
+  UPDATE_BUTTON.dataset.version = "";
+  UPDATE_BUTTON.dataset.commit = "";
+  UPDATE_BUTTON.dataset.buildId = "";
+  UPDATE_BUTTON.textContent = "";
+  UPDATE_BUTTON.classList.add("hidden");
+}
+
+function askWorkerBuildInfo(worker) {
+  return new Promise((resolve) => {
+    if (!worker) {
+      resolve(null);
+      return;
+    }
+
+    const channel = new MessageChannel();
+    const timeout = window.setTimeout(() => resolve(null), 1500);
+
+    channel.port1.onmessage = (event) => {
+      window.clearTimeout(timeout);
+      const version = event.data?.version;
+      const commit = event.data?.commit;
+      if (!version || !commit) {
+        resolve(null);
+        return;
+      }
+      resolve({ version, commit });
+    };
+
+    worker.postMessage({ type: "GET_VERSION" }, [channel.port2]);
+  });
+}
+
+async function evaluateWaitingWorker(registration) {
+  const waitingWorker = registration?.waiting;
+  if (!waitingWorker) {
+    return;
+  }
+
+  const waitingBuild = await askWorkerBuildInfo(waitingWorker);
+  if (!waitingBuild) {
+    return;
+  }
+
+  const waitingVersion = waitingBuild.version;
+  const waitingCommit = waitingBuild.commit;
+  const isSameVersionDifferentCommit = waitingVersion === APP_VERSION && waitingCommit !== APP_COMMIT_SHORT;
+
+  if (isVersionNewer(APP_VERSION, waitingVersion) || isSameVersionDifferentCommit) {
+    state.latestAvailableVersion = waitingVersion;
+    state.latestAvailableCommit = waitingCommit;
+    showUpdateButton(waitingVersion, waitingCommit);
+  }
 }
 
 function setInstallStatus(text) {
@@ -163,12 +262,53 @@ function wireInstallPrompt() {
   });
 }
 
+function activateWaitingUpdate() {
+  const waitingWorker = state.swRegistration?.waiting;
+  if (!waitingWorker) {
+    return;
+  }
+
+  state.isReloadingForUpdate = true;
+  UPDATE_BUTTON.disabled = true;
+  UPDATE_BUTTON.textContent = `Updating to v${UPDATE_BUTTON.dataset.version} (${UPDATE_BUTTON.dataset.commit})...`;
+  waitingWorker.postMessage({ type: "SKIP_WAITING" });
+}
+
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
     return;
   }
 
-  navigator.serviceWorker.register("./sw.js").catch((error) => {
+  navigator.serviceWorker.register("./sw.js").then(async (registration) => {
+    state.swRegistration = registration;
+
+    await evaluateWaitingWorker(registration);
+
+    registration.addEventListener("updatefound", () => {
+      const installingWorker = registration.installing;
+      if (!installingWorker) {
+        return;
+      }
+
+      installingWorker.addEventListener("statechange", async () => {
+        if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
+          await evaluateWaitingWorker(registration);
+        }
+      });
+    });
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!state.isReloadingForUpdate) {
+        return;
+      }
+
+      window.location.reload();
+    });
+
+    registration.update().catch(() => {
+      // Ignore transient update-check errors; next refresh will retry.
+    });
+  }).catch((error) => {
     console.warn("Service worker registration failed", error);
   });
 }
@@ -177,12 +317,14 @@ function init() {
   setAppVersion();
   setNetworkStatus();
   setInstallStatus("unavailable");
+  hideUpdateButton();
   wireInstallPrompt();
   registerServiceWorker();
 
   REFRESH_BUTTON.addEventListener("click", refreshState);
   ACTION_BUTTON.addEventListener("click", performAction);
   INSTALL_STATE.addEventListener("click", installApp);
+  UPDATE_BUTTON.addEventListener("click", activateWaitingUpdate);
 
   refreshState();
 }
