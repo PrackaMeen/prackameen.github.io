@@ -57,6 +57,37 @@
   margin-top: 0.25rem;
 }
 
+.readonly-block {
+  margin-top: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.readonly-row {
+  display: flex;
+  gap: 0.45rem;
+  align-items: stretch;
+  margin-bottom: 0.4rem;
+}
+
+.readonly-row .url-input {
+  background: var(--color-surface-alt, #f8fafc);
+}
+
+.readonly-row .copy-btn {
+  padding: 0.45rem 0.7rem;
+}
+
+@media (max-width: 640px) {
+  .readonly-row {
+    flex-wrap: wrap;
+  }
+
+  .readonly-row .url-input {
+    width: 100%;
+    flex-basis: 100%;
+  }
+}
+
 .join-code-display {
   width: 100%;
   box-sizing: border-box;

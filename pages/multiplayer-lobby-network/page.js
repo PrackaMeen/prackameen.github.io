@@ -126,7 +126,15 @@ export function mountPage(context) {
       }
     }
 
-    statusEl.textContent = `Error: ${lastError?.message || "Unable to connect using provided signaling options."}`;
+    const triedHosts = signalingUrls.map((url) => {
+      try {
+        return new URL(url).host;
+      } catch {
+        return url;
+      }
+    }).join(", ");
+
+    statusEl.textContent = `Error: ${lastError?.message || "Unable to connect using provided signaling options."} Tried: ${triedHosts}`;
     statusEl.style.color = "#b91c1c";
     joinBtn.disabled = false;
   });

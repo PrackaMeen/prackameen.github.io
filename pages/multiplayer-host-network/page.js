@@ -10,6 +10,10 @@ export function mountPage(context) {
   const statusEl = document.getElementById("hostStatus");
   const signalingUrlEl = document.getElementById("signalingUrl");
   const extraHostInputEl = document.getElementById("extraHostInput");
+  const localLanHostDisplayEl = document.getElementById("localLanHostDisplay");
+  const localLanHostHintEl = document.getElementById("localLanHostHint");
+  const copyLocalLanHostBtn = document.getElementById("copyLocalLanHostBtn");
+  const useLocalLanHostBtn = document.getElementById("useLocalLanHostBtn");
   const startBtn = document.getElementById("startBtn");
   const joinCodeCard = document.getElementById("joinCodeCard");
   const joinCodeEl = document.getElementById("joinCode");
@@ -30,6 +34,8 @@ export function mountPage(context) {
   const nickname = prefs.nickname || "Host";
   const mgr = new SessionManager();
   const unsubs = [];
+
+  initLocalLanHostBlock();
 
   // ── peer rendering ────────────────────────────────────────────────────────
 
@@ -128,6 +134,75 @@ export function mountPage(context) {
       // mgr.leave() intentionally not called — session continues when navigating forward
     }
   };
+
+  function initLocalLanHostBlock() {
+    if (!localLanHostDisplayEl) {
+      return;
+    }
+
+    refreshDetectedLanHost();
+
+    signalingUrlEl?.addEventListener("change", () => {
+      refreshDetectedLanHost();
+    });
+
+    copyLocalLanHostBtn?.addEventListener("click", () => {
+      const value = localLanHostDisplayEl.value.trim();
+      if (!value) {
+        return;
+      }
+      navigator.clipboard.writeText(value).then(() => {
+        copyLocalLanHostBtn.textContent = "Copied!";
+        setTimeout(() => { copyLocalLanHostBtn.textContent = "Copy"; }, 1200);
+      });
+    });
+
+    useLocalLanHostBtn?.addEventListener("click", () => {
+      const value = localLanHostDisplayEl.value.trim();
+      if (!value || !extraHostInputEl) {
+        return;
+      }
+      extraHostInputEl.value = value;
+      statusEl.textContent = `Extra Host filled with detected LAN host: ${value}`;
+      statusEl.style.color = "";
+    });
+  }
+
+  async function refreshDetectedLanHost() {
+    const fromSignaling = extractPrivateHostFromUrl(signalingUrlEl?.value);
+    if (fromSignaling) {
+      setDetectedLanHost(fromSignaling, "Detected from signaling URL.");
+      return;
+    }
+
+    setDetectedLanHost("", "Trying to detect LAN host from signaling server…");
+
+    const fromServer = await detectLanHostFromSignalingServer(signalingUrlEl?.value);
+    if (fromServer) {
+      setDetectedLanHost(fromServer, "Detected from signaling server network interfaces.");
+      return;
+    }
+
+    const fromWebRtc = await detectLanIpViaWebRtc();
+    if (fromWebRtc) {
+      setDetectedLanHost(fromWebRtc, "Detected from device network.");
+      return;
+    }
+
+    setDetectedLanHost("", "Could not auto-detect. Enter IP/domain manually in Extra Host.");
+  }
+
+  function setDetectedLanHost(host, hintText) {
+    if (!localLanHostDisplayEl) {
+      return;
+    }
+
+    localLanHostDisplayEl.value = host || "";
+    localLanHostDisplayEl.placeholder = host ? "" : "Not detected";
+    if (localLanHostHintEl) {
+      localLanHostHintEl.textContent = hintText;
+    }
+  }
 }
 
 function generateQRCode(container, text) {
@@ -177,12 +252,10 @@ function buildSignalingUrlCandidates({ baseSignalingUrl, extraHost }) {
     urls.push(candidate.toString());
   };
 
-  // Always include current URL first.
-  urls.push(parsedBase.url.toString());
-
-  // Keep localhost as explicit fallback, plus one optional host (IP or DNS).
-  addCandidate("localhost");
+  // Prefer explicit host (LAN/public) first when provided, then configured URL, then localhost fallback.
   addCandidate(extraHost);
+  urls.push(parsedBase.url.toString());
+  addCandidate("localhost");
 
   return dedupe(urls);
 }
@@ -205,5 +278,114 @@ function dedupe(items) {
     }
   }
   return result;
+}
+
+function extractPrivateHostFromUrl(urlText) {
+  try {
+    const parsed = new URL(String(urlText || "").trim());
+    const host = parsed.hostname;
+    return isPrivateIpv4(host) ? host : "";
+  } catch {
+    return "";
+  }
+}
+
+function isPrivateIpv4(host) {
+  const ip = String(host || "").trim();
+  if (!/^\d+\.\d+\.\d+\.\d+$/.test(ip)) {
+    return false;
+  }
+
+  const parts = ip.split(".").map((part) => Number.parseInt(part, 10));
+  if (parts.some((n) => Number.isNaN(n) || n < 0 || n > 255)) {
+    return false;
+  }
+
+  return parts[0] === 10
+    || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31)
+    || (parts[0] === 192 && parts[1] === 168);
+}
+
+async function detectLanIpViaWebRtc() {
+  const RTCPeer = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+  if (!RTCPeer) {
+    return "";
+  }
+
+  let peer = null;
+  try {
+    peer = new RTCPeer({ iceServers: [] });
+    peer.createDataChannel("lan-detect");
+
+    const detectionPromise = new Promise((resolve) => {
+      const timeout = window.setTimeout(() => resolve(""), 1800);
+
+      peer.onicecandidate = (event) => {
+        const candidate = event?.candidate?.candidate || "";
+        const match = candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+        if (!match) {
+          return;
+        }
+
+        const ip = match[1];
+        if (isPrivateIpv4(ip)) {
+          window.clearTimeout(timeout);
+          resolve(ip);
+        }
+      };
+    });
+
+    const offer = await peer.createOffer();
+    await peer.setLocalDescription(offer);
+    return await detectionPromise;
+  } catch {
+    return "";
+  } finally {
+    peer?.close();
+  }
+}
+
+async function detectLanHostFromSignalingServer(signalingUrl) {
+  const endpoint = buildNetworkInfoEndpoint(signalingUrl);
+  if (!endpoint) {
+    return "";
+  }
+
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 2500);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "GET",
+      mode: "cors",
+      cache: "no-store",
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      return "";
+    }
+
+    const payload = await response.json();
+    if (!Array.isArray(payload?.hosts)) {
+      return "";
+    }
+
+    return payload.hosts.find((host) => isPrivateIpv4(host)) || "";
+  } catch {
+    return "";
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function buildNetworkInfoEndpoint(signalingUrl) {
+  try {
+    const parsed = new URL(String(signalingUrl || "").trim());
+    const httpProtocol = parsed.protocol === "wss:" ? "https:" : "http:";
+    return `${httpProtocol}//${parsed.host}/api/network/local-addresses`;
+  } catch {
+    return "";
+  }
 }
 
