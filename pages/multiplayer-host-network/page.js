@@ -9,6 +9,7 @@ export function mountPage(context) {
 
   const statusEl = document.getElementById("hostStatus");
   const signalingUrlEl = document.getElementById("signalingUrl");
+  const extraHostInputEl = document.getElementById("extraHostInput");
   const startBtn = document.getElementById("startBtn");
   const joinCodeCard = document.getElementById("joinCodeCard");
   const joinCodeEl = document.getElementById("joinCode");
@@ -74,8 +75,14 @@ export function mountPage(context) {
       return;
     }
 
-    // Build and display the join code (base64 of { s: sessionId, u: signalingUrl })
-    const joinCode = btoa(JSON.stringify({ s: mgr.sessionId, u: signalingUrl }));
+    const signalingUrls = buildSignalingUrlCandidates({
+      baseSignalingUrl: signalingUrl,
+      extraHost: extraHostInputEl?.value
+    });
+
+    // Build and display the join code.
+    // `u` keeps backward compatibility; `us` carries full candidate list.
+    const joinCode = btoa(JSON.stringify({ s: mgr.sessionId, u: signalingUrls[0], us: signalingUrls }));
     joinCodeEl.value = joinCode;
     joinCodeCard.hidden = false;
     peersCard.hidden = false;
@@ -86,7 +93,7 @@ export function mountPage(context) {
     generateQRCode(qrCodeContainer, qrPayload);
     qrCodeCard.hidden = false;
 
-    statusEl.textContent = "Session active — share the Join Code with players.";
+    statusEl.textContent = `Session active — generated ${signalingUrls.length} signaling option(s) in Join Code.`;
 
     unsubs.push(mgr.peers.onChange(renderPeers));
     renderPeers(mgr.peers.getAll());
@@ -150,5 +157,53 @@ function escHtml(str) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function buildSignalingUrlCandidates({ baseSignalingUrl, extraHost }) {
+  const urls = [];
+  const parsedBase = parseSignalingUrl(baseSignalingUrl);
+  if (!parsedBase) {
+    return [baseSignalingUrl];
+  }
+
+  const addCandidate = (hostValue) => {
+    const normalizedHost = String(hostValue || "").trim();
+    if (!normalizedHost) {
+      return;
+    }
+
+    const candidate = new URL(parsedBase.url.toString());
+    candidate.hostname = normalizedHost;
+    urls.push(candidate.toString());
+  };
+
+  // Always include current URL first.
+  urls.push(parsedBase.url.toString());
+
+  // Keep localhost as explicit fallback, plus one optional host (IP or DNS).
+  addCandidate("localhost");
+  addCandidate(extraHost);
+
+  return dedupe(urls);
+}
+
+function parseSignalingUrl(signalingUrl) {
+  try {
+    return { url: new URL(String(signalingUrl || "")) };
+  } catch {
+    return null;
+  }
+}
+
+function dedupe(items) {
+  const seen = new Set();
+  const result = [];
+  for (const item of items) {
+    if (!seen.has(item)) {
+      seen.add(item);
+      result.push(item);
+    }
+  }
+  return result;
 }
 

@@ -81,20 +81,20 @@ export function mountPage(context) {
     const raw = joinCodeInputEl.value.trim();
     if (!raw) return;
 
-    let sessionId, signalingUrl;
+    let sessionId, signalingUrls;
     try {
       const parsed = parseJoinPayload(raw);
       sessionId = parsed.s;
-      signalingUrl = parsed.u;
-      if (!sessionId || !signalingUrl) throw new Error("incomplete");
+      signalingUrls = normalizeSignalingUrls(parsed);
+      if (!sessionId || signalingUrls.length === 0) throw new Error("incomplete");
     } catch {
       statusEl.textContent = "Invalid join code. Please check you copied it correctly.";
       statusEl.style.color = "#b91c1c";
       return;
     }
 
-    // Save signaling URL for next time
-    localStorage.setItem(SIGNALING_URL_KEY, signalingUrl);
+    // Save first candidate for next time
+    localStorage.setItem(SIGNALING_URL_KEY, signalingUrls[0]);
 
     joinBtn.disabled = true;
     statusEl.textContent = "Connecting to signaling server…";
@@ -113,13 +113,22 @@ export function mountPage(context) {
       statusEl.textContent = "Disconnected from session.";
     });
 
-    try {
-      await mgr.join({ sessionId, nickname, transportType: "webrtc", signalingUrl });
-    } catch (err) {
-      statusEl.textContent = `Error: ${err.message}`;
-      statusEl.style.color = "#b91c1c";
-      joinBtn.disabled = false;
+    let lastError = null;
+    for (let i = 0; i < signalingUrls.length; i += 1) {
+      const signalingUrl = signalingUrls[i];
+      statusEl.textContent = `Connecting to signaling server (${i + 1}/${signalingUrls.length})…`;
+      try {
+        await mgr.join({ sessionId, nickname, transportType: "webrtc", signalingUrl });
+        localStorage.setItem(SIGNALING_URL_KEY, signalingUrl);
+        return;
+      } catch (err) {
+        lastError = err;
+      }
     }
+
+    statusEl.textContent = `Error: ${lastError?.message || "Unable to connect using provided signaling options."}`;
+    statusEl.style.color = "#b91c1c";
+    joinBtn.disabled = false;
   });
 
   // ── proceed ───────────────────────────────────────────────────────────────
@@ -270,6 +279,36 @@ function parseJoinPayload(rawJoinCode) {
     : normalized;
 
   return JSON.parse(atob(payload));
+}
+
+function normalizeSignalingUrls(parsedPayload) {
+  const list = [];
+
+  if (parsedPayload && typeof parsedPayload.u === "string") {
+    list.push(parsedPayload.u);
+  }
+
+  if (Array.isArray(parsedPayload?.us)) {
+    for (const url of parsedPayload.us) {
+      if (typeof url === "string") {
+        list.push(url);
+      }
+    }
+  }
+
+  return dedupe(list.map((url) => String(url).trim()).filter(Boolean));
+}
+
+function dedupe(items) {
+  const seen = new Set();
+  const result = [];
+  for (const item of items) {
+    if (!seen.has(item)) {
+      seen.add(item);
+      result.push(item);
+    }
+  }
+  return result;
 }
 
 function escHtml(str) {

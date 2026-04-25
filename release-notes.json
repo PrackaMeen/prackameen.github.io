@@ -1,6 +1,32 @@
 {
   "items": [
     {
+      "version": "1.0.30",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Simplified host endpoint input for QR/join payload",
+      "businessSummary": "Network Host setup now uses a single optional endpoint field that accepts either an IP address or a domain name, reducing setup complexity while keeping multi-endpoint join reliability.",
+      "highlights": [
+        "Replaced multiple optional endpoint inputs with one Extra Host field.",
+        "Extra Host accepts both IP addresses and DNS hostnames.",
+        "Generated join payload still includes endpoint candidates for fallback connection attempts.",
+        "Join flow behavior and backward compatibility remain unchanged."
+      ]
+    },
+    {
+      "version": "1.0.29",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "QR join payload now supports multiple server endpoints",
+      "businessSummary": "Host-generated join payloads now include an array of signaling server options (localhost, LAN IP, public IP, and optional public DNS). Joining clients can automatically try these endpoints until one connects.",
+      "highlights": [
+        "Host screen includes optional LAN IP, Public IP, and Public DNS inputs for join payload generation.",
+        "Join payload now carries signaling endpoint array while keeping backward compatibility.",
+        "Join flow attempts available signaling endpoints in order until connection succeeds.",
+        "Improves reliability across local-only, LAN, and internet scenarios from one QR code."
+      ]
+    },
+    {
       "version": "1.0.28",
       "commit": "pending",
       "date": "2026-04-25",
