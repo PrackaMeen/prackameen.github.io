@@ -1,16 +1,36 @@
-const APP_VERSION = "1.0.5";
-const APP_COMMIT_SHORT = "a61d2c9";
+const APP_VERSION = "1.0.7";
+const APP_COMMIT_SHORT = "f42c9a1";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
-const DEFAULT_ROUTE = "single-player-game-settings";
+const DEFAULT_ROUTE = "menu";
 
 const PAGES = {
+  menu: {
+    title: "Menu",
+    basePath: "./pages/menu/"
+  },
+  "single-player": {
+    title: "Single Player",
+    basePath: "./pages/single-player/"
+  },
   "single-player-game-settings": {
     title: "Single Player / Game Settings",
     basePath: "./pages/single-player-game-settings/"
   },
+  multiplayer: {
+    title: "Multiplayer",
+    basePath: "./pages/multiplayer/"
+  },
+  "multiplayer-lobby": {
+    title: "Multiplayer / Lobby",
+    basePath: "./pages/multiplayer-lobby/"
+  },
   "multiplayer-lobby-joined-game-settings": {
     title: "Multiplayer / Lobby / Joined Game Settings",
     basePath: "./pages/multiplayer-lobby-joined-game-settings/"
+  },
+  "multiplayer-host": {
+    title: "Multiplayer / Host",
+    basePath: "./pages/multiplayer-host/"
   },
   "multiplayer-host-game-settings": {
     title: "Multiplayer / Host / Game Settings",
@@ -28,53 +48,64 @@ const PAGES = {
 
 const NAV_TREE = [
   {
-    id: "single-player",
-    label: "Single Player",
+    id: "menu",
+    label: "Menu",
+    route: "menu",
     children: [
       {
-        id: "single-player-game-settings",
-        label: "Game Settings",
-        route: "single-player-game-settings"
-      }
-    ]
-  },
-  {
-    id: "multiplayer",
-    label: "Multiplayer",
-    children: [
-      {
-        id: "multiplayer-lobby",
-        label: "Lobby",
+        id: "single-player",
+        label: "Single Player",
+        route: "single-player",
         children: [
           {
-            id: "multiplayer-lobby-joined-game-settings",
-            label: "Joined Game Settings",
-            route: "multiplayer-lobby-joined-game-settings"
+            id: "single-player-game-settings",
+            label: "Game Settings",
+            route: "single-player-game-settings"
           }
         ]
       },
       {
-        id: "multiplayer-host",
-        label: "Host",
+        id: "multiplayer",
+        label: "Multiplayer",
+        route: "multiplayer",
         children: [
           {
-            id: "multiplayer-host-game-settings",
-            label: "Game Settings",
-            route: "multiplayer-host-game-settings"
+            id: "multiplayer-lobby",
+            label: "Lobby",
+            route: "multiplayer-lobby",
+            children: [
+              {
+                id: "multiplayer-lobby-joined-game-settings",
+                label: "Joined Game Settings",
+                route: "multiplayer-lobby-joined-game-settings"
+              }
+            ]
+          },
+          {
+            id: "multiplayer-host",
+            label: "Host",
+            route: "multiplayer-host",
+            children: [
+              {
+                id: "multiplayer-host-game-settings",
+                label: "Game Settings",
+                route: "multiplayer-host-game-settings"
+              }
+            ]
           }
         ]
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        route: "settings"
+      },
+      {
+        id: "release-notes",
+        label: "Release Notes",
+        route: "release-notes"
       }
     ]
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    route: "settings"
-  },
-  {
-    id: "release-notes",
-    label: "Release Notes",
-    route: "release-notes"
   }
 ];
 
@@ -260,59 +291,25 @@ function findPathByRoute(nodes, routeName, path = []) {
   return [];
 }
 
-function renderLinkSet(nodes, activeNodeId) {
-  if (!nodes || nodes.length === 0) {
-    return "<span class=\"nav-empty\">No deeper level</span>";
-  }
-
-  return nodes.map((node) => {
-    const route = getFirstLeafRoute(node);
-    const activeClass = activeNodeId === node.id ? "active" : "";
-    const currentAttr = activeNodeId === node.id ? 'aria-current="page"' : "";
-    return `<a class="nav-link ${activeClass}" href="#/${route}" ${currentAttr}>${node.label}</a>`;
-  }).join("");
-}
-
 function renderBreadcrumb(path) {
   if (!path.length) {
     return "";
   }
 
   return path.map((node) => {
-    const route = getFirstLeafRoute(node);
+    const route = node.route || getFirstLeafRoute(node);
     return `<a class="crumb-link" href="#/${route}">${node.label}</a>`;
   }).join('<span class="crumb-sep">&gt;</span>');
 }
 
 function renderNavigation(activeRoute) {
   const activePath = findPathByRoute(NAV_TREE, activeRoute);
-  const menuNode = activePath[0] || null;
-  const pageNode = activePath[1] || null;
-  const innerNode = activePath[2] || null;
-  const pageLevelNodes = menuNode?.children || [];
-  const innerLevelNodes = pageNode?.children || [];
 
   NAV_ROOT.innerHTML = `
     <div class="nav-inner">
-      <a class="brand" href="#/${DEFAULT_ROUTE}" aria-label="Go to default page">G.A.M.E</a>
-      <p class="nav-hint">menu &gt; page &gt; inner page</p>
-      <div class="breadcrumb" aria-label="Breadcrumb">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
         ${renderBreadcrumb(activePath)}
-      </div>
-      <div class="nav-levels">
-        <section class="nav-level" aria-label="Menu level">
-          <p class="nav-level-label">Menu</p>
-          <div class="nav-links">${renderLinkSet(NAV_TREE, menuNode?.id)}</div>
-        </section>
-        <section class="nav-level" aria-label="Page level">
-          <p class="nav-level-label">Page</p>
-          <div class="nav-links">${renderLinkSet(pageLevelNodes, pageNode?.id)}</div>
-        </section>
-        <section class="nav-level" aria-label="Inner page level">
-          <p class="nav-level-label">Inner Page</p>
-          <div class="nav-links">${renderLinkSet(innerLevelNodes, innerNode?.id)}</div>
-        </section>
-      </div>
+      </nav>
     </div>
   `;
 }
