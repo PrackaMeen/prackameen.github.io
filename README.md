@@ -34,3 +34,12 @@ Open `index.html` directly, or serve this folder with any static host.
 - `POST /api/game/action`
 
 In mock mode, all three are handled client-side by `mock-api.js`.
+
+## PWA Versioning Policy
+
+For every repository change, increment the app code version and keep PWA version metadata aligned.
+
+At runtime, compare current running version with latest available version:
+
+- If latest is newer, show an update notification.
+- After user confirmation, activate/load the latest version.
