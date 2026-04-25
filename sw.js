@@ -1,4 +1,4 @@
-const CACHE_NAME = "game-mobile-lab-v1";
+const CACHE_NAME = "game-mobile-lab-v1.0.1";
 const APP_SHELL = [
   "./",
   "./index.html",

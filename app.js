@@ -1,3 +1,5 @@
+const APP_VERSION = "1.0.1";
+
 const state = {
   installPromptEvent: null,
   installSupported: false
@@ -7,10 +9,15 @@ const REFRESH_BUTTON = document.querySelector("#refreshBtn");
 const ACTION_BUTTON = document.querySelector("#actionBtn");
 const NETWORK_MODE = document.querySelector("#networkMode");
 const INSTALL_STATE = document.querySelector("#installState");
+const APP_VERSION_PILL = document.querySelector("#appVersion");
 const LAST_UPDATED = document.querySelector("#lastUpdated");
 const STATS_GRID = document.querySelector("#statsGrid");
 const EVENT_FEED = document.querySelector("#eventFeed");
 const CARD_TEMPLATE = document.querySelector("#statCardTemplate");
+
+function setAppVersion() {
+  APP_VERSION_PILL.textContent = `Version: ${APP_VERSION}`;
+}
 
 function setInstallStatus(text) {
   INSTALL_STATE.textContent = `Install: ${text}`;
@@ -167,6 +174,7 @@ function registerServiceWorker() {
 }
 
 function init() {
+  setAppVersion();
   setNetworkStatus();
   setInstallStatus("unavailable");
   wireInstallPrompt();
