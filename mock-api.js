@@ -17,6 +17,13 @@
     playersTotal: 4,
     energyPool: 14,
     zone: "North Ridge",
+    characterClasses: [
+      { id: "vanguard", name: "Vanguard", icon: "🛡️" },
+      { id: "ranger", name: "Ranger", icon: "🏹" },
+      { id: "mystic", name: "Mystic", icon: "✨" },
+      { id: "engineer", name: "Engineer", icon: "🔧" },
+      { id: "shadow", name: "Shadow", icon: "🗡️" }
+    ],
     events: [
       { time: "09:28", type: "ok", message: "Loot crate claimed by Ranger-2." },
       { time: "09:26", type: "warning", message: "Storm ring moved one sector inward." },
@@ -73,6 +80,17 @@
         message: event.message,
         time
       });
+    }
+
+    if (requestUrl.pathname === "/api/characters/classes") {
+      return jsonResponse({ items: inMemory.characterClasses });
+    }
+
+    if (requestUrl.pathname === "/api/characters/random-default") {
+      const items = inMemory.characterClasses;
+      const index = Math.floor(Math.random() * items.length);
+      const picked = items[index];
+      return jsonResponse({ characterId: picked.id });
     }
 
     return jsonResponse({ error: "Unknown mock endpoint" }, 404);
