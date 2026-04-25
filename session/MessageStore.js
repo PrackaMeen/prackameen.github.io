@@ -128,7 +128,7 @@ export class MessageStore {
       const req = store.openCursor(range, "prev");
       req.onsuccess = () => {
         const cursor = req.result;
-        resolve(cursor ? cursor.value.seq : -1);
+        resolve(cursor ? cursor.value.seq : 0);
       };
       req.onerror = () => reject(req.error);
     });

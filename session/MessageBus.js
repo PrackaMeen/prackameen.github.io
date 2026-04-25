@@ -117,6 +117,7 @@ export class MessageBus {
   // ── internal ──────────────────────────────────────────────────────────────
 
   async _handleIncoming(envelope, fromPeerId) {
+    console.debug("[MessageBus] _handleIncoming isHost=", this._transport.isHost, "type=", envelope.type, "seq=", envelope.seq, "from=", fromPeerId);
     if (this._transport.isHost) {
       await this._hostHandleFromClient(envelope, fromPeerId);
     } else {
@@ -136,6 +137,7 @@ export class MessageBus {
 
   async _hostSequenceAndBroadcast(envelope) {
     const sequenced = { ...envelope, seq: this._nextSeq++ };
+    console.debug("[MessageBus] host sequencing", sequenced.seq, "lastFlushed=", this._lastFlushed, "subscribers=", this._subscribers.length);
 
     // Persist first
     await this._store.append(sequenced);
@@ -145,6 +147,7 @@ export class MessageBus {
 
     // Deliver locally to host subscribers
     this._flushIfContiguous(sequenced);
+    console.debug("[MessageBus] after flush lastFlushed=", this._lastFlushed);
   }
 
   async _hostServeSyncRequest(requestingPeerId, fromSeq) {
@@ -162,6 +165,7 @@ export class MessageBus {
 
   // Client: receive a sequenced message from the host
   async _clientHandleFromHost(envelope) {
+    console.debug("[MessageBus] client got from host: type=", envelope.type, "seq=", envelope.seq, "lastFlushed=", this._lastFlushed);
     if (envelope.type === "sync-response") {
       // Replay all messages in the sync response in order
       const { messages } = envelope.payload;
@@ -195,6 +199,7 @@ export class MessageBus {
   }
 
   _flushIfContiguous(envelope) {
+    console.debug("[MessageBus] _flushIfContiguous seq=", envelope.seq, "lastFlushed=", this._lastFlushed, "match=", envelope.seq === this._lastFlushed + 1);
     if (envelope.seq === this._lastFlushed + 1) {
       this._lastFlushed = envelope.seq;
       this._emit(envelope);
@@ -202,8 +207,9 @@ export class MessageBus {
   }
 
   _emit(envelope) {
+    console.debug("[MessageBus] _emit seq=", envelope.seq, "type=", envelope.type, "to", this._subscribers.length, "subscribers");
     for (const handler of this._subscribers) {
-      try { handler(envelope); } catch { /* subscriber errors are isolated */ }
+      try { handler(envelope); } catch (e) { console.error("[MessageBus] subscriber error", e); }
     }
   }
 }

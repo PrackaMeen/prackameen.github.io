@@ -10,6 +10,7 @@ export function mountPage(context) {
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
   const goBtn = document.getElementById("goToSettingsBtn");
+  const goChatBtn = document.getElementById("goToChatBtn");
 
   const prefs = loadPlayerPreferences();
   const nickname = prefs.nickname || "Host";
@@ -19,6 +20,7 @@ export function mountPage(context) {
   function renderPeers(peers) {
     peerCountEl.textContent = `(${peers.length})`;
     goBtn.disabled = peers.length < 2;
+    goChatBtn.disabled = peers.length < 2;
     if (peers.length === 0) {
       peerListEl.innerHTML = '<li class="peer-item peer-item--empty">Waiting for players…</li>';
       return;
@@ -50,6 +52,11 @@ export function mountPage(context) {
   goBtn.addEventListener("click", () => {
     window.__GAME_MULTIPLAYER_SESSION__ = mgr;
     context.setRoute("multiplayer-host-game-settings");
+  });
+
+  goChatBtn.addEventListener("click", () => {
+    window.__GAME_MULTIPLAYER_SESSION__ = mgr;
+    context.setRoute("multiplayer-chat");
   });
 
   mgr.create({ nickname, transportType: "broadcast" }).catch((err) => {

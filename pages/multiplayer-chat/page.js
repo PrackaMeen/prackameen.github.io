@@ -1,15 +1,15 @@
 /**
  * multiplayer-chat/page.js
  *
- * Test page for the full session pipeline.
- * Reads ?host=1&session=<id>&name=<nickname> from the URL hash or query string.
+ * Can be reached in two ways:
  *
- * Examples (same origin, 3 tabs):
- *   Tab 1 (host):   #/multiplayer-chat?host=1&name=Alice
- *   Tab 2 (client): #/multiplayer-chat?session=<id>&name=Bob
- *   Tab 3 (client): #/multiplayer-chat?session=<id>&name=Carol
+ * 1. Navigated from multiplayer-host or multiplayer-lobby:
+ *    window.__GAME_MULTIPLAYER_SESSION__ holds the active SessionManager.
+ *    No URL params needed — the session is already running.
  *
- * After host tab loads, copy the session ID shown and paste into client tabs.
+ * 2. Direct URL access (dev, standalone tabs):
+ *    #/multiplayer-chat?host=1&name=Alice          → creates a new host session
+ *    #/multiplayer-chat?session=<id>&name=Bob      → joins an existing session
  */
 
 import { SessionManager } from "../../session/SessionManager.js";
@@ -31,11 +31,14 @@ export function mountPage(context) {
 
   const prefs = loadPlayerPreferences();
   const params = parseParams();
-  const isHost = params.host === "1" || params.host === "true";
-  const sessionIdParam = params.session || null;
   const nickname = params.name || prefs.nickname || "Player";
 
-  const mgr = new SessionManager();
+  // Use pre-existing session if navigated from host/lobby, else create one here.
+  const handedOffMgr = window.__GAME_MULTIPLAYER_SESSION__ || null;
+  window.__GAME_MULTIPLAYER_SESSION__ = null;
+
+  const mgr = handedOffMgr || new SessionManager();
+  const ownsMgr = !handedOffMgr; // only leave() if we created it
   const unsubs = [];
 
   // ── peer list rendering ───────────────────────────────────────────────────
@@ -83,57 +86,70 @@ export function mountPage(context) {
     messageLogEl.scrollTop = messageLogEl.scrollHeight;
   }
 
-  // ── session setup ─────────────────────────────────────────────────────────
+  // ── session wiring (works for both handed-off and freshly created mgr) ────
 
-  mgr.onSessionReady(({ sessionId, isHost: host }) => {
-    statusEl.textContent = host ? "Session active — waiting for peers." : "Joined session.";
-    sessionIdEl.textContent = sessionId;
-    roleEl.textContent = host ? "Host" : "Client";
-    sendBtn.disabled = false;
+  function wireSession() {
+    unsubs.push(mgr.peers.onChange(renderPeers));
 
-    // Render initial peer list
-    renderPeers(mgr.peers.getAll());
-  });
+    const unsub = mgr.onMessage((envelope) => {
+      if (envelope.type === "chat" || envelope.type === "system") {
+        appendMessage(envelope);
+      }
+    });
+    unsubs.push(unsub);
 
-  unsubs.push(mgr.peers.onChange(renderPeers));
-
-  mgr.onDisconnected(() => {
-    statusEl.textContent = "Disconnected.";
-    sendBtn.disabled = true;
-  });
-
-  mgr.onReconnecting && mgr.onReconnecting(() => {
-    statusEl.textContent = "Reconnecting and syncing history…";
-  });
+    mgr.onDisconnected(() => {
+      statusEl.textContent = "Disconnected.";
+      sendBtn.disabled = true;
+    });
+  }
 
   // ── init ──────────────────────────────────────────────────────────────────
 
   sendBtn.disabled = true;
 
-  async function start() {
-    try {
-      if (isHost) {
-        await mgr.create({ nickname, transportType: "broadcast" });
-      } else if (sessionIdParam) {
-        await mgr.join({ sessionId: sessionIdParam, nickname, transportType: "broadcast" });
-      } else {
-        statusEl.textContent = "Provide ?host=1 or ?session=<id> in the URL.";
-        return;
-      }
+  if (handedOffMgr) {
+    // Session already running — plug straight in.
+    const isHost = mgr._transport && mgr._transport.isHost;
+    statusEl.textContent = isHost ? "Session active — waiting for peers." : "Connected to session.";
+    sessionIdEl.textContent = mgr.sessionId || "—";
+    roleEl.textContent = isHost ? "Host" : "Client";
+    sendBtn.disabled = false;
+    renderPeers(mgr.peers.getAll());
+    wireSession();
+  } else {
+    // Fresh start from URL params.
+    const isHost = params.host === "1" || params.host === "true";
+    const sessionIdParam = params.session || null;
 
-      // Subscribe to ordered messages from the bus
-      const unsub = mgr.onMessage((envelope) => {
-        if (envelope.type === "chat" || envelope.type === "system") {
-          appendMessage(envelope);
+    mgr.onSessionReady(({ sessionId, isHost: host }) => {
+      statusEl.textContent = host ? "Session active — waiting for peers." : "Joined session.";
+      sessionIdEl.textContent = sessionId;
+      roleEl.textContent = host ? "Host" : "Client";
+      sendBtn.disabled = false;
+      renderPeers(mgr.peers.getAll());
+    });
+
+    wireSession();
+
+    async function start() {
+      try {
+        if (isHost) {
+          await mgr.create({ nickname, transportType: "broadcast" });
+        } else if (sessionIdParam) {
+          await mgr.join({ sessionId: sessionIdParam, nickname, transportType: "broadcast" });
+        } else {
+          statusEl.textContent = "No session. Use ?host=1 or ?session=<id>, or navigate here from Host/Lobby.";
+          return;
         }
-      });
-      unsubs.push(unsub);
-    } catch (err) {
-      statusEl.textContent = `Error: ${err.message}`;
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+        statusEl.style.color = "#b91c1c";
+      }
     }
-  }
 
-  start();
+    start();
+  }
 
   // ── copy session ID ───────────────────────────────────────────────────────
 
@@ -166,7 +182,9 @@ export function mountPage(context) {
   return {
     async dispose() {
       unsubs.forEach(u => u && u());
-      await mgr.leave();
+      if (ownsMgr) {
+        await mgr.leave();
+      }
     }
   };
 }
