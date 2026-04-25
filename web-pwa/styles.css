@@ -1,0 +1,272 @@
+:root {
+  --bg-top: #ffe8ce;
+  --bg-mid: #ffe1c2;
+  --bg-bottom: #ffd8b0;
+  --ink: #10202d;
+  --ink-soft: #2f4658;
+  --accent: #ff6f3c;
+  --accent-deep: #e74d14;
+  --surface: rgba(255, 255, 255, 0.82);
+  --line: rgba(16, 32, 45, 0.12);
+  --ok: #1d8f55;
+  --warn: #b84d1f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 85% 8%, rgba(255, 255, 255, 0.95), transparent 45%),
+    linear-gradient(150deg, var(--bg-top), var(--bg-mid) 45%, var(--bg-bottom));
+  overflow-x: hidden;
+}
+
+.bg-shape {
+  position: fixed;
+  z-index: 0;
+  border-radius: 999px;
+  filter: blur(24px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.bg-shape-1 {
+  top: -80px;
+  left: -120px;
+  width: 250px;
+  height: 250px;
+  background: #ff8d63;
+}
+
+.bg-shape-2 {
+  right: -90px;
+  bottom: 80px;
+  width: 210px;
+  height: 210px;
+  background: #ffbe86;
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+.hero {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 1.1rem;
+  box-shadow: 0 18px 34px rgba(36, 20, 10, 0.11);
+  animation: rise-in 500ms ease-out;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Syne", "Space Grotesk", sans-serif;
+}
+
+h1 {
+  margin: 0.25rem 0;
+  font-size: clamp(1.45rem, 5.5vw, 2.4rem);
+  line-height: 1.05;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--ink-soft);
+  max-width: 60ch;
+}
+
+.hero-row {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.btn {
+  border-radius: 12px;
+  border: 0;
+  padding: 0.72rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  box-shadow: 0 10px 24px rgba(231, 77, 20, 0.3);
+}
+
+.btn-ghost {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--line);
+}
+
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.pill {
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.panel {
+  margin-top: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: 0 14px 30px rgba(36, 20, 10, 0.08);
+  animation: rise-in 650ms ease-out both;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.panel-title-row small {
+  color: var(--ink-soft);
+}
+
+.stats-grid {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.stat-card {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.75rem;
+}
+
+.stat-card h3 {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+
+.value {
+  margin: 0.2rem 0 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.caption {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.event-feed {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.event-feed li {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.6rem 0.7rem;
+  animation: feed-in 260ms ease-out;
+}
+
+.event-feed time {
+  display: inline-block;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-right: 0.5rem;
+}
+
+.event-feed .ok {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.event-feed .warn {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 720px) {
+  .app-shell {
+    padding: 1.4rem 1.4rem 2.2rem;
+  }
+
+  .hero,
+  .panel {
+    padding: 1.25rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
