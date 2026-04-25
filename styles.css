@@ -30,24 +30,7 @@ body {
   width: min(100%, 960px);
   margin: 0 auto;
   padding: 0.7rem 1rem;
-  display: grid;
-  gap: 0.45rem;
-}
-
-.brand {
-  text-decoration: none;
-  color: #112635;
-  font-family: "Syne", "Space Grotesk", sans-serif;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-}
-
-.nav-hint {
-  margin: 0;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #4b5860;
+  display: flex;
 }
 
 .breadcrumb {
@@ -71,51 +54,6 @@ body {
   font-size: 0.75rem;
 }
 
-.nav-levels {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.nav-level {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.nav-level-label {
-  margin: 0;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #4b5860;
-}
-
-.nav-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.nav-empty {
-  color: #67747f;
-  font-size: 0.85rem;
-}
-
-.nav-link {
-  text-decoration: none;
-  color: #173548;
-  border: 1px solid rgba(23, 53, 72, 0.18);
-  border-radius: 999px;
-  padding: 0.3rem 0.65rem;
-  font-size: 0.85rem;
-  background: #fff6;
-}
-
-.nav-link.active {
-  color: #ffffff;
-  border-color: #103349;
-  background: #103349;
-}
-
 .app-root {
   min-height: 100dvh;
 }
@@ -132,20 +70,3 @@ body {
   font-family: "Syne", "Space Grotesk", sans-serif;
 }
 
-@media (min-width: 860px) {
-  .nav-inner {
-    grid-template-columns: auto 1fr;
-    align-items: start;
-    gap: 1rem;
-  }
-
-  .nav-hint,
-  .breadcrumb,
-  .nav-levels {
-    grid-column: 2;
-  }
-
-  .nav-levels {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}

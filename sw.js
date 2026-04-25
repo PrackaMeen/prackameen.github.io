@@ -1,17 +1,32 @@
-const APP_VERSION = "1.0.5";
-const APP_COMMIT_SHORT = "a61d2c9";
+const APP_VERSION = "1.0.7";
+const APP_COMMIT_SHORT = "f42c9a1";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./pages/menu/index.html",
+  "./pages/menu/styles.css",
+  "./pages/menu/page.js",
+  "./pages/single-player/index.html",
+  "./pages/single-player/styles.css",
+  "./pages/single-player/page.js",
   "./pages/single-player-game-settings/index.html",
   "./pages/single-player-game-settings/styles.css",
   "./pages/single-player-game-settings/page.js",
+  "./pages/multiplayer/index.html",
+  "./pages/multiplayer/styles.css",
+  "./pages/multiplayer/page.js",
+  "./pages/multiplayer-lobby/index.html",
+  "./pages/multiplayer-lobby/styles.css",
+  "./pages/multiplayer-lobby/page.js",
   "./pages/multiplayer-lobby-joined-game-settings/index.html",
   "./pages/multiplayer-lobby-joined-game-settings/styles.css",
   "./pages/multiplayer-lobby-joined-game-settings/page.js",
+  "./pages/multiplayer-host/index.html",
+  "./pages/multiplayer-host/styles.css",
+  "./pages/multiplayer-host/page.js",
   "./pages/multiplayer-host-game-settings/index.html",
   "./pages/multiplayer-host-game-settings/styles.css",
   "./pages/multiplayer-host-game-settings/page.js",
