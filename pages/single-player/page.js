@@ -1,3 +1,5 @@
+import { loadPlayerPreferences } from "../../player-preferences.js";
+
 export function mountPage(context) {
   context.setTitle("Single Player");
 
@@ -27,7 +29,16 @@ export function mountPage(context) {
   const RANDOM_CHARACTER = { id: "random", name: "Random", icon: "🎲" };
   const RANDOM_COLOR = { id: "random", label: "Random", hex: null };
 
-  const players = [{ id: 1, name: "You", type: "human", removable: false, characterId: "random", colorId: "random" }];
+  const preferences = loadPlayerPreferences();
+
+  const players = [{
+    id: 1,
+    name: preferences.nickname,
+    type: "human",
+    removable: false,
+    characterId: preferences.preferredCharacterId,
+    colorId: preferences.preferredColorId
+  }];
   let characterClasses = fallbackClasses;
   let nextId = 2;
   let characterSelectorOpenForPlayerId = null;
@@ -59,6 +70,22 @@ export function mountPage(context) {
 
   function syncAddButtonState() {
     addBtn.disabled = players.length >= colorPalette.length;
+  }
+
+  function sanitizePreferredCharacterId(characterId) {
+    if (characterId === "random") {
+      return "random";
+    }
+
+    return characterClasses.some((item) => item.id === characterId) ? characterId : "random";
+  }
+
+  function sanitizePreferredColorId(colorId) {
+    if (colorId === "random") {
+      return "random";
+    }
+
+    return colorPalette.some((item) => item.id === colorId) ? colorId : "random";
   }
 
   async function fetchCharacterClasses() {
@@ -354,6 +381,8 @@ export function mountPage(context) {
   async function initialize() {
     addBtn.disabled = true;
     characterClasses = await fetchCharacterClasses();
+    players[0].characterId = sanitizePreferredCharacterId(players[0].characterId);
+    players[0].colorId = sanitizePreferredColorId(players[0].colorId);
     renderPlayers();
     syncAddButtonState();
   }

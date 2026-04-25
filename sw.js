@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.11";
+const APP_VERSION = "1.0.21";
 const APP_COMMIT_SHORT = "ccae28c";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -6,6 +6,7 @@ const APP_SHELL = [
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./player-preferences.js",
   "./pages/menu/index.html",
   "./pages/menu/styles.css",
   "./pages/menu/page.js",
