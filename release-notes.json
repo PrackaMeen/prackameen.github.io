@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "version": "1.0.8",
+      "commit": "f42c9a1",
+      "date": "2026-04-25",
+      "title": "Clear update visibility and release communication",
+      "businessSummary": "Players can now see exactly which app build they run and which build is available before accepting an update, reducing confusion and support friction during rollouts.",
+      "highlights": [
+        "Version badge now includes semantic version and short commit ID.",
+        "Update prompt confirms target build using version and commit.",
+        "Release notes are now data-driven from a repo file and rendered in-app."
+      ]
+    },
+    {
+      "version": "1.0.7",
+      "commit": "f42c9a1",
+      "date": "2026-04-25",
+      "title": "Navigation and flow expansion",
+      "businessSummary": "The app structure was expanded to support clearer navigation and broader gameplay flow mockups, making user journeys easier to test end-to-end.",
+      "highlights": [
+        "Introduced hierarchical navigation with breadcrumb path.",
+        "Added menu/page/inner-page route model.",
+        "Expanded static page folders for multiplayer flows."
+      ]
+    }
+  ]
+}

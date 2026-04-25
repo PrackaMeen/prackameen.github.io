@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.7";
+const APP_VERSION = "1.0.8";
 const APP_COMMIT_SHORT = "f42c9a1";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -36,6 +36,7 @@ const APP_SHELL = [
   "./pages/release-notes/index.html",
   "./pages/release-notes/styles.css",
   "./pages/release-notes/page.js",
+  "./release-notes.json",
   "./mock-api.js",
   "./manifest.webmanifest",
   "./icons/icon-192.svg",

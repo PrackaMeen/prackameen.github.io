@@ -69,7 +69,11 @@ In mock mode, all three are handled client-side by `mock-api.js`.
 
 For every repository change, increment the app code version and keep PWA version metadata aligned.
 
+When the app version is increased, add a new item to `release-notes.json` with a business-focused summary and user-visible highlights for that version/build.
+
 At runtime, compare current running version with latest available version:
 
 - If latest is newer, show an update notification.
 - After user confirmation, activate/load the latest version.
+
+Release notes are loaded from `release-notes.json` and displayed in-app on the Release Notes page.
