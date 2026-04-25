@@ -1,0 +1,13 @@
+# Repository Copilot Instructions
+
+## PWA Versioning And Update Flow
+
+For every change to this repository:
+
+1. Increase the app code version.
+2. Keep PWA version metadata aligned with app code version.
+3. Compare current running version with latest available version during update checks.
+4. If current is older, prompt the user that a newer version is available.
+5. Only after user confirmation, load/activate the latest version.
+
+This policy is mandatory for all update-related changes.
