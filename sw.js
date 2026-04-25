@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.23";
+const APP_VERSION = "1.0.25";
 const APP_COMMIT_SHORT = "ccae28c";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -43,6 +43,14 @@ const APP_SHELL = [
   "./session/PeerRegistry.js",
   "./session/SessionManager.js",
   "./session/transport/BroadcastChannelTransport.js",
+    "./session/SignalingClient.js",
+    "./session/transport/WebRtcTransport.js",
+    "./pages/multiplayer-host-network/index.html",
+    "./pages/multiplayer-host-network/styles.css",
+    "./pages/multiplayer-host-network/page.js",
+    "./pages/multiplayer-lobby-network/index.html",
+    "./pages/multiplayer-lobby-network/styles.css",
+    "./pages/multiplayer-lobby-network/page.js",
   "./pages/settings/index.html",
   "./pages/settings/styles.css",
   "./pages/settings/page.js",

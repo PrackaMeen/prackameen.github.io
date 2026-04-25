@@ -1,0 +1,27 @@
+<main class="page-shell">
+  <section class="card">
+    <p class="kicker">Multiplayer / Network</p>
+    <h1>Join via Network</h1>
+    <p id="joinStatus" class="status-text">Paste the join code provided by the host.</p>
+  </section>
+
+  <section class="card" id="joinFormCard">
+    <h2>Join Code</h2>
+    <p class="hint-text">The host's Join Code contains the session ID and signaling server address.</p>
+    <form id="joinForm">
+      <textarea id="joinCodeInput" class="join-code-input" placeholder="Paste join code here…"
+                rows="3" autocomplete="off" spellcheck="false"></textarea>
+      <button id="joinBtn" class="primary-btn" type="submit">Connect</button>
+    </form>
+  </section>
+
+  <section class="card" id="peersCard" hidden>
+    <h2>Connected Peers <span id="peerCount" class="peer-count">(0)</span></h2>
+    <ul id="peerList" class="peer-list" aria-label="Connected peers"></ul>
+  </section>
+
+  <section class="card actions-card" id="actionsCard" hidden>
+    <button id="goToChatBtn" class="primary-btn" type="button" disabled>Proceed to Chat</button>
+    <button id="goToSettingsBtn" class="primary-btn primary-btn--secondary" type="button" disabled>Proceed to Game Settings</button>
+  </section>
+</main>

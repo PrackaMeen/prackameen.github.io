@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.23";
+const APP_VERSION = "1.0.25";
 const APP_COMMIT_SHORT = "ccae28c";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -44,6 +44,14 @@ const PAGES = {
   "multiplayer-chat": {
     title: "Multiplayer / Chat",
     basePath: "./pages/multiplayer-chat/"
+  },
+  "multiplayer-host-network": {
+    title: "Multiplayer / Network Host",
+    basePath: "./pages/multiplayer-host-network/"
+  },
+  "multiplayer-lobby-network": {
+    title: "Multiplayer / Network Join",
+    basePath: "./pages/multiplayer-lobby-network/"
   },
   settings: {
     title: "Settings",
@@ -112,6 +120,16 @@ const NAV_TREE = [
             ]
           },
           {
+            id: "multiplayer-host-network",
+            label: "Host (Network)",
+            route: "multiplayer-host-network"
+          },
+          {
+            id: "multiplayer-lobby-network",
+            label: "Join (Network)",
+            route: "multiplayer-lobby-network"
+          },
+          {
             id: "multiplayer-chat",
             label: "Chat (Dev)",
             route: "multiplayer-chat"
@@ -144,6 +162,7 @@ const PAGE_STYLESHEET = document.querySelector("#pageStylesheet");
 const updateState = {
   swRegistration: null,
   isReloadingForUpdate: false,
+  hasReloadedForControllerChange: false,
   promptedBuildIds: new Set(),
   isCheckingForUpdates: false,
   lastHiddenAt: null
@@ -331,9 +350,10 @@ function registerServiceWorker() {
   });
 
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!updateState.isReloadingForUpdate) {
+    if (!updateState.isReloadingForUpdate || updateState.hasReloadedForControllerChange) {
       return;
     }
+    updateState.hasReloadedForControllerChange = true;
     window.location.reload();
   });
 }

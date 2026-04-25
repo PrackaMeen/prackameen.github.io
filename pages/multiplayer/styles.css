@@ -98,6 +98,14 @@ h2 {
 
 .nav-btn--dev {
   background: rgba(45, 74, 114, 0.12);
+  }
+
+  .nav-btn--network {
+    background: #0e7490;
+  }
+
+  .nav-btn--network:hover {
+    background: #0c6a82;
   color: #355884;
   border: 1px solid rgba(45, 74, 114, 0.25);
 }

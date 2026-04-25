@@ -1,0 +1,113 @@
+.status-text {
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.hint-text {
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #64748b);
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
+.join-code-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border, #cbd5e1);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: monospace;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #1e293b);
+  resize: vertical;
+  word-break: break-all;
+  margin-bottom: 0.6rem;
+  display: block;
+}
+
+.join-code-input:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.peer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.peer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.6rem;
+  background: var(--color-surface-alt, #f8fafc);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.peer-item--empty {
+  color: var(--color-text-muted, #94a3b8);
+  font-style: italic;
+}
+
+.peer-count {
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #94a3b8);
+  font-weight: normal;
+}
+
+.peer-badge {
+  font-size: 0.72rem;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+}
+
+.peer-badge--host {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.primary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.primary-btn--secondary {
+  background: transparent;
+  color: #2563eb;
+  border: 1.5px solid #2563eb;
+}
+
+.primary-btn--secondary:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.actions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

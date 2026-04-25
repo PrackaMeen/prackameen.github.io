@@ -1,0 +1,41 @@
+<main class="page-shell">
+  <section class="card">
+    <p class="kicker">Multiplayer / Network</p>
+    <h1>Host via Network</h1>
+    <p id="hostStatus" class="status-text">Configure the signaling server, then start your session.</p>
+  </section>
+
+  <section class="card">
+    <h2>Signaling Server</h2>
+    <p class="hint-text">
+      Run the G.A.M.E WebClient on any device reachable by all players.<br>
+      For <strong>LAN</strong>: use that device's local IP (e.g. <code>ws://192.168.1.5:5000/multiplayer/signaling</code>).<br>
+      For <strong>internet</strong>: expose the WebClient publicly and use its URL.
+    </p>
+    <div class="url-row">
+      <input type="text" id="signalingUrl" class="url-input"
+             placeholder="ws://localhost:5000/multiplayer/signaling"
+             autocomplete="off" spellcheck="false" />
+      <button id="startBtn" class="primary-btn" type="button">Start Session</button>
+    </div>
+  </section>
+
+  <section class="card" id="joinCodeCard" hidden>
+    <h2>Join Code</h2>
+    <p class="hint-text">Share this code with every player who wants to join.</p>
+    <textarea id="joinCode" class="join-code-display" readonly rows="3"></textarea>
+    <button id="copyJoinCodeBtn" class="copy-btn" type="button">Copy Join Code</button>
+  </section>
+
+  <section class="card" id="peersCard" hidden>
+    <h2>Connected Peers <span id="peerCount" class="peer-count">(0)</span></h2>
+    <ul id="peerList" class="peer-list" aria-label="Connected peers">
+      <li class="peer-item peer-item--empty">Waiting for players…</li>
+    </ul>
+  </section>
+
+  <section class="card actions-card" id="actionsCard" hidden>
+    <button id="goToChatBtn" class="primary-btn" type="button" disabled>Proceed to Chat</button>
+    <button id="goToSettingsBtn" class="primary-btn primary-btn--secondary" type="button" disabled>Proceed to Game Settings</button>
+  </section>
+</main>
