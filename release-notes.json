@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.13",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Single Player player roster",
+      "businessSummary": "The Single Player page now shows a player roster. You start as the only human player and can add bot opponents by clicking 'Add Player'. Each added player can be removed individually.",
+      "highlights": [
+        "Single Player page shows a live player list starting with you as the human player.",
+        "Add Player button appends a new bot player to the roster.",
+        "Added players can be removed via a remove button; the first human slot is always locked."
+      ]
+    },
+    {
       "version": "1.0.12",
       "commit": "pending",
       "date": "2026-04-25",
