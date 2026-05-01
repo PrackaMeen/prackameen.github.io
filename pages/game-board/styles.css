@@ -86,9 +86,24 @@ body[data-page="game-board"] {
 
 .game-board-stage {
   position: relative;
-  width: fit-content;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
   margin-top: 0;
-  padding-top: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.game-board-map {
+  position: relative;
+  width: fit-content;
+  transform: scale(var(--game-board-zoom, 1));
+  transform-origin: center top;
+  will-change: transform;
 }
 
 .game-board-arrow-layer {
@@ -103,8 +118,7 @@ body[data-page="game-board"] {
 
 .game-board {
   --game-cell-base-size: clamp(1.35rem, 3.1vw, 2rem);
-  --game-cell-scale: 1;
-  --game-cell-size: calc(var(--game-cell-base-size) * var(--game-cell-scale));
+  --game-cell-size: var(--game-cell-base-size);
   display: grid;
   gap: 0;
   width: fit-content;

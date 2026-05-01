@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.86",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board map now stays top aligned",
+      "businessSummary": "The game board map is now anchored to the top of the play area while the bottom action bar remains pinned to the bottom. This keeps the board easier to scan and preserves a stable control strip when the map is zoomed or resized.",
+      "highlights": [
+        "The map now starts at the top of the available board area.",
+        "The bottom action bar remains pinned to the bottom edge.",
+        "Zoom continues to apply only to the rendered map, not the surrounding UI."
+      ]
+    },
+    {
       "version": "1.0.84",
       "commit": "pending",
       "date": "2026-05-01",
