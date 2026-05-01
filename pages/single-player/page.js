@@ -459,7 +459,9 @@ export function mountPage(context) {
           tileKind = "chamber-4-entrances";
         }
 
-        cells.push({ x, y, tileKind });
+        const tileOrientation = getDemoTileOrientation(tileKind, x, y);
+
+        cells.push({ x, y, tileKind, tileOrientation });
       }
     }
 
@@ -487,6 +489,30 @@ export function mountPage(context) {
     }
 
     return { width, height, cells };
+  }
+
+  function getDemoTileOrientation(tileKind, x, y) {
+    if (tileKind === "direct-road") {
+      return x === 2 ? 0 : 1;
+    }
+
+    if (tileKind === "chamber-2-entrances") {
+      if (x < 2 && y < 2) {
+        return 0;
+      }
+
+      if (x > 3 && y < 2) {
+        return 1;
+      }
+
+      if (x > 3 && y > 3) {
+        return 2;
+      }
+
+      return 3;
+    }
+
+    return (x + y) % 4;
   }
 
   function setCellEntity(cells, width, x, y, entity) {

@@ -1,6 +1,7 @@
 import {
   getEntityAssetUrl,
   getTileAssetUrl,
+  getTileWalls,
   normalizeEntityKind,
   normalizeTileKind
 } from "../../lib/game-assets.js";
@@ -117,15 +118,23 @@ export function mountPage(context) {
       const tileKind = normalizeTileKind(cell.tileKind || cell.kind || cell.terrainKind);
       const entityKind = normalizeEntityKind(cell.entityKind || cell.occupantKind || cell.monsterKind || cell.playerKind);
       const hasEntity = Boolean(cell.entityKind || cell.occupantKind || cell.monsterKind || cell.playerKind);
+      const tileOrientation = Number.isInteger(cell.tileOrientation)
+        ? cell.tileOrientation
+        : Number.isInteger(cell.orientation)
+          ? cell.orientation
+          : 0;
+      const tileWalls = getTileWalls(tileKind, tileOrientation);
 
       const tile = document.createElement("div");
       tile.className = "game-board-cell";
       tile.setAttribute("role", "gridcell");
-      tile.title = `${cell.x}, ${cell.y} • ${tileKind}${hasEntity ? ` • ${entityKind}` : ""}`;
+      tile.dataset.orientation = String(tileOrientation);
+      tile.dataset.walls = JSON.stringify(tileWalls);
+      tile.title = `${cell.x}, ${cell.y} • ${tileKind} • rot ${tileOrientation * 90}°${hasEntity ? ` • ${entityKind}` : ""}`;
 
       const terrainLayer = document.createElement("span");
       terrainLayer.className = `game-board-cell__layer game-board-cell__layer--terrain game-board-cell__layer--${tileKind}`;
-      terrainLayer.style.backgroundImage = `url(${getTileAssetUrl(tileKind, `${cell.x}:${cell.y}`)})`;
+      terrainLayer.style.backgroundImage = `url(${getTileAssetUrl(tileKind, tileOrientation)})`;
 
       tile.appendChild(terrainLayer);
 
