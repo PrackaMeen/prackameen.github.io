@@ -95,7 +95,7 @@ body[data-page="game-board"] {
   justify-content: center;
   overflow: hidden;
   margin-top: 0;
-  padding: 0.5rem 0 max(0.85rem, env(safe-area-inset-bottom));
+  padding: 0.5rem 0 max(0.75rem, env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
