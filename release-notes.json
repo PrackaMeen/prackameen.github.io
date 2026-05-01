@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.1.2",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game board camera now follows the active player",
+      "businessSummary": "The game board now recenters on the active player as movement updates arrive, so the player stays in focus instead of drifting off-screen. This makes movement easier to follow on smaller screens and keeps the map anchored around the current action.",
+      "highlights": [
+        "Centered the board camera on the active player during render updates.",
+        "Kept the camera focused after viewport resizes.",
+        "Bumped the app version so the new camera behavior ships as a fresh PWA build."
+      ]
+    },
+    {
       "version": "1.1.1",
       "commit": "pending",
       "date": "2026-05-02",
