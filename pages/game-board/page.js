@@ -285,23 +285,42 @@ export async function mountPage(context) {
   async function ensureGameWasmHydrated() {
     try {
       const wasm = await ensureGameWasmRuntime();
+      const bootstrapSession = state.session || window.__GAME_SESSION__ || null;
+      const participants = Array.isArray(bootstrapSession?.players)
+        ? bootstrapSession.players.map((player) => ({
+            name: player.name || "Player",
+            type: player.type || "player",
+            colorHex: player.colorHex || null,
+            isBot: player.type === "bot",
+            role: player.role || "player"
+          }))
+        : [];
+      const monsterCount = Array.isArray(bootstrapSession?.board)
+        ? bootstrapSession.board.filter((cell) => cell?.entityKind === "monster").length
+        : 9;
+        const hasParticipants = participants.length > 0;
       const [runtimeState, runtimeTileDefinitions] = await Promise.all([
-        typeof wasm.startGame === "function"
-          ? wasm.startGame({ boardSize: 19, monsterCount: 9, participants: [] })
+          typeof wasm.startGame === "function" && hasParticipants
+          ? wasm.startGame({
+              boardSize: Number.isInteger(bootstrapSession?.boardWidth) ? bootstrapSession.boardWidth : 19,
+              monsterCount,
+              participants
+            })
           : wasm.getState(),
         typeof wasm.getTileDefinitions === "function" ? wasm.getTileDefinitions() : Promise.resolve(null)
       ]);
+      const runtimeSnapshot = runtimeState?.snapshot || runtimeState;
 
       if (runtimeTileDefinitions) {
         applyTileDefinitionsFromRuntime(runtimeTileDefinitions);
       }
 
-      if (runtimeState?.board) {
+      if (runtimeSnapshot?.board) {
         state.isRuntimeReady = true;
-        state.session = runtimeState;
-        window.__GAME_SESSION__ = runtimeState;
-        state.activePlayerId = runtimeState.currentPlayerId ?? runtimeState.activePlayerId ?? state.activePlayerId;
-        state.activePlayerName = runtimeState.currentPlayerName ?? runtimeState.activePlayerName ?? state.activePlayerName;
+        state.session = runtimeSnapshot;
+        window.__GAME_SESSION__ = runtimeSnapshot;
+        state.activePlayerId = runtimeSnapshot.currentPlayerId ?? runtimeSnapshot.activePlayerId ?? state.activePlayerId;
+        state.activePlayerName = runtimeSnapshot.currentPlayerName ?? runtimeSnapshot.activePlayerName ?? state.activePlayerName;
         renderBoard(state.session);
         syncHud();
       }
@@ -464,7 +483,7 @@ export async function mountPage(context) {
     }
 
     if (performActionBtn) {
-      performActionBtn.disabled = !state.isRuntimeReady || !state.selectedSource || !state.pendingTarget || state.isSubmitting;
+      performActionBtn.disabled = !state.selectedSource || !state.pendingTarget || state.isSubmitting;
       performActionBtn.textContent = state.isSubmitting ? "Sending..." : "Confirm Move";
     }
   }
