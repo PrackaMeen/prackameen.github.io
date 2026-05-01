@@ -115,7 +115,7 @@ export function mountPage(context) {
   }
 
   function hydrateForm(preferences) {
-    nicknameInput.value = preferences.nickname || DEFAULT_PLAYER_PREFERENCES.nickname;
+    nicknameInput.value = preferences.nickname ?? DEFAULT_PLAYER_PREFERENCES.nickname;
     renderCharacterOptions(preferences.preferredCharacterId);
     renderColorOptions(preferences.preferredColorId);
   }

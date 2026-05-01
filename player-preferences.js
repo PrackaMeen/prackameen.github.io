@@ -1,7 +1,7 @@
 const STORAGE_KEY = "game.playerPreferences.v1";
 
 export const DEFAULT_PLAYER_PREFERENCES = {
-  nickname: "You",
+  nickname: "",
   preferredCharacterId: "random",
   preferredColorId: "random"
 };

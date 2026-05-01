@@ -25,7 +25,7 @@ export function mountPage(context) {
   goSettingsBtn.disabled = true;
 
   const prefs = loadPlayerPreferences();
-  const nickname = prefs.nickname || "Host";
+  const nickname = prefs.nickname || "";
   const localPlayerIdStorageKeyPrefix = "game-network-local-player-id";
   let activeRoomId = "";
   let activePlayerId = "";

@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.54",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Blank nickname now stays local while multiplayer gets a temp name",
+      "businessSummary": "The shared nickname default is now blank, the local UI shows that client as You, and the backend assigns a temporary multiplayer name when no nickname is provided.",
+      "highlights": [
+        "Nickname preferences no longer default to the literal text You.",
+        "Network host and join pages use the local player identity for the You label.",
+        "The Signaling Function assigns temporary host/player names when requests omit a nickname."
+      ]
+    },
+    {
       "version": "1.0.53",
       "commit": "pending",
       "date": "2026-05-01",
