@@ -67,6 +67,8 @@ Open `index.html` directly, or serve this folder with any static host.
 - `POST /api/rooms/{roomId}/join`
 - `POST /api/rooms/{roomId}/heartbeat`
 
+The Swagger/OpenAPI document is generated from the live Signaling Function endpoints, so the route list stays aligned with the code.
+
 The network host/join screens use the Signaling Function REST API. The lab page still uses the local mock API for its test endpoints.
 
 ## PWA Versioning Policy
