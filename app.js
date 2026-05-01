@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.91";
+const APP_VERSION = "1.0.94";
 const APP_COMMIT_SHORT = "3660ec6";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -176,6 +176,10 @@ const updateState = {
   promptedBuildIds: new Set(),
   isCheckingForUpdates: false,
   lastHiddenAt: null
+};
+
+const navState = {
+  message: ""
 };
 
 let mountedPage = null;
@@ -436,35 +440,62 @@ function renderBreadcrumb(path) {
 }
 
 function syncNavVersionVisibility() {
-  const breadcrumb = NAV_ROOT.querySelector(".breadcrumb");
+  const navInner = NAV_ROOT.querySelector(".nav-inner");
   const versionEl = NAV_ROOT.querySelector(".nav-version");
-  if (!breadcrumb || !versionEl) return;
+  if (!navInner || !versionEl) return;
 
   // Restore display so we measure the natural layout with version present.
   versionEl.style.display = "";
 
-  // getBoundingClientRect() forces a synchronous layout (no visual flash).
-  // If the breadcrumb's bottom edge drops below the version's, items have wrapped.
-  const wraps = breadcrumb.getBoundingClientRect().bottom > versionEl.getBoundingClientRect().bottom + 4;
+  const overflows = navInner.scrollWidth > navInner.clientWidth + 4 || navInner.scrollHeight > navInner.clientHeight + 4;
 
-  // Hiding with display:none frees the reserved space so the breadcrumb
-  // can expand to full width and fit on one line again.
-  versionEl.style.display = wraps ? "none" : "";
+  // Hiding with display:none frees the reserved space so the nav copy can
+  // expand to full width and keep the row to a single line.
+  versionEl.style.display = overflows ? "none" : "";
 }
 
 window.addEventListener("resize", syncNavVersionVisibility);
 
+function setNavigationMessage(message) {
+  navState.message = String(message || "");
+  renderNavigation(getRouteName());
+}
+
+window.__GAME_SET_NAV_MESSAGE__ = setNavigationMessage;
+
 function renderNavigation(activeRoute) {
   const activePath = findPathByRoute(NAV_TREE, activeRoute);
 
-  NAV_ROOT.innerHTML = `
-    <div class="nav-inner">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-        ${renderBreadcrumb(activePath)}
-      </nav>
-      <span class="nav-version" title="Build ${APP_VERSION} (${APP_COMMIT_SHORT})">v${APP_VERSION}</span>
-    </div>
-  `;
+  NAV_ROOT.replaceChildren();
+
+  const navInner = document.createElement("div");
+  navInner.className = "nav-inner";
+
+  const navCopy = document.createElement("div");
+  navCopy.className = "nav-copy";
+
+  const breadcrumb = document.createElement("nav");
+  breadcrumb.className = "breadcrumb";
+  breadcrumb.setAttribute("aria-label", "Breadcrumb");
+  breadcrumb.innerHTML = renderBreadcrumb(activePath);
+
+  const navMessage = document.createElement("div");
+  navMessage.className = "nav-message";
+  navMessage.setAttribute("aria-live", "polite");
+  navMessage.setAttribute("aria-atomic", "true");
+  navMessage.textContent = navState.message;
+
+  navCopy.appendChild(breadcrumb);
+  navCopy.appendChild(navMessage);
+
+  const version = document.createElement("span");
+  version.className = "nav-version";
+  version.title = `Build ${APP_VERSION} (${APP_COMMIT_SHORT})`;
+  version.textContent = `v${APP_VERSION}`;
+
+  navInner.appendChild(navCopy);
+  navInner.appendChild(version);
+  NAV_ROOT.appendChild(navInner);
 
   syncNavVersionVisibility();
 }
@@ -490,6 +521,7 @@ async function loadPage(pageName) {
     await preloadGameAssets();
   }
 
+  setNavigationMessage("");
   const module = await import(versionedAssetUrl(`${page.basePath}page.js`));
   if (typeof mountedPage?.dispose === "function") {
     mountedPage.dispose();
@@ -504,6 +536,7 @@ async function loadPage(pageName) {
     appBuildId: APP_BUILD_ID,
     route: pageName,
     setRoute,
+    setNavMessage: setNavigationMessage,
     setTitle: (title) => {
       document.title = title;
     }

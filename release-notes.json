@@ -1,6 +1,42 @@
 {
   "items": [
     {
+      "version": "1.0.94",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game status now appears in the top navigation row",
+      "businessSummary": "The game board status messages now share the main navigation row instead of taking a separate row, which keeps the interface tighter and preserves more vertical space for the board.",
+      "highlights": [
+        "Moved game status text into the app shell navigation row.",
+        "Removed the separate in-page game-board HUD row.",
+        "Kept the version pill out of the way when the combined row text is too long."
+      ]
+    },
+    {
+      "version": "1.0.93",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now fits without scrolling",
+      "businessSummary": "The game board now resizes itself to the available stage area, so the full grid remains visible without requiring vertical scrolling on smaller screens.",
+      "highlights": [
+        "Removed the scroll-based board stage behavior.",
+        "Fit the board cells to the visible stage size automatically.",
+        "Kept the action bar and HUD visible while the full board stays on screen."
+      ]
+    },
+    {
+      "version": "1.0.92",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now scrolls to reveal the last row",
+      "businessSummary": "The game board stage now scrolls vertically instead of clipping at the viewport edge, so the bottom row can be brought fully into view on smaller screens.",
+      "highlights": [
+        "Made the board stage vertically scrollable instead of hard-clipped.",
+        "Added extra bottom scroll room so the last row can clear the action bar.",
+        "Bumped the app version to ship the layout fix as a new PWA build."
+      ]
+    },
+    {
       "version": "1.0.91",
       "commit": "pending",
       "date": "2026-05-01",

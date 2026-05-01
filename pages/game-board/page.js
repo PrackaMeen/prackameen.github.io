@@ -15,13 +15,14 @@ export async function mountPage(context) {
 
   const boardEl = document.getElementById("gameBoard");
   const mapEl = document.getElementById("gameBoardMap");
+  const stageEl = document.getElementById("gameBoardStage");
   const arrowLayerEl = document.getElementById("gameBoardArrowLayer");
-  const statusEl = document.getElementById("gameBoardStatus");
   const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
   const performActionBtn = document.getElementById("performActionBtn");
   const roomApi = createDefaultRoomApiClient();
   const session = window.__GAME_SESSION__ || createFallbackSession();
   const gameWasmScriptUrl = `/assets/game-wasm/wwwroot/js/game-runtime.js?v=${encodeURIComponent(context.appBuildId || context.appVersion || "latest")}`;
+  const setNavMessage = typeof context.setNavMessage === "function" ? context.setNavMessage : () => {};
   const state = {
     session,
     activePlayerId: session.currentPlayerId ?? session.activePlayerId ?? session.players?.[0]?.id ?? null,
@@ -39,8 +40,20 @@ export async function mountPage(context) {
     gestureStartMidpoint: null,
     gestureStartPanX: 0,
     gestureStartPanY: 0,
-    activeTouchPoints: new Map()
+    activeTouchPoints: new Map(),
+    boardWidth: 19,
+    boardHeight: 19
   };
+
+  const layoutResizeObserver = typeof ResizeObserver !== "undefined" && stageEl
+    ? new ResizeObserver(() => {
+        fitBoardToStage(state.boardWidth, state.boardHeight);
+      })
+    : null;
+
+  if (layoutResizeObserver && stageEl) {
+    layoutResizeObserver.observe(stageEl);
+  }
 
   void ensureGameWasmHydrated().catch(() => undefined);
 
@@ -255,6 +268,8 @@ export async function mountPage(context) {
       boardEl?.removeEventListener("touchmove", handleMapTouchMove);
       boardEl?.removeEventListener("touchend", handleMapTouchEnd);
       boardEl?.removeEventListener("touchcancel", handleMapTouchCancel);
+      layoutResizeObserver?.disconnect();
+      setNavMessage("");
     }
   };
 
@@ -362,8 +377,12 @@ export async function mountPage(context) {
       ? currentSession.boardHeight
       : 19;
 
+    state.boardWidth = width;
+    state.boardHeight = height;
+
     boardEl.style.gridTemplateColumns = `repeat(${width}, var(--game-cell-size))`;
     boardEl.style.gridTemplateRows = `repeat(${height}, var(--game-cell-size))`;
+    fitBoardToStage(width, height);
     boardEl.innerHTML = "";
     arrowLayerEl.innerHTML = "";
 
@@ -439,6 +458,25 @@ export async function mountPage(context) {
     mapEl.style.setProperty("--game-board-pan-y", `${state.panY}px`);
   }
 
+  function fitBoardToStage(width, height) {
+    if (!boardEl || !stageEl || !Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
+      return;
+    }
+
+    const stageStyle = window.getComputedStyle(stageEl);
+    const paddingLeft = Number.parseFloat(stageStyle.paddingLeft || "0") || 0;
+    const paddingRight = Number.parseFloat(stageStyle.paddingRight || "0") || 0;
+    const paddingTop = Number.parseFloat(stageStyle.paddingTop || "0") || 0;
+    const paddingBottom = Number.parseFloat(stageStyle.paddingBottom || "0") || 0;
+    const availableWidth = Math.max(0, stageEl.clientWidth - paddingLeft - paddingRight);
+    const availableHeight = Math.max(0, stageEl.clientHeight - paddingTop - paddingBottom);
+    const fitWidth = availableWidth / width;
+    const fitHeight = availableHeight / height;
+    const nextCellSize = Math.max(8, Math.floor(Math.min(fitWidth, fitHeight)));
+
+    boardEl.style.setProperty("--game-cell-size", `${nextCellSize}px`);
+  }
+
   function renderArrowOverlay(width, height) {
     if (!arrowLayerEl) {
       return;
@@ -485,17 +523,14 @@ export async function mountPage(context) {
   }
 
   function syncHud() {
-    if (statusEl) {
-      if (state.feedback) {
-        statusEl.textContent = state.feedback;
-      } else if (!state.selectedSource) {
-        statusEl.textContent = `Click ${state.activePlayerName} to select it.`;
-      } else if (!state.pendingTarget) {
-        statusEl.textContent = `Selected ${state.activePlayerName}. Click a tile to queue movement.`;
-      } else {
-        statusEl.textContent = `Queued move to (${state.pendingTarget.x}, ${state.pendingTarget.y}). Backend validates on action.`;
-      }
-    }
+    const statusMessage = state.feedback
+      || (!state.selectedSource
+        ? `Click ${state.activePlayerName} to select it.`
+        : !state.pendingTarget
+          ? `Selected ${state.activePlayerName}. Click a tile to queue movement.`
+          : `Queued move to (${state.pendingTarget.x}, ${state.pendingTarget.y}). Backend validates on action.`);
+
+    setNavMessage(statusMessage);
 
     if (cancelSelectionBtn) {
       cancelSelectionBtn.disabled = !state.selectedSource && !state.pendingTarget;
