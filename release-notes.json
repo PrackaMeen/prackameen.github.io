@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.90",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GitHub Pages now serves GameWasm framework assets",
+      "businessSummary": "The published PWA now includes the GitHub Pages marker needed to serve the Blazor GameWasm framework files, which restores the hidden runtime boot path and prevents the game from stalling on a missing asset.",
+      "highlights": [
+        "Added the GitHub Pages marker so underscore-prefixed framework assets are published correctly.",
+        "Bumped the app and service worker version to refresh cached shell files.",
+        "Kept the GameWasm boot path aligned with the published site structure."
+      ]
+    },
+    {
       "version": "1.0.89",
       "commit": "pending",
       "date": "2026-05-01",
