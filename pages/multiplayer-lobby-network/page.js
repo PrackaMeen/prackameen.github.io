@@ -37,15 +37,20 @@ export function mountPage(context) {
   let activeRoomId = "";
   let activePlayerId = "";
   let waitingRoomsPollTimer = null;
+  let pendingScanJoinTarget = null;
 
   document.getElementById("goToChatBtn").hidden = true;
 
-  // ── auto-fill from QR code URL param ──────────────────────────────────────
+  // ── auto-join from QR code URL param ──────────────────────────────────────
 
   const urlParams = new URLSearchParams(window.location.search);
   const codeFromUrl = urlParams.get("code");
   if (codeFromUrl) {
-    joinCodeInputEl.value = decodeURIComponent(codeFromUrl);
+    const parsedUrlJoin = parseRoomJoinCode(codeFromUrl);
+    if (parsedUrlJoin.roomId) {
+      pendingScanJoinTarget = parsedUrlJoin;
+      void joinRoomById(parsedUrlJoin.roomId, parsedUrlJoin.apiBaseUrl || roomApi.apiBaseUrl);
+    }
   }
 
   // ── in-app QR scanning ───────────────────────────────────────────────────
@@ -83,6 +88,22 @@ export function mountPage(context) {
     });
   }
 
+  if (joinBtn) {
+    joinBtn.addEventListener("click", async () => {
+      if (!pendingScanJoinTarget?.roomId) {
+        statusEl.textContent = "Scan a QR code first, or use the waiting rooms list.";
+        statusEl.style.color = "#b91c1c";
+        return;
+      }
+
+      try {
+        await joinRoomById(pendingScanJoinTarget.roomId, pendingScanJoinTarget.apiBaseUrl || roomApi.apiBaseUrl);
+      } catch {
+        // Status is already set by the join helper.
+      }
+    });
+  }
+
   // ── peer rendering ────────────────────────────────────────────────────────
 
   function renderPeers(peers, localPlayerId = "") {
@@ -110,44 +131,6 @@ export function mountPage(context) {
   }
 
   // ── join ──────────────────────────────────────────────────────────────────
-
-  joinForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const raw = joinCodeInputEl.value.trim();
-    if (!raw) return;
-
-    let roomId;
-    let apiBaseUrl = "";
-    try {
-      const parsed = parseRoomJoinCode(raw);
-      roomId = parsed.roomId;
-      apiBaseUrl = parsed.apiBaseUrl || roomApi.apiBaseUrl;
-      if (!roomId) throw new Error("incomplete");
-    } catch {
-      statusEl.textContent = "Invalid join code. Please check you copied it correctly.";
-      statusEl.style.color = "#b91c1c";
-      return;
-    }
-
-    try {
-      roomApi.setApiBaseUrl(apiBaseUrl);
-    } catch (err) {
-      statusEl.textContent = `Error: ${err.message}`;
-      statusEl.style.color = "#b91c1c";
-      return;
-    }
-
-    joinBtn.disabled = true;
-    statusEl.textContent = "Joining room…";
-    statusEl.style.color = "";
-
-    try {
-      await joinRoomById(roomId, apiBaseUrl);
-    } catch (err) {
-      joinBtn.disabled = false;
-    }
-  });
 
   // ── proceed ───────────────────────────────────────────────────────────────
 
@@ -485,13 +468,19 @@ export function mountPage(context) {
       const barcodes = await scanDetector.detect(scannerVideo);
       if (barcodes.length > 0) {
         const rawValue = barcodes[0].rawValue || "";
-        const joinCode = extractJoinCode(rawValue);
+        const parsedJoin = parseRoomJoinCode(rawValue);
 
-        if (joinCode) {
-          joinCodeInputEl.value = joinCode;
-          scannerStatus.textContent = "QR scanned. Join code filled.";
+        if (parsedJoin?.roomId) {
+          pendingScanJoinTarget = parsedJoin;
+          scannerStatus.textContent = "QR scanned. Joining room...";
           scannerStatus.style.color = "#15803d";
           stopScanner();
+
+          try {
+            await joinRoomById(parsedJoin.roomId, parsedJoin.apiBaseUrl || roomApi.apiBaseUrl);
+          } catch {
+            // The join helper already sets the visible error state.
+          }
           return;
         }
 
@@ -510,34 +499,3 @@ function supportsQrScanning() {
   return !!(window.isSecureContext && navigator.mediaDevices?.getUserMedia && window.BarcodeDetector);
 }
 
-function extractJoinCode(scannedValue) {
-  const raw = String(scannedValue || "").trim();
-  if (!raw) {
-    return null;
-  }
-
-  if (raw.startsWith("GAMEJOIN:")) {
-    return raw.slice("GAMEJOIN:".length).trim() || null;
-  }
-
-  try {
-    const parsedUrl = new URL(raw);
-    const urlCode = parsedUrl.searchParams.get("code");
-    if (urlCode) {
-      return decodeURIComponent(urlCode);
-    }
-  } catch {
-    // Not a URL; continue.
-  }
-
-  try {
-    const parsed = parseRoomJoinCode(raw);
-    if (parsed?.roomId) {
-      return raw;
-    }
-  } catch {
-    // Not a join code.
-  }
-
-  return null;
-}

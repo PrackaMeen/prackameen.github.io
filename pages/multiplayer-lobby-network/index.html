@@ -2,7 +2,7 @@
   <section class="card">
     <p class="kicker">Multiplayer / Network</p>
     <h1>Join via Network</h1>
-    <p id="joinStatus" class="status-text">Paste the room join code provided by the host.</p>
+    <p id="joinStatus" class="status-text">Scan the host QR code or join from the waiting rooms list below.</p>
   </section>
 
   <section class="card" id="activeRoomsCard">
@@ -12,9 +12,10 @@
   </section>
 
   <section class="card" id="joinFormCard">
-    <h2>Join Code</h2>
-    <p class="hint-text">The host's Join Code contains the room ID and backend API address.</p>
+    <h2>Scan QR</h2>
+    <p class="hint-text">Scan the host QR code to join immediately. No join code is needed.</p>
     <button id="scanQrBtn" class="primary-btn primary-btn--secondary" type="button">Scan QR in App</button>
+    <button id="joinBtn" class="primary-btn" type="button">Join Room</button>
     <div id="scannerCard" class="scanner-card" hidden>
       <video id="scannerVideo" class="scanner-video" autoplay playsinline muted></video>
       <div class="scanner-actions">
@@ -22,11 +23,6 @@
       </div>
       <p id="scannerStatus" class="hint-text">Point camera at host QR code.</p>
     </div>
-    <form id="joinForm">
-      <textarea id="joinCodeInput" class="join-code-input" placeholder="Paste join code here…"
-                rows="3" autocomplete="off" spellcheck="false"></textarea>
-      <button id="joinBtn" class="primary-btn" type="submit">Join Room</button>
-    </form>
   </section>
 
   <section class="card" id="peersCard" hidden>
