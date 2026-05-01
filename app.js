@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.55";
+const APP_VERSION = "1.0.56";
 const APP_COMMIT_SHORT = "3660ec6";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -221,6 +221,12 @@ function buildUpdateReloadUrl() {
 
 function forceUpdateReload() {
   window.location.replace(buildUpdateReloadUrl());
+}
+
+function versionedAssetUrl(assetPath) {
+  const url = new URL(assetPath, window.location.href);
+  url.searchParams.set("v", APP_BUILD_ID);
+  return url.toString();
 }
 
 function askWorkerBuildInfo(worker) {
@@ -454,16 +460,16 @@ async function loadPage(pageName) {
 
   APP_ROOT.innerHTML = "<p class=\"boot-message\">Loading page...</p>";
 
-  const htmlResponse = await fetch(`${page.basePath}index.html`);
+  const htmlResponse = await fetch(versionedAssetUrl(`${page.basePath}index.html`));
   if (!htmlResponse.ok) {
     throw new Error(`Failed to load ${pageName} page HTML`);
   }
 
   const pageMarkup = await htmlResponse.text();
   APP_ROOT.innerHTML = pageMarkup;
-  PAGE_STYLESHEET.href = `${page.basePath}styles.css`;
+  PAGE_STYLESHEET.href = versionedAssetUrl(`${page.basePath}styles.css`);
 
-  const module = await import(`${page.basePath}page.js`);
+  const module = await import(versionedAssetUrl(`${page.basePath}page.js`));
   if (typeof mountedPage?.dispose === "function") {
     mountedPage.dispose();
   }
