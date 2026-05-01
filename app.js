@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.43";
+const APP_VERSION = "1.0.44";
 const APP_COMMIT_SHORT = "3660ec6";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -457,6 +457,9 @@ async function loadPage(pageName) {
     mountedPage.dispose();
   }
 
+  document.documentElement.dataset.page = pageName;
+  document.body.dataset.page = pageName;
+
   mountedPage = module.mountPage({
     appVersion: APP_VERSION,
     appCommitShort: APP_COMMIT_SHORT,
@@ -467,9 +470,6 @@ async function loadPage(pageName) {
       document.title = title;
     }
   }) || null;
-
-  document.documentElement.dataset.page = pageName;
-  document.body.dataset.page = pageName;
   document.title = page.title;
 }
 

@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.44",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join page now starts room polling reliably",
+      "businessSummary": "The Join via Network page now marks the route as active before the page module mounts, so the waiting-room list starts loading immediately instead of being skipped on first open.",
+      "highlights": [
+        "The join page can now start its initial room poll as soon as it mounts.",
+        "Route-leave cleanup still stops background polling when you go back to Multiplayer.",
+        "PWA version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
       "version": "1.0.43",
       "commit": "pending",
       "date": "2026-05-01",
