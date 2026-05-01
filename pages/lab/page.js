@@ -184,7 +184,6 @@ export function mountPage(context) {
     CHECK_LATEST_BUTTON.textContent = "Checking...";
 
     try {
-      state.promptedBuildIds.clear();
       await state.swRegistration.update();
       const activated = await promptAndActivateUpdate(state.swRegistration);
 
