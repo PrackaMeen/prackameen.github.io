@@ -13,13 +13,17 @@ body {
 }
 
 body {
+  display: flex;
+  flex-direction: column;
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   background: linear-gradient(180deg, #f7f5ef 0%, #f6ead7 100%);
+  overflow: hidden;
 }
 
 .nav-root {
   position: sticky;
   top: 0;
+  flex: 0 0 auto;
   z-index: 10;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(247, 245, 239, 0.86);
@@ -102,7 +106,9 @@ body {
 }
 
 .app-root {
-  min-height: 100dvh;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .boot-message,

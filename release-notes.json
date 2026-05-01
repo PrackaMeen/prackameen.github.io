@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.95",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game shell now keeps the full board and bottom actions in view",
+      "businessSummary": "The app shell now uses the remaining viewport below the top navigation, which keeps the game board and the bottom action bar visible without forcing the player to scroll the page.",
+      "highlights": [
+        "Changed the app shell to a bounded flex layout below the navigation bar.",
+        "Kept the game board and bottom action bar inside the visible viewport.",
+        "Retained the shared top navigation message and version display behavior."
+      ]
+    },
+    {
       "version": "1.0.94",
       "commit": "pending",
       "date": "2026-05-01",
