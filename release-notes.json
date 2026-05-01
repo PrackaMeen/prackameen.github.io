@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.41",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Fixed Join via Network page bootstrap",
+      "businessSummary": "The Join via Network page now loads reliably again after the waiting-room poller was moved back into the page lifecycle. This restores the lobby list on local runs and keeps the new room-status flow usable.",
+      "highlights": [
+        "Fixed the join page bootstrap ReferenceError for waiting-room polling.",
+        "Waiting rooms continue to load inside the page lifecycle instead of as a stray top-level call.",
+        "Version metadata was bumped again to keep the PWA cache aligned with the fix."
+      ]
+    },
+    {
       "version": "1.0.40",
       "commit": "pending",
       "date": "2026-05-01",

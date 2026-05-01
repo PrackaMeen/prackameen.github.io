@@ -151,6 +151,8 @@ export function mountPage(context) {
 
   // ── dispose ───────────────────────────────────────────────────────────────
 
+  startWaitingRoomsPolling();
+
   return {
     async dispose() {
       stopTimers();
@@ -481,5 +483,3 @@ function escHtml(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
-
-  startWaitingRoomsPolling();
