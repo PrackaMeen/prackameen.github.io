@@ -16,6 +16,7 @@ export async function mountPage(context) {
   const boardEl = document.getElementById("gameBoard");
   const arrowLayerEl = document.getElementById("gameBoardArrowLayer");
   const statusEl = document.getElementById("gameBoardStatus");
+  const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
   const performActionBtn = document.getElementById("performActionBtn");
   const roomApi = createDefaultRoomApiClient();
   const session = window.__GAME_SESSION__ || createFallbackSession();
@@ -27,6 +28,7 @@ export async function mountPage(context) {
     selectedSource: null,
     pendingTarget: null,
     isSubmitting: false,
+    isRuntimeReady: false,
     feedback: "",
     zoomScale: 1,
     pinchStartDistance: null,
@@ -127,6 +129,17 @@ export async function mountPage(context) {
     }
   };
 
+  const handleCancelSelection = () => {
+    if (!state.selectedSource && !state.pendingTarget) {
+      return;
+    }
+
+    clearSelection();
+    state.feedback = "";
+    renderBoard(state.session);
+    syncHud();
+  };
+
   const handleMapTouchStart = (event) => {
     if (!boardEl || !event.target || !boardEl.contains(event.target)) {
       return;
@@ -208,6 +221,7 @@ export async function mountPage(context) {
   syncHud();
 
   boardEl?.addEventListener("click", handleBoardClick);
+  cancelSelectionBtn?.addEventListener("click", handleCancelSelection);
   performActionBtn?.addEventListener("click", handlePerformAction);
   boardEl?.addEventListener("touchstart", handleMapTouchStart, { passive: false });
   boardEl?.addEventListener("touchmove", handleMapTouchMove, { passive: false });
@@ -217,6 +231,7 @@ export async function mountPage(context) {
   return {
     dispose() {
       boardEl?.removeEventListener("click", handleBoardClick);
+      cancelSelectionBtn?.removeEventListener("click", handleCancelSelection);
       performActionBtn?.removeEventListener("click", handlePerformAction);
       boardEl?.removeEventListener("touchstart", handleMapTouchStart);
       boardEl?.removeEventListener("touchmove", handleMapTouchMove);
@@ -282,6 +297,7 @@ export async function mountPage(context) {
       }
 
       if (runtimeState?.board) {
+        state.isRuntimeReady = true;
         state.session = runtimeState;
         window.__GAME_SESSION__ = runtimeState;
         state.activePlayerId = runtimeState.currentPlayerId ?? runtimeState.activePlayerId ?? state.activePlayerId;
@@ -290,7 +306,9 @@ export async function mountPage(context) {
         syncHud();
       }
     } catch {
-      // Keep the page usable if the runtime assets are unavailable.
+      state.isRuntimeReady = false;
+      state.feedback = "Game runtime is still loading.";
+      syncHud();
     }
   }
 
@@ -441,9 +459,13 @@ export async function mountPage(context) {
       }
     }
 
+    if (cancelSelectionBtn) {
+      cancelSelectionBtn.disabled = !state.selectedSource && !state.pendingTarget;
+    }
+
     if (performActionBtn) {
-      performActionBtn.disabled = !state.selectedSource || !state.pendingTarget || state.isSubmitting;
-      performActionBtn.textContent = state.isSubmitting ? "Sending..." : "Perform Action";
+      performActionBtn.disabled = !state.isRuntimeReady || !state.selectedSource || !state.pendingTarget || state.isSubmitting;
+      performActionBtn.textContent = state.isSubmitting ? "Sending..." : "Confirm Move";
     }
   }
 

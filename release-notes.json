@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.0.84",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board map container is centered",
+      "businessSummary": "The game board stage now centers horizontally so the map feels balanced on wider screens while keeping the status and action bars full-width. This improves readability and gives the board more visual focus.",
+      "highlights": [
+        "The map container is centered within the game board page.",
+        "The top status strip and bottom action bar remain full-width.",
+        "The layout keeps the map visually anchored without changing gameplay controls."
+      ]
+    },
+    {
+      "version": "1.0.83",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board gets a bottom action bar",
+      "businessSummary": "The game board now keeps the header focused on status text and moves confirm actions into a dedicated bottom bar. This gives the map more vertical room while making the primary action controls easier to spot.",
+      "highlights": [
+        "The top board strip now shows only status text.",
+        "Confirm and cancel controls moved into a dedicated bottom action bar.",
+        "The board layout now feels less cramped on smaller screens."
+      ]
+    },
+    {
       "version": "1.0.82",
       "commit": "pending",
       "date": "2026-05-01",
