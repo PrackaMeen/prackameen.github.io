@@ -1,4 +1,5 @@
 import { SessionManager } from "../../session/SessionManager.js";
+import { mountSessionChat } from "../../session/SessionChat.js";
 import { loadPlayerPreferences } from "../../player-preferences.js";
 
 export function mountPage(context) {
@@ -13,12 +14,16 @@ export function mountPage(context) {
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
   const goBtn = document.getElementById("goToSettingsBtn");
-  const goChatBtn = document.getElementById("goToChatBtn");
+  const chatCardEl = document.getElementById("chatCard");
+  const messageLogEl = document.getElementById("messageLog");
+  const chatForm = document.getElementById("chatForm");
+  const chatInput = document.getElementById("chatInput");
 
   const prefs = loadPlayerPreferences();
   const nickname = prefs.nickname || "Player";
   const mgr = new SessionManager();
   const unsubs = [];
+  let chatController = null;
 
   function renderPeers(peers) {
     peerCountEl.textContent = `(${peers.length})`;
@@ -32,19 +37,7 @@ export function mountPage(context) {
     }).join("");
   }
 
-  mgr.onSessionReady(() => {
-    statusEl.textContent = "Connected to session.";
-    joinForm.hidden = true;
-    peersCard.hidden = false;
-    settingsCard.hidden = false;
-    renderPeers(mgr.peers.getAll());
-  });
-
   unsubs.push(mgr.peers.onChange(renderPeers));
-
-  mgr.onDisconnected(() => {
-    statusEl.textContent = "Disconnected from session.";
-  });
 
   joinForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -55,6 +48,21 @@ export function mountPage(context) {
     statusEl.style.color = "";
     try {
       await mgr.join({ sessionId, nickname, transportType: "broadcast" });
+      statusEl.textContent = "Connected to session.";
+      joinForm.hidden = true;
+      peersCard.hidden = false;
+      settingsCard.hidden = false;
+      renderPeers(mgr.peers.getAll());
+      if (!chatController) {
+        chatController = mountSessionChat({
+          mgr,
+          statusEl,
+          chatCardEl,
+          messageLogEl,
+          chatForm,
+          chatInput
+        });
+      }
     } catch (err) {
       statusEl.textContent = `Could not join: ${err.message}`;
       statusEl.style.color = "#b91c1c";
@@ -67,14 +75,10 @@ export function mountPage(context) {
     context.setRoute("multiplayer-lobby-joined-game-settings");
   });
 
-  goChatBtn.addEventListener("click", () => {
-    window.__GAME_MULTIPLAYER_SESSION__ = mgr;
-    context.setRoute("multiplayer-chat");
-  });
-
   return {
     async dispose() {
       unsubs.forEach(u => u && u());
+      chatController && chatController.dispose();
     }
   };
 }

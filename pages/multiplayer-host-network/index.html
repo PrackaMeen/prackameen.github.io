@@ -13,6 +13,22 @@
     </ul>
   </section>
 
+  <section class="card chat-card" id="chatCard" hidden>
+    <h2>Room Chat</h2>
+    <ol id="messageLog" class="message-log" aria-live="polite" aria-label="Room chat messages"></ol>
+    <form id="chatForm" class="chat-form" autocomplete="off">
+      <input
+        id="chatInput"
+        class="chat-input"
+        type="text"
+        placeholder="Type a message…"
+        maxlength="256"
+        required
+      />
+      <button class="primary-btn chat-send-btn" type="submit">Send</button>
+    </form>
+  </section>
+
   <section class="card" id="qrCodeCard" hidden>
     <h2>QR Code</h2>
     <div id="qrCodeContainer" class="qr-code-container"></div>

@@ -20,6 +20,11 @@ export function mountPage(context) {
   const peersCard = document.getElementById("peersCard");
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
+  const chatCardEl = document.getElementById("chatCard");
+  const messageLogEl = document.getElementById("messageLog");
+  const chatForm = document.getElementById("chatForm");
+  const chatInput = document.getElementById("chatInput");
+  const chatSendBtn = chatForm.querySelector(".chat-send-btn");
   const actionsCard = document.getElementById("actionsCard");
   const goSettingsBtn = document.getElementById("goToSettingsBtn");
 
@@ -37,8 +42,9 @@ export function mountPage(context) {
   let activePlayerId = "";
   let waitingRoomsPollTimer = null;
   let pendingScanJoinTarget = null;
+  let chatSubmitHandler = null;
 
-  document.getElementById("goToChatBtn").hidden = true;
+  chatCardEl.hidden = true;
 
   // ── auto-join from QR code URL param ──────────────────────────────────────
 
@@ -125,8 +131,79 @@ export function mountPage(context) {
     }).join("");
   }
 
-  function renderPeer(peers) {
-    renderPeers(peers, activePlayerId);
+  function renderMessages(messages, localPlayerId = "") {
+    const entries = Array.isArray(messages) ? messages : [];
+    if (entries.length === 0) {
+      messageLogEl.innerHTML = '<li class="message-item message-item--empty">No messages yet.</li>';
+      return;
+    }
+
+    messageLogEl.innerHTML = entries.map((message) => {
+      const isSelf = !!localPlayerId && message.playerId === localPlayerId;
+      const time = formatTime(message.createdUtc);
+      return `
+        <li class="message-item ${isSelf ? "message-item--self" : ""}">
+          <div class="message-item__copy">
+            <span class="message-sender">${escHtml(message.playerName || message.playerId.slice(0, 8))}</span>
+            <span class="message-text">${escHtml(message.text || "")}</span>
+          </div>
+          <span class="message-ts">${escHtml(time)}</span>
+        </li>
+      `;
+    }).join("");
+
+    messageLogEl.scrollTop = messageLogEl.scrollHeight;
+  }
+
+  function formatTime(value) {
+    const parsed = Date.parse(value || "");
+    if (Number.isNaN(parsed)) {
+      return "Just now";
+    }
+
+    return new Date(parsed).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function setChatEnabled(isEnabled) {
+    chatInput.disabled = false;
+    chatSendBtn.disabled = false;
+  }
+
+  function showChat() {
+    chatCardEl.hidden = false;
+    setChatEnabled(true);
+    window.setTimeout(() => chatInput.focus(), 0);
+  }
+
+  function hideChat() {
+    chatCardEl.hidden = true;
+    setChatEnabled(false);
+  }
+
+  function ensureChatHandler() {
+    if (chatSubmitHandler) {
+      return;
+    }
+
+    chatSubmitHandler = async (event) => {
+      event.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text || !activeRoomId || !activePlayerId) {
+        return;
+      }
+
+      chatInput.value = "";
+
+      try {
+        const snapshot = await roomApi.sendRoomMessage(activeRoomId, activePlayerId, nickname, text);
+        renderRoomSnapshot(snapshot);
+      } catch (err) {
+        statusEl.textContent = `Unable to send message: ${err.message}`;
+        statusEl.style.color = "#b91c1c";
+      }
+    };
+
+    chatForm.addEventListener("submit", chatSubmitHandler);
   }
 
   // ── join ──────────────────────────────────────────────────────────────────
@@ -139,6 +216,7 @@ export function mountPage(context) {
 
   function renderRoomSnapshot(snapshot) {
     renderPeers(snapshot?.players || [], activePlayerId);
+     renderMessages(snapshot?.messages || [], activePlayerId);
     if (!snapshot) {
       return;
     }
@@ -157,6 +235,7 @@ export function mountPage(context) {
      activeRoomsCard.hidden = false;
      peersCard.hidden = true;
      actionsCard.hidden = true;
+    hideChat();
      joinBtn.disabled = false;
      setJoinUiBusy(false);
      statusEl.textContent = message || "Scan the host QR code or join from the waiting rooms list below.";
@@ -317,6 +396,10 @@ export function mountPage(context) {
            // Best-effort leave only; navigation is already in progress.
          });
        }
+       if (chatSubmitHandler) {
+         chatForm.removeEventListener("submit", chatSubmitHandler);
+         chatSubmitHandler = null;
+       }
       stopTimers();
       stopWaitingRoomsPolling();
       stopScanner();
@@ -354,6 +437,8 @@ export function mountPage(context) {
   function handleJoinedRoom(snapshot) {
     activeRoomId = snapshot.roomId;
     peersCard.hidden = false;
+    showChat();
+    ensureChatHandler();
     actionsCard.hidden = true;
     joinFormCard.hidden = true;
     activeRoomsCard.hidden = true;

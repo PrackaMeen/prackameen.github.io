@@ -1,4 +1,5 @@
 import { SessionManager } from "../../session/SessionManager.js";
+import { mountSessionChat } from "../../session/SessionChat.js";
 import { loadPlayerPreferences } from "../../player-preferences.js";
 
 export function mountPage(context) {
@@ -10,17 +11,20 @@ export function mountPage(context) {
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
   const goBtn = document.getElementById("goToSettingsBtn");
-  const goChatBtn = document.getElementById("goToChatBtn");
+  const chatCardEl = document.getElementById("chatCard");
+  const messageLogEl = document.getElementById("messageLog");
+  const chatForm = document.getElementById("chatForm");
+  const chatInput = document.getElementById("chatInput");
 
   const prefs = loadPlayerPreferences();
   const nickname = prefs.nickname || "Host";
   const mgr = new SessionManager();
   const unsubs = [];
+  let chatController = null;
 
   function renderPeers(peers) {
     peerCountEl.textContent = `(${peers.length})`;
     goBtn.disabled = peers.length < 2;
-    goChatBtn.disabled = peers.length < 2;
     if (peers.length === 0) {
       peerListEl.innerHTML = '<li class="peer-item peer-item--empty">Waiting for players…</li>';
       return;
@@ -30,12 +34,6 @@ export function mountPage(context) {
       return `<li class="peer-item"><span>${escHtml(p.nickname || p.peerId.slice(0, 8))}</span><span class="${badgeClass}">${p.isHost ? "Host" : "Peer"}</span></li>`;
     }).join("");
   }
-
-  mgr.onSessionReady(({ sessionId }) => {
-    statusEl.textContent = "Session active — share the ID below.";
-    sessionIdEl.textContent = sessionId;
-    renderPeers(mgr.peers.getAll());
-  });
 
   unsubs.push(mgr.peers.onChange(renderPeers));
 
@@ -54,18 +52,33 @@ export function mountPage(context) {
     context.setRoute("multiplayer-host-game-settings");
   });
 
-  goChatBtn.addEventListener("click", () => {
-    window.__GAME_MULTIPLAYER_SESSION__ = mgr;
-    context.setRoute("multiplayer-chat");
-  });
+  void startSession();
 
-  mgr.create({ nickname, transportType: "broadcast" }).catch((err) => {
-    statusEl.textContent = `Error: ${err.message}`;
-  });
+  async function startSession() {
+    try {
+      const sessionId = await mgr.create({ nickname, transportType: "broadcast" });
+      statusEl.textContent = "Session active — share the ID below.";
+      sessionIdEl.textContent = sessionId;
+      renderPeers(mgr.peers.getAll());
+      if (!chatController) {
+        chatController = mountSessionChat({
+          mgr,
+          statusEl,
+          chatCardEl,
+          messageLogEl,
+          chatForm,
+          chatInput
+        });
+      }
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+    }
+  }
 
   return {
     async dispose() {
       unsubs.forEach(u => u && u());
+      chatController && chatController.dispose();
       // mgr.leave() is intentionally NOT called here — session continues
       // when navigating to game settings.
     }
