@@ -1,6 +1,19 @@
 {
   "items": [
     {
+      "version": "1.0.34",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "REST room flow now uses Signaling Function",
+      "businessSummary": "The network host and join screens now create and join rooms through the Signaling Function REST API instead of the old WebSocket signaling relay, matching the deployed Azure Functions backend.",
+      "highlights": [
+        "Host now creates a room through POST /api/rooms and shares a room-based join code.",
+        "Join now uses the room join and room fetch endpoints from the REST API.",
+        "Room presence is refreshed with heartbeat updates and periodic state polling.",
+        "PWA version metadata was bumped to keep release tracking aligned."
+      ]
+    },
+    {
       "version": "1.0.33",
       "commit": "pending",
       "date": "2026-04-25",

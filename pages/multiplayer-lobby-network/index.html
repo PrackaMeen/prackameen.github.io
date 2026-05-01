@@ -2,12 +2,12 @@
   <section class="card">
     <p class="kicker">Multiplayer / Network</p>
     <h1>Join via Network</h1>
-    <p id="joinStatus" class="status-text">Paste the join code provided by the host.</p>
+    <p id="joinStatus" class="status-text">Paste the room join code provided by the host.</p>
   </section>
 
   <section class="card" id="joinFormCard">
     <h2>Join Code</h2>
-    <p class="hint-text">The host's Join Code contains the session ID and signaling server address.</p>
+    <p class="hint-text">The host's Join Code contains the room ID and backend API address.</p>
     <button id="scanQrBtn" class="primary-btn primary-btn--secondary" type="button">Scan QR in App</button>
     <div id="scannerCard" class="scanner-card" hidden>
       <video id="scannerVideo" class="scanner-video" autoplay playsinline muted></video>
@@ -19,7 +19,7 @@
     <form id="joinForm">
       <textarea id="joinCodeInput" class="join-code-input" placeholder="Paste join code here…"
                 rows="3" autocomplete="off" spellcheck="false"></textarea>
-      <button id="joinBtn" class="primary-btn" type="submit">Connect</button>
+      <button id="joinBtn" class="primary-btn" type="submit">Join Room</button>
     </form>
   </section>
 

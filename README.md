@@ -15,7 +15,7 @@ This is a standalone static website for quick mobile testing.
 - Installable PWA
 - Offline app-shell caching
 - API mock mode auto-enabled when hosted from GitHub Pages (`*.github.io`) or opened as local file (`file://`)
-- Live mode on non-GitHub hosts (for future .NET API)
+- Live mode on non-GitHub hosts (for the REST backend)
 
 ## No-Build Page Structure
 
@@ -57,13 +57,14 @@ Open `index.html` directly, or serve this folder with any static host.
 2. Open the published URL on mobile.
 3. The app will auto-use mock API endpoints for `/api/*` calls.
 
-## API Contract Used by UI
+## REST Room Contract Used by Network UI
 
-- `GET /api/game/state`
-- `GET /api/game/events`
-- `POST /api/game/action`
+- `POST /api/rooms`
+- `GET /api/rooms/{roomId}`
+- `POST /api/rooms/{roomId}/join`
+- `POST /api/rooms/{roomId}/heartbeat`
 
-In mock mode, all three are handled client-side by `mock-api.js`.
+The network host/join screens use the Signaling Function REST API. The lab page still uses the local mock API for its test endpoints.
 
 ## PWA Versioning Policy
 

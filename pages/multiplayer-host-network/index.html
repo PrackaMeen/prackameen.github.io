@@ -2,36 +2,21 @@
   <section class="card">
     <p class="kicker">Multiplayer / Network</p>
     <h1>Host via Network</h1>
-    <p id="hostStatus" class="status-text">Configure the signaling server, then start your session.</p>
+    <p id="hostStatus" class="status-text">Configure the Signaling Function API base, then create your room.</p>
   </section>
 
   <section class="card">
-    <h2>Signaling Server</h2>
+    <h2>Backend API</h2>
     <p class="hint-text">
-      Run the G.A.M.E WebClient on any device reachable by all players.<br>
-      For <strong>LAN</strong>: use that device's local IP (e.g. <code>ws://192.168.1.5:5000/multiplayer/signaling</code>).<br>
-      For <strong>internet</strong>: expose the WebClient publicly and use its URL.
+      Enter the REST base URL for the Signaling Function backend.<br>
+      For <strong>local development</strong>: use <code>http://localhost:7071/api</code>.<br>
+      For <strong>deployment</strong>: use the published Azure Functions URL ending in <code>/api</code>.
     </p>
     <div class="url-row">
-      <input type="text" id="signalingUrl" class="url-input"
-             placeholder="ws://localhost:5000/multiplayer/signaling"
+      <input type="text" id="apiBaseUrl" class="url-input"
+             placeholder="https://your-function-app.azurewebsites.net/api"
              autocomplete="off" spellcheck="false" />
-      <button id="startBtn" class="primary-btn" type="button">Start Session</button>
-    </div>
-    <p class="hint-text">Optional: add one extra host target (IP or domain) to include in generated join payload.</p>
-    <label class="server-option-field server-option-field--wide" for="extraHostInput">
-      <span>Extra Host (IP or Domain)</span>
-      <input type="text" id="extraHostInput" class="url-input" placeholder="192.168.1.5 or game.example.com" autocomplete="off" spellcheck="false" />
-    </label>
-
-    <div class="readonly-block" aria-live="polite">
-      <p class="hint-text">Detected Local LAN Host (read-only)</p>
-      <div class="readonly-row">
-        <input type="text" id="localLanHostDisplay" class="url-input" readonly value="Detecting..." />
-        <button id="copyLocalLanHostBtn" class="copy-btn" type="button">Copy</button>
-        <button id="useLocalLanHostBtn" class="copy-btn" type="button">Use</button>
-      </div>
-      <p class="hint-text" id="localLanHostHint">Copy this host/IP for mobile hosting or tap Use to fill Extra Host.</p>
+      <button id="startBtn" class="primary-btn" type="button">Create Room</button>
     </div>
   </section>
 
