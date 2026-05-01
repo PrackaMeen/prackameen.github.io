@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.58",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Admin console replaces the Lab page",
+      "businessSummary": "The old mock-focused Lab page is now an Admin console with real room-management actions. It can list all games with only the safe summary fields, clean inactive games, and still exposes the app update and install controls for maintenance work.",
+      "highlights": [
+        "Renamed the Lab navigation entry to Admin and moved it to a room-management dashboard.",
+        "Added room listing and inactive cleanup actions backed by the signaling API.",
+        "PWA version metadata was bumped so the new admin console replaces cached copies."
+      ]
+    },
+    {
       "version": "1.0.57",
       "commit": "pending",
       "date": "2026-05-01",
