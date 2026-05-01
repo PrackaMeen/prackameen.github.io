@@ -213,7 +213,7 @@
         "chamber0": [
             {
                 "orientation": 0,
-                "sprite": "./assets/game/tiles/Chamber0.png",
+                "sprite": "./assets/game/tiles/Chamber0_0.png",
                 "walls": {
                     "north": true,
                     "east": true,
@@ -223,7 +223,7 @@
             },
             {
                 "orientation": 1,
-                "sprite": "./assets/game/tiles/Chamber0.png",
+                "sprite": "./assets/game/tiles/Chamber0_1.png",
                 "walls": {
                     "north": true,
                     "east": true,
@@ -233,7 +233,7 @@
             },
             {
                 "orientation": 2,
-                "sprite": "./assets/game/tiles/Chamber0.png",
+                "sprite": "./assets/game/tiles/Chamber0_2.png",
                 "walls": {
                     "north": false,
                     "east": true,
@@ -243,7 +243,7 @@
             },
             {
                 "orientation": 3,
-                "sprite": "./assets/game/tiles/Chamber0.png",
+                "sprite": "./assets/game/tiles/Chamber0_3.png",
                 "walls": {
                     "north": true,
                     "east": false,
@@ -255,7 +255,7 @@
         "chamber1": [
             {
                 "orientation": 0,
-                "sprite": "./assets/game/tiles/Chamber1.png",
+                "sprite": "./assets/game/tiles/Chamber1_0.png",
                 "walls": {
                     "north": false,
                     "east": true,
@@ -265,7 +265,7 @@
             },
             {
                 "orientation": 1,
-                "sprite": "./assets/game/tiles/Chamber1.png",
+                "sprite": "./assets/game/tiles/Chamber1_1.png",
                 "walls": {
                     "north": true,
                     "east": false,
@@ -275,7 +275,7 @@
             },
             {
                 "orientation": 2,
-                "sprite": "./assets/game/tiles/Chamber1.png",
+                "sprite": "./assets/game/tiles/Chamber1_2.png",
                 "walls": {
                     "north": false,
                     "east": true,
@@ -285,7 +285,7 @@
             },
             {
                 "orientation": 3,
-                "sprite": "./assets/game/tiles/Chamber1.png",
+                "sprite": "./assets/game/tiles/Chamber1_3.png",
                 "walls": {
                     "north": true,
                     "east": false,
@@ -297,7 +297,7 @@
         "chamber2": [
             {
                 "orientation": 0,
-                "sprite": "./assets/game/tiles/Chamber2.png",
+                "sprite": "./assets/game/tiles/Chamber2_0.png",
                 "walls": {
                     "north": false,
                     "east": true,
@@ -307,7 +307,7 @@
             },
             {
                 "orientation": 1,
-                "sprite": "./assets/game/tiles/Chamber2.png",
+                "sprite": "./assets/game/tiles/Chamber2_1.png",
                 "walls": {
                     "north": true,
                     "east": true,
@@ -317,7 +317,7 @@
             },
             {
                 "orientation": 2,
-                "sprite": "./assets/game/tiles/Chamber2.png",
+                "sprite": "./assets/game/tiles/Chamber2_2.png",
                 "walls": {
                     "north": false,
                     "east": true,
@@ -327,7 +327,7 @@
             },
             {
                 "orientation": 3,
-                "sprite": "./assets/game/tiles/Chamber2.png",
+                "sprite": "./assets/game/tiles/Chamber2_3.png",
                 "walls": {
                     "north": false,
                     "east": false,
@@ -339,7 +339,7 @@
         "chamber3": [
             {
                 "orientation": 0,
-                "sprite": "./assets/game/tiles/Chamber3.png",
+                "sprite": "./assets/game/tiles/Chamber3_0.png",
                 "walls": {
                     "north": false,
                     "east": false,
@@ -349,7 +349,7 @@
             },
             {
                 "orientation": 1,
-                "sprite": "./assets/game/tiles/Chamber3.png",
+                "sprite": "./assets/game/tiles/Chamber3_1.png",
                 "walls": {
                     "north": false,
                     "east": false,
@@ -359,7 +359,7 @@
             },
             {
                 "orientation": 2,
-                "sprite": "./assets/game/tiles/Chamber3.png",
+                "sprite": "./assets/game/tiles/Chamber3_2.png",
                 "walls": {
                     "north": true,
                     "east": false,
@@ -369,7 +369,7 @@
             },
             {
                 "orientation": 3,
-                "sprite": "./assets/game/tiles/Chamber3.png",
+                "sprite": "./assets/game/tiles/Chamber3_3.png",
                 "walls": {
                     "north": false,
                     "east": true,
@@ -381,7 +381,7 @@
         "chamber4": [
             {
                 "orientation": 0,
-                "sprite": "./assets/game/tiles/Chamber4.png",
+                "sprite": "./assets/game/tiles/Chamber4_0.png",
                 "walls": {
                     "north": false,
                     "east": false,
@@ -391,7 +391,7 @@
             },
             {
                 "orientation": 1,
-                "sprite": "./assets/game/tiles/Chamber4.png",
+                "sprite": "./assets/game/tiles/Chamber4_1.png",
                 "walls": {
                     "north": false,
                     "east": false,
@@ -401,7 +401,7 @@
             },
             {
                 "orientation": 2,
-                "sprite": "./assets/game/tiles/Chamber4.png",
+                "sprite": "./assets/game/tiles/Chamber4_2.png",
                 "walls": {
                     "north": false,
                     "east": false,
@@ -411,7 +411,7 @@
             },
             {
                 "orientation": 3,
-                "sprite": "./assets/game/tiles/Chamber4.png",
+                "sprite": "./assets/game/tiles/Chamber4_3.png",
                 "walls": {
                     "north": false,
                     "east": false,
