@@ -1,6 +1,19 @@
 {
   "items": [
     {
+      "version": "1.0.45",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Lab page can force a latest-version check",
+      "businessSummary": "The Lab page now includes a manual Check Latest Version button that forces the service worker to re-check the newest build and re-run the update flow on demand.",
+      "highlights": [
+        "Adds a visible manual update-check button to the Lab page.",
+        "The forced check clears stale prompt state and re-evaluates the waiting service worker.",
+        "If a newer build is available, the existing reload/update flow is retriggered.",
+        "PWA version metadata was bumped to keep the cache aligned."
+      ]
+    },
+    {
       "version": "1.0.44",
       "commit": "pending",
       "date": "2026-05-01",
