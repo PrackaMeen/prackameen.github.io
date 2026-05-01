@@ -1,6 +1,54 @@
 {
   "items": [
     {
+      "version": "1.0.78",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Map zoom is now constrained to the board itself",
+      "businessSummary": "Pinch zoom now lives on the board element instead of the broader map shell, which keeps tap-based movement working and ensures only the tile grid responds to touch scaling. The rest of the page, including the action bar and navigation, stays outside the zoom target.",
+      "highlights": [
+        "Pinch zoom is attached directly to the tile grid.",
+        "Tap selection and movement remain active on the board.",
+        "The action strip and top navigation stay unaffected by zoom gestures."
+      ]
+    },
+    {
+      "version": "1.0.77",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Map tiles now support pinch zoom inside the board area",
+      "businessSummary": "Players can now pinch inside the map container to zoom tiles in and out without affecting the rest of the page. The tile grid scales proportionally so the board stays readable on touch devices while the action bar and navigation remain fixed.",
+      "highlights": [
+        "Pinch zoom is scoped to the map container only.",
+        "Tile size scales proportionally as the gesture changes.",
+        "The top navigation and action bar remain outside the zoomed area."
+      ]
+    },
+    {
+      "version": "1.0.76",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now queues a move target before validation",
+      "businessSummary": "The board now lets a player select their own icon, click a destination tile, and preview the move with an arrow before sending the action to the backend. The backend remains the source of truth for validation when the player clicks Perform Action.",
+      "highlights": [
+        "Players can click their own icon to select it on the board.",
+        "A clicked destination tile now shows a queued move arrow before submission.",
+        "The move is submitted for backend validation only when Perform Action is pressed."
+      ]
+    },
+    {
+      "version": "1.0.75",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game start now reuses a shared 19x19 board builder",
+      "businessSummary": "Single-player and multiplayer now share the same game-start logic. The app builds a 19x19 board-only battlefield, places players at the corners, and opens a board-only page with no roster or description text so the map is the only focus.",
+      "highlights": [
+        "Added a shared 19x19 game-start session builder.",
+        "Single-player and multiplayer host starts now route to the same board-only page.",
+        "The board page shows only the map and entity sprites, with no visible descriptions."
+      ]
+    },
+    {
       "version": "1.0.74",
       "commit": "pending",
       "date": "2026-05-01",

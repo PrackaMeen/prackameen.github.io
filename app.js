@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.74";
+const APP_VERSION = "1.0.78";
 const APP_COMMIT_SHORT = "3660ec6";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -20,6 +20,10 @@ const PAGES = {
   "single-player-game": {
     title: "Single Player / Game",
     basePath: "./pages/single-player-game/"
+  },
+  "game-board": {
+    title: "Game",
+    basePath: "./pages/game-board/"
   },
   multiplayer: {
     title: "Multiplayer",
@@ -235,7 +239,7 @@ function versionedAssetUrl(assetPath) {
   return url.toString();
 }
 
-const GAME_ASSET_ROUTES = new Set(["single-player", "single-player-game", "tile-set-demo"]);
+const GAME_ASSET_ROUTES = new Set(["single-player", "single-player-game", "game-board", "tile-set-demo"]);
 
 async function preloadGameAssets() {
   const module = await import(versionedAssetUrl("./lib/game-assets.js"));

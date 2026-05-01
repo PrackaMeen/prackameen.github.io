@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.74";
+const APP_VERSION = "1.0.78";
 const APP_COMMIT_SHORT = "3660ec6";
 const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -19,6 +19,9 @@ const APP_SHELL = [
   "./pages/single-player-game/index.html",
   "./pages/single-player-game/styles.css",
   "./pages/single-player-game/page.js",
+  "./pages/game-board/index.html",
+  "./pages/game-board/styles.css",
+  "./pages/game-board/page.js",
   "./pages/multiplayer/index.html",
   "./pages/multiplayer/styles.css",
   "./pages/multiplayer/page.js",
