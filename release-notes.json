@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.48",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join page snapshot rendering now stays in scope",
+      "businessSummary": "The Join via Network page now renders room snapshots from inside the page mount scope, which removes the renderPeers ReferenceError that could block the room list and joined-room state from displaying on refresh.",
+      "highlights": [
+        "Moved room snapshot rendering back into the Join via Network page scope.",
+        "Fixes the renderPeers ReferenceError seen on page load and refresh.",
+        "PWA version metadata was bumped so the updated page script can replace cached copies."
+      ]
+    },
+    {
       "version": "1.0.47",
       "commit": "pending",
       "date": "2026-05-01",

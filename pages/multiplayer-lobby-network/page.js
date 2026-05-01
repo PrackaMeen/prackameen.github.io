@@ -153,6 +153,46 @@ export function mountPage(context) {
     context.setRoute("multiplayer-lobby-joined-game-settings");
   });
 
+  function renderRoomSnapshot(snapshot) {
+    renderPeers(snapshot?.players || []);
+    if (!snapshot) {
+      return;
+    }
+
+    statusEl.textContent = `Room ${snapshot.roomId} is ${snapshot.status || "waiting to start"} · state v${snapshot.stateVersion || 0}`;
+    statusEl.style.color = "";
+  }
+
+  function formatUpdatedLabel(updatedUtc) {
+    const parsed = Date.parse(updatedUtc || "");
+    if (Number.isNaN(parsed)) {
+      return "Updated recently";
+    }
+
+    return `Updated ${new Date(parsed).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+  }
+
+  function pickLatestPlayerId(players) {
+    for (let index = players.length - 1; index >= 0; index -= 1) {
+      if (!players[index]?.isHost) {
+        return players[index].playerId || "";
+      }
+    }
+
+    return "";
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function isJoinPageActive() {
+    return document.body?.dataset?.page === "multiplayer-lobby-network";
+  }
+
   // ── dispose ───────────────────────────────────────────────────────────────
 
   startWaitingRoomsPolling();
@@ -402,16 +442,6 @@ function extractJoinCode(scannedValue) {
   return null;
 }
 
-function renderRoomSnapshot(snapshot) {
-  renderPeers(snapshot?.players || []);
-  if (!snapshot) {
-    return;
-  }
-
-    statusEl.textContent = `Room ${snapshot.roomId} is ${snapshot.status || "waiting to start"} · state v${snapshot.stateVersion || 0}`;
-  statusEl.style.color = "";
-}
-
 function startPollingRoom() {
   stopPollingRoom();
   if (!activeRoomId) {
@@ -469,34 +499,4 @@ function stopHeartbeat() {
 function stopTimers() {
   stopPollingRoom();
   stopHeartbeat();
-}
-
-  function formatUpdatedLabel(updatedUtc) {
-    const parsed = Date.parse(updatedUtc || "");
-    if (Number.isNaN(parsed)) {
-      return "Updated recently";
-    }
-
-    return `Updated ${new Date(parsed).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
-  }
-
-function pickLatestPlayerId(players) {
-  for (let index = players.length - 1; index >= 0; index -= 1) {
-    if (!players[index]?.isHost) {
-      return players[index].playerId || "";
-    }
-  }
-
-  return "";
-}
-
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function isJoinPageActive() {
-  return document.body?.dataset?.page === "multiplayer-lobby-network";
 }
