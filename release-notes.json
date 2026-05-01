@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.0.68",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "CI now reuses the local build counter",
+      "businessSummary": "GitHub Actions no longer changes the patch version. It now reads the stored build counter and continues from that value, so CI and local builds stay aligned and the build segment keeps the same reset behavior when the base version changes.",
+      "highlights": [
+        "Removed the special CI patch bump path.",
+        "Builds now continue from the stored local build counter.",
+        "Version resets still happen automatically when major, minor, or patch changes."
+      ]
+    },
+    {
+      "version": "1.0.67",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GitHub Actions now reset the build segment",
+      "businessSummary": "Local rebuilds keep using the 3-digit build counter, but GitHub Actions now advance the patch segment and reset the build segment to 001 so CI-produced API versions stay clearly newer.",
+      "highlights": [
+        "Local builds still increment the 3-digit build counter.",
+        "GitHub Actions now move the patch segment forward and reset the build segment to 001.",
+        "Swagger and /api/version continue to show the same numeric API version."
+      ]
+    },
+    {
       "version": "1.0.66",
       "commit": "pending",
       "date": "2026-05-01",
