@@ -433,7 +433,7 @@ function startPollingRoom() {
 }
 
 function stopPollingRoom() {
-  if (pollTimer) {
+  if (typeof pollTimer !== "undefined" && pollTimer) {
     window.clearInterval(pollTimer);
     pollTimer = null;
   }
@@ -460,7 +460,7 @@ function startHeartbeat() {
 }
 
 function stopHeartbeat() {
-  if (heartbeatTimer) {
+  if (typeof heartbeatTimer !== "undefined" && heartbeatTimer) {
     window.clearInterval(heartbeatTimer);
     heartbeatTimer = null;
   }
