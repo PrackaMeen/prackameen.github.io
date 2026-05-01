@@ -55,6 +55,7 @@ export class RoomApiClient {
     const response = await fetch(`${this._apiBaseUrl}${path}`, {
       method,
       mode: "cors",
+      cache: "no-store",
       headers: body ? { "Content-Type": "application/json" } : undefined,
       body: body ? JSON.stringify(body) : undefined
     });
