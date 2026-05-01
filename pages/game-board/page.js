@@ -1,11 +1,17 @@
-import { getEntityAssetUrl, getTileAssetUrl, normalizeEntityKind, normalizeTileKind } from "../../lib/game-assets.js";
-import { buildGameStartSession } from "../../lib/game-start-session.js";
 import { createDefaultRoomApiClient } from "../../session/RoomApiClient.js";
 
 let gameWasmLoadPromise = null;
 
-export function mountPage(context) {
+export async function mountPage(context) {
   context.setTitle("Game");
+
+  const {
+    applyTileDefinitionsFromRuntime,
+    getEntityAssetUrl,
+    getTileAssetUrl,
+    normalizeEntityKind,
+    normalizeTileKind
+  } = await import(`../../lib/game-assets.js?v=${encodeURIComponent(context.appBuildId || context.appVersion || "latest")}`);
 
   const boardEl = document.getElementById("gameBoard");
   const arrowLayerEl = document.getElementById("gameBoardArrowLayer");
@@ -28,7 +34,7 @@ export function mountPage(context) {
     activeTouchPoints: new Map()
   };
 
-  void ensureGameWasmHydrated(state.session).catch(() => undefined);
+  void ensureGameWasmHydrated().catch(() => undefined);
 
   const handleBoardClick = (event) => {
     const cell = event.target.closest?.(".game-board-cell");
@@ -86,43 +92,28 @@ export function mountPage(context) {
 
     try {
       const wasm = await ensureGameWasmRuntime().catch(() => null);
-      let payload = null;
-
-      if (wasm) {
-        await wasm.hydrate(state.session);
-        payload = await wasm.applyAction({
-          actionName: "move",
-          sourceX: state.selectedSource.x,
-          sourceY: state.selectedSource.y,
-          targetX: state.pendingTarget.x,
-          targetY: state.pendingTarget.y
-        });
-      } else {
-        const response = await fetch(`${roomApi.apiBaseUrl}/session/action`, {
-          method: "POST",
-          cache: "no-store",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            command: "move",
-            targetX: state.pendingTarget.x,
-            targetY: state.pendingTarget.y
-          })
-        });
-
-        payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(payload?.message || payload?.error || `Action failed (${response.status})`);
-        }
+      if (!wasm) {
+        throw new Error("GameWasm bridge is unavailable.");
       }
+
+      const payload = await wasm.applyAction({
+        actionName: "move",
+        sourceX: state.selectedSource.x,
+        sourceY: state.selectedSource.y,
+        targetX: state.pendingTarget.x,
+        targetY: state.pendingTarget.y
+      });
 
       if (!payload?.success) {
         throw new Error(payload?.message || "Action failed.");
       }
 
-      applyWasmSnapshotToSession(state.session, payload.snapshot);
-      window.__GAME_SESSION__ = state.session;
+      if (payload?.snapshot) {
+        state.session = payload.snapshot;
+        window.__GAME_SESSION__ = payload.snapshot;
+        state.activePlayerId = payload.snapshot.currentPlayerId ?? payload.snapshot.activePlayerId ?? state.activePlayerId;
+        state.activePlayerName = payload.snapshot.currentPlayerName ?? payload.snapshot.activePlayerName ?? state.activePlayerName;
+      }
       clearSelection();
       state.feedback = payload?.message || "Move resolved by WASM runtime.";
       renderBoard(state.session);
@@ -235,7 +226,12 @@ export function mountPage(context) {
   };
 
   function createFallbackSession() {
-    return buildGameStartSession([]);
+    return {
+      boardWidth: 19,
+      boardHeight: 19,
+      board: [],
+      players: []
+    };
   }
 
   async function ensureGameWasmRuntime() {
@@ -271,64 +267,30 @@ export function mountPage(context) {
     return gameWasmLoadPromise;
   }
 
-  async function ensureGameWasmHydrated(currentSession) {
+  async function ensureGameWasmHydrated() {
     try {
       const wasm = await ensureGameWasmRuntime();
-      await wasm.hydrate(currentSession);
+      const [runtimeState, runtimeTileDefinitions] = await Promise.all([
+        typeof wasm.startGame === "function"
+          ? wasm.startGame({ boardSize: 19, monsterCount: 9, participants: [] })
+          : wasm.getState(),
+        typeof wasm.getTileDefinitions === "function" ? wasm.getTileDefinitions() : Promise.resolve(null)
+      ]);
+
+      if (runtimeTileDefinitions) {
+        applyTileDefinitionsFromRuntime(runtimeTileDefinitions);
+      }
+
+      if (runtimeState?.board) {
+        state.session = runtimeState;
+        window.__GAME_SESSION__ = runtimeState;
+        state.activePlayerId = runtimeState.currentPlayerId ?? runtimeState.activePlayerId ?? state.activePlayerId;
+        state.activePlayerName = runtimeState.currentPlayerName ?? runtimeState.activePlayerName ?? state.activePlayerName;
+        renderBoard(state.session);
+        syncHud();
+      }
     } catch {
       // Keep the page usable if the runtime assets are unavailable.
-    }
-  }
-
-  function applyWasmSnapshotToSession(currentSession, snapshot) {
-    if (!currentSession || !Array.isArray(currentSession.board)) {
-      return;
-    }
-
-    if (!snapshot || !Array.isArray(snapshot.characters)) {
-      return;
-    }
-
-    const boardByCoordinate = new Map(
-      currentSession.board.map((cell) => [`${Number(cell.x)},${Number(cell.y)}`, cell])
-    );
-
-    for (const character of snapshot.characters) {
-      if (!character || !Number.isInteger(character.id)) {
-        continue;
-      }
-
-      const nextPositionKey = `${character.x},${character.y}`;
-      const nextCell = boardByCoordinate.get(nextPositionKey);
-      if (!nextCell) {
-        continue;
-      }
-
-      const currentCell = currentSession.board.find((cell) => String(cell.entityId) === String(character.id));
-      if (currentCell && currentCell !== nextCell) {
-        ["entityKind", "entityId", "entityName", "entityColorHex", "occupantId", "occupantName", "occupantAlive"].forEach((key) => {
-          delete currentCell[key];
-        });
-      }
-
-      nextCell.entityKind = "player";
-      nextCell.entityId = character.id;
-      nextCell.entityName = character.name || `Player ${character.id}`;
-      nextCell.entityColorHex = nextCell.entityColorHex || null;
-      nextCell.occupantId = character.id;
-      nextCell.occupantName = character.name || `Player ${character.id}`;
-      nextCell.occupantAlive = Boolean(character.isAlive);
-    }
-
-    if (Array.isArray(currentSession.players)) {
-      for (const player of currentSession.players) {
-        const matchingCharacter = snapshot.characters.find((character) => String(character.id) === String(player.id));
-        if (!matchingCharacter) {
-          continue;
-        }
-
-        player.position = { x: matchingCharacter.x, y: matchingCharacter.y };
-      }
     }
   }
 

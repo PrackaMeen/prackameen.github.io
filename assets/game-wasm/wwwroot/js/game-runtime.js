@@ -68,6 +68,14 @@ function createParentBridge() {
 
   return {
     ready: ensureIframe(),
+    async startGame(request) {
+      const runtime = await ensureIframe();
+      return runtime.startGame(request);
+    },
+    async getTileDefinitions() {
+      const runtime = await ensureIframe();
+      return runtime.getTileDefinitions();
+    },
     async hydrate(session) {
       const runtime = await ensureIframe();
       return runtime.hydrate(session);
@@ -108,6 +116,8 @@ function createHostedBridge() {
 
   return {
     ready: runtimeReady,
+    startGame: async (request) => JSON.parse(await invoke("StartGameJson", JSON.stringify(request ?? {}))),
+    getTileDefinitions: async () => JSON.parse(await invoke("GetTileDefinitionsJson")),
     hydrate: async (session) => JSON.parse(await invoke("HydrateSessionJson", JSON.stringify(session ?? {}))),
     getState: async () => JSON.parse(await invoke("GetStateJson")),
     reset: async () => JSON.parse(await invoke("ResetSessionJson")),

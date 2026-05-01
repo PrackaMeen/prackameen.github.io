@@ -1,6 +1,42 @@
 {
   "items": [
     {
+      "version": "1.0.82",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GameLogic now starts the game session",
+      "businessSummary": "The browser now asks GameLogic to create the initial board and actor roster through a StartGame runtime event, instead of assembling the session in JavaScript. This keeps the map and available players or monsters under one engine-owned source of truth.",
+      "highlights": [
+        "GameLogic now exposes a StartGame event for session initialization.",
+        "The game board page now requests the starting snapshot from the runtime.",
+        "The PWA no longer constructs the initial board state itself for the game board flow."
+      ]
+    },
+    {
+      "version": "1.0.81",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game runtime cache and hydration hardening",
+      "businessSummary": "This update forces the browser to load the latest GameLogic WebAssembly bundle and keeps the runtime host aligned with the current app version. It also hardens session hydration so the browser can stay in sync with the engine without mixing up entity types.",
+      "highlights": [
+        "The PWA shell and hidden GameWasm host now use a new versioned bundle.",
+        "Runtime hydration is more defensive about saved session payloads and entity IDs.",
+        "The app keeps the GameLogic runtime and browser shell on the same cache-busted version."
+      ]
+    },
+    {
+      "version": "1.0.80",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now uses GameLogic for map and tile data",
+      "businessSummary": "The game board now loads its initial map state from the .NET WebAssembly runtime, and the tile catalog is also sourced from GameLogic so rendering and board setup share one definition set. This reduces duplication between the PWA shell and the game engine while keeping the browser UI unchanged.",
+      "highlights": [
+        "The board snapshot is now built by GameLogic and loaded into the PWA on startup.",
+        "Tile definitions are now sourced from the GameLogic runtime instead of only the JavaScript fallback.",
+        "The browser UI still renders the board, but it no longer owns the canonical map layout."
+      ]
+    },
+    {
       "version": "1.0.79",
       "commit": "pending",
       "date": "2026-05-01",
