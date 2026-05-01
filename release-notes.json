@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.0.89",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GameWasm bridge restored to the served asset path",
+      "businessSummary": "The game runtime now loads from the same published GameWasm path that the app serves, which fixes 404s from the hidden runtime iframe and lets game reloads complete reliably again.",
+      "highlights": [
+        "Restored the GameWasm host and runtime script to the served wwwroot asset path.",
+        "Bumped the shell and service worker version so cached bad URLs are replaced.",
+        "Kept the update flow and release notes aligned with the new runtime path."
+      ]
+    },
+    {
+      "version": "1.0.88",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GameWasm now loads from published asset routes",
+      "businessSummary": "The browser now points the GameWasm host and runtime bridge at the published asset routes used in production, which prevents reloads from stalling on a stale hidden iframe path. This keeps the WASM boot flow consistent between local runs and the deployed site.",
+      "highlights": [
+        "GameWasm now loads from the published asset route instead of the stale wwwroot path.",
+        "The service worker cache keys were aligned with the published runtime URLs.",
+        "App and service worker versions were bumped together to invalidate old cached shells."
+      ]
+    },
+    {
       "version": "1.0.87",
       "commit": "pending",
       "date": "2026-05-01",
