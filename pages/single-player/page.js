@@ -420,7 +420,11 @@ export function mountPage(context) {
 
   function handleStartGame() {
     const RANDOM_COLOR_HEX = null;
+    const board = buildDemoBoard(players);
     window.__GAME_SESSION__ = {
+      boardWidth: board.width,
+      boardHeight: board.height,
+      board: board.cells,
       players: players.map((player) => ({
         id: player.id,
         name: player.name,
@@ -434,6 +438,67 @@ export function mountPage(context) {
       }))
     };
     context.setRoute("single-player-game");
+  }
+
+  function buildDemoBoard(currentPlayers) {
+    const width = 6;
+    const height = 6;
+    const cells = [];
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        let tileKind = "cross-road";
+
+        if (x === 2 && y === 2) {
+          tileKind = "cross-road";
+        } else if (x === 2 || y === 2) {
+          tileKind = "direct-road";
+        } else if ((x < 2 && y < 2) || (x > 3 && y < 2) || (x < 2 && y > 3) || (x > 3 && y > 3)) {
+          tileKind = "chamber-2-entrances";
+        } else {
+          tileKind = "chamber-4-entrances";
+        }
+
+        cells.push({ x, y, tileKind });
+      }
+    }
+
+    const playerName = currentPlayers[0]?.name || "Player";
+    const playerColorHex = currentPlayers[0]?.colorHex || null;
+
+    setCellEntity(cells, width, 2, 2, {
+      entityKind: "player",
+      entityName: playerName,
+      entityColorHex: playerColorHex
+    });
+
+    setCellEntity(cells, width, 3, 3, {
+      entityKind: "monster",
+      entityName: "Monster",
+      entityColorHex: "#b91c1c"
+    });
+
+    if (currentPlayers[1]) {
+      setCellEntity(cells, width, 4, 2, {
+        entityKind: "player",
+        entityName: currentPlayers[1].name || "Player 2",
+        entityColorHex: currentPlayers[1].colorHex || null
+      });
+    }
+
+    return { width, height, cells };
+  }
+
+  function setCellEntity(cells, width, x, y, entity) {
+    const index = (y * width) + x;
+    if (index < 0 || index >= cells.length) {
+      return;
+    }
+
+    cells[index] = {
+      ...cells[index],
+      ...entity
+    };
   }
 
   startBtn.addEventListener("click", handleStartGame);

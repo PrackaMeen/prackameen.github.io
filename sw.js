@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.70";
+const APP_VERSION = "1.0.71";
 const APP_COMMIT_SHORT = "3660ec6";
 const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -63,11 +63,22 @@ const APP_SHELL = [
   "./pages/release-notes/index.html",
   "./pages/release-notes/styles.css",
   "./pages/release-notes/page.js",
+  "./lib/game-assets.js",
   "./release-notes.json",
   "./mock-api.js",
   "./manifest.webmanifest",
   "./icons/icon-192.svg",
-  "./icons/icon-512.svg"
+  "./icons/icon-512.svg",
+  "./assets/game/tiles/Road1.png",
+  "./assets/game/tiles/Road2.png",
+  "./assets/game/tiles/Road3.png",
+  "./assets/game/tiles/Road4.png",
+  "./assets/game/tiles/Chamber1.png",
+  "./assets/game/tiles/Chamber2.png",
+  "./assets/game/tiles/Chamber3.png",
+  "./assets/game/tiles/Chamber4.png",
+  "./assets/game/entities/player.png",
+  "./assets/game/entities/monster.png"
 ];
 
 self.addEventListener("install", (event) => {
