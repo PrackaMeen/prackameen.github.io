@@ -25,7 +25,7 @@ export function mountPage(context) {
   const goSettingsBtn = document.getElementById("goToSettingsBtn");
 
   const prefs = loadPlayerPreferences();
-  const nickname = prefs.nickname || "Player";
+  const nickname = prefs.nickname || "";
   const roomApi = createDefaultRoomApiClient();
   const localPlayerIdStorageKeyPrefix = "game-network-local-player-id";
   const unsubs = [];
