@@ -6,23 +6,14 @@ export function mountPage(context) {
   context.setTitle("Multiplayer / Network Host");
 
   const statusEl = document.getElementById("hostStatus");
-  const apiBaseUrlEl = document.getElementById("apiBaseUrl");
   const startBtn = document.getElementById("startBtn");
-  const joinCodeCard = document.getElementById("joinCodeCard");
-  const joinCodeEl = document.getElementById("joinCode");
-  const copyJoinCodeBtn = document.getElementById("copyJoinCodeBtn");
   const qrCodeCard = document.getElementById("qrCodeCard");
   const qrCodeContainer = document.getElementById("qrCodeContainer");
   const peersCard = document.getElementById("peersCard");
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
-  const actionsCard = document.getElementById("actionsCard");
-  const goSettingsBtn = document.getElementById("goToSettingsBtn");
 
   const roomApi = createDefaultRoomApiClient();
-  apiBaseUrlEl.value = roomApi.apiBaseUrl;
-  document.getElementById("goToChatBtn").hidden = true;
-  goSettingsBtn.disabled = true;
 
   const prefs = loadPlayerPreferences();
   const nickname = prefs.nickname || "";
@@ -36,7 +27,6 @@ export function mountPage(context) {
 
   function renderPeers(peers, localPlayerId = "") {
     peerCountEl.textContent = `(${peers.length})`;
-    goSettingsBtn.disabled = peers.length < 2;
 
     if (peers.length === 0) {
       peerListEl.innerHTML = '<li class="peer-item peer-item--empty">Waiting for players…</li>';
@@ -57,20 +47,6 @@ export function mountPage(context) {
   // ── start session ─────────────────────────────────────────────────────────
 
   startBtn.addEventListener("click", async () => {
-    const apiBaseUrl = apiBaseUrlEl.value.trim();
-    if (!apiBaseUrl) {
-      statusEl.textContent = "Please enter the backend API base URL.";
-      return;
-    }
-
-    try {
-      roomApi.setApiBaseUrl(apiBaseUrl);
-    } catch (err) {
-      statusEl.textContent = `Error: ${err.message}`;
-      statusEl.style.color = "#b91c1c";
-      return;
-    }
-
     startBtn.disabled = true;
     statusEl.textContent = "Creating room…";
     statusEl.style.color = "";
@@ -82,14 +58,15 @@ export function mountPage(context) {
       storeLocalPlayerId(snapshot.roomId, roomApi.apiBaseUrl, activePlayerId);
 
       const joinCode = buildRoomJoinCode({ roomId: snapshot.roomId, apiBaseUrl: roomApi.apiBaseUrl });
-      joinCodeEl.value = joinCode;
-      joinCodeCard.hidden = false;
-      peersCard.hidden = false;
-      actionsCard.hidden = false;
-
       generateQRCode(qrCodeContainer, `GAMEJOIN:${joinCode}`);
-      qrCodeCard.hidden = false;
 
+      const introCard = statusEl.closest(".card");
+      if (introCard) {
+        introCard.hidden = true;
+      }
+
+      peersCard.hidden = false;
+      qrCodeCard.hidden = false;
       renderRoomSnapshot(snapshot);
       startPollingRoom();
       startHeartbeat();
@@ -99,34 +76,6 @@ export function mountPage(context) {
       startBtn.disabled = false;
       return;
     }
-  });
-
-  // ── copy join code ────────────────────────────────────────────────────────
-
-  copyJoinCodeBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(joinCodeEl.value).then(() => {
-      copyJoinCodeBtn.textContent = "Copied!";
-      setTimeout(() => { copyJoinCodeBtn.textContent = "Copy Join Code"; }, 1500);
-    });
-  });
-
-  // ── proceed ───────────────────────────────────────────────────────────────
-
-  goSettingsBtn.addEventListener("click", () => {
-    if (!activeRoomId) {
-      context.setRoute("multiplayer-host-game-settings");
-      return;
-    }
-
-    statusEl.textContent = "Starting game…";
-    statusEl.style.color = "";
-    roomApi.startRoom(activeRoomId).then((snapshot) => {
-      renderRoomSnapshot(snapshot);
-      context.setRoute("multiplayer-host-game-settings");
-    }).catch((err) => {
-      statusEl.textContent = `Error: ${err.message}`;
-      statusEl.style.color = "#b91c1c";
-    });
   });
 
   // ── dispose ───────────────────────────────────────────────────────────────
@@ -239,7 +188,7 @@ function generateQRCode(container, text) {
   img.style.height = "auto";
   
   img.onerror = function() {
-    container.innerHTML = '<p style="color:#666; font-size:0.85rem; margin:0;">Unable to generate QR code. Use the Join Code above instead.</p>';
+    container.innerHTML = '<p style="color:#666; font-size:0.85rem; margin:0;">Unable to generate QR code. Refresh to try again.</p>';
   };
 
   container.appendChild(img);
