@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.91",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now fits the visible mobile viewport",
+      "businessSummary": "The game board layout now uses the visible viewport height on mobile devices and gives the board area a little extra bottom spacing, so the last row stays fully visible above the action bar.",
+      "highlights": [
+        "Switched the board shell to dynamic viewport height for mobile browsers.",
+        "Added bottom stage spacing so the last row no longer sits behind browser chrome.",
+        "Bumped the app version to ship the layout fix as a fresh PWA build."
+      ]
+    },
+    {
       "version": "1.0.90",
       "commit": "pending",
       "date": "2026-05-01",
