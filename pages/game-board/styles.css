@@ -101,7 +101,7 @@ body[data-page="game-board"] {
 .game-board-map {
   position: relative;
   width: fit-content;
-  transform: scale(var(--game-board-zoom, 1));
+  transform: translate(var(--game-board-pan-x, 0px), var(--game-board-pan-y, 0px)) scale(var(--game-board-zoom, 1));
   transform-origin: center top;
   will-change: transform;
 }
