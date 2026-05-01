@@ -1,9 +1,6 @@
-import { RoomApiClient, buildRoomJoinCode, loadStoredApiBaseUrl } from "../../session/RoomApiClient.js";
+import { HEARTBEAT_INTERVAL_MS, POLL_INTERVAL_MS } from "../../session/ApiConfig.js";
+import { buildRoomJoinCode, createDefaultRoomApiClient } from "../../session/RoomApiClient.js";
 import { loadPlayerPreferences } from "../../player-preferences.js";
-
-const DEFAULT_API_BASE_URL = "https://prackameen-game-d4gqengkdwggbgcd.westeurope-01.azurewebsites.net/api";
-const HEARTBEAT_INTERVAL_MS = 15_000;
-const POLL_INTERVAL_MS = 4_000;
 
 export function mountPage(context) {
   context.setTitle("Multiplayer / Network Host");
@@ -22,7 +19,7 @@ export function mountPage(context) {
   const actionsCard = document.getElementById("actionsCard");
   const goSettingsBtn = document.getElementById("goToSettingsBtn");
 
-  const roomApi = new RoomApiClient(loadStoredApiBaseUrl() || DEFAULT_API_BASE_URL);
+  const roomApi = createDefaultRoomApiClient();
   apiBaseUrlEl.value = roomApi.apiBaseUrl;
   document.getElementById("goToChatBtn").hidden = true;
   goSettingsBtn.disabled = true;

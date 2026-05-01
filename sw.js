@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.34";
+const APP_VERSION = "1.0.36";
 const APP_COMMIT_SHORT = "ccae28c";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -41,6 +41,7 @@ const APP_SHELL = [
   "./session/MessageStore.js",
   "./session/MessageBus.js",
   "./session/PeerRegistry.js",
+  "./session/ApiConfig.js",
   "./session/SessionManager.js",
   "./session/RoomApiClient.js",
   "./session/transport/BroadcastChannelTransport.js",

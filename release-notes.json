@@ -1,6 +1,32 @@
 {
   "items": [
     {
+      "version": "1.0.36",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Centralized REST API configuration",
+      "businessSummary": "The PWA now keeps REST backend defaults, local-storage keys, join-code prefixing, and network timing in one shared config module, making local and deployed API behavior easier to keep consistent.",
+      "highlights": [
+        "Shared API config now defines the local and remote backend defaults in one place.",
+        "Room join-code prefix and persistence key are centralized.",
+        "Heartbeat and polling intervals now come from one shared module.",
+        "Host and join pages consume the same config values instead of duplicating constants."
+      ]
+    },
+    {
+      "version": "1.0.35",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Localhost now auto-selects local REST backend",
+      "businessSummary": "When the PWA runs from localhost, the network host and join screens now default to the local Signaling Function backend instead of the deployed Azure URL, so local development works without manual API URL changes.",
+      "highlights": [
+        "localhost and loopback PWA sessions now default to http://localhost:7071/api.",
+        "Deployed GitHub Pages sessions still default to the Azure Functions API URL.",
+        "Room join codes continue to carry the backend base URL for cross-device sharing.",
+        "App version was bumped again to keep the PWA metadata aligned."
+      ]
+    },
+    {
       "version": "1.0.34",
       "commit": "pending",
       "date": "2026-05-01",
