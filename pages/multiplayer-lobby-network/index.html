@@ -5,6 +5,12 @@
     <p id="joinStatus" class="status-text">Paste the room join code provided by the host.</p>
   </section>
 
+  <section class="card" id="activeRoomsCard">
+    <h2>Waiting to Start Rooms <span id="waitingRoomCount" class="peer-count">(0)</span></h2>
+    <p id="waitingRoomsStatus" class="hint-text">Loading rooms that are still in the lobby.</p>
+    <ul id="waitingRoomList" class="active-room-list" aria-label="Waiting to start rooms"></ul>
+  </section>
+
   <section class="card" id="joinFormCard">
     <h2>Join Code</h2>
     <p class="hint-text">The host's Join Code contains the room ID and backend API address.</p>

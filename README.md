@@ -60,6 +60,9 @@ Open `index.html` directly, or serve this folder with any static host.
 ## REST Room Contract Used by Network UI
 
 - `POST /api/rooms`
+- `GET /api/rooms/waiting-to-start`
+- `POST /api/rooms/{roomId}/start`
+- `GET /api/rooms/active`
 - `GET /api/rooms/{roomId}`
 - `POST /api/rooms/{roomId}/join`
 - `POST /api/rooms/{roomId}/heartbeat`

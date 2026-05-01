@@ -6,6 +6,10 @@ export function mountPage(context) {
   context.setTitle("Multiplayer / Network Join");
 
   const statusEl = document.getElementById("joinStatus");
+  const activeRoomsCard = document.getElementById("activeRoomsCard");
+  const waitingRoomCountEl = document.getElementById("waitingRoomCount");
+  const waitingRoomsStatusEl = document.getElementById("waitingRoomsStatus");
+  const waitingRoomListEl = document.getElementById("waitingRoomList");
   const joinForm = document.getElementById("joinForm");
   const joinCodeInputEl = document.getElementById("joinCodeInput");
   const joinBtn = document.getElementById("joinBtn");
@@ -31,6 +35,7 @@ export function mountPage(context) {
   let heartbeatTimer = null;
   let activeRoomId = "";
   let activePlayerId = "";
+  let waitingRoomsPollTimer = null;
 
   document.getElementById("goToChatBtn").hidden = true;
 
@@ -53,6 +58,27 @@ export function mountPage(context) {
   if (stopScanBtn) {
     stopScanBtn.addEventListener("click", () => {
       stopScanner();
+    });
+  }
+
+  if (waitingRoomListEl) {
+    waitingRoomListEl.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-room-id]");
+      if (!button) {
+        return;
+      }
+
+      const roomId = button.dataset.roomId || "";
+      const apiBaseUrl = button.dataset.apiBaseUrl || roomApi.apiBaseUrl;
+      if (!roomId) {
+        return;
+      }
+
+      try {
+        await joinRoomById(roomId, apiBaseUrl);
+      } catch {
+        // The status label already reflects the error.
+      }
     });
   }
 
@@ -111,18 +137,8 @@ export function mountPage(context) {
     statusEl.style.color = "";
 
     try {
-      const snapshot = await roomApi.joinRoom(roomId, nickname);
-      activeRoomId = snapshot.roomId;
-      activePlayerId = pickLatestPlayerId(snapshot.players || []);
-      peersCard.hidden = false;
-      actionsCard.hidden = false;
-      renderRoomSnapshot(snapshot);
-      statusEl.textContent = `Joined room ${snapshot.roomId}.`;
-      startPollingRoom();
-      startHeartbeat();
+      await joinRoomById(roomId, apiBaseUrl);
     } catch (err) {
-      statusEl.textContent = `Error: ${err.message}`;
-      statusEl.style.color = "#b91c1c";
       joinBtn.disabled = false;
     }
   });
@@ -138,10 +154,119 @@ export function mountPage(context) {
   return {
     async dispose() {
       stopTimers();
+      stopWaitingRoomsPolling();
       stopScanner();
       unsubs.forEach(u => u?.());
     }
   };
+
+  async function joinRoomById(roomId, apiBaseUrl) {
+    try {
+      roomApi.setApiBaseUrl(apiBaseUrl);
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
+      throw err;
+    }
+
+    setJoinUiBusy(true);
+    statusEl.textContent = "Joining room…";
+    statusEl.style.color = "";
+
+    try {
+      const snapshot = await roomApi.joinRoom(roomId, nickname);
+      handleJoinedRoom(snapshot);
+      return snapshot;
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
+      setJoinUiBusy(false);
+      throw err;
+    }
+  }
+
+  function handleJoinedRoom(snapshot) {
+    activeRoomId = snapshot.roomId;
+    activePlayerId = pickLatestPlayerId(snapshot.players || []);
+    peersCard.hidden = false;
+    actionsCard.hidden = false;
+    activeRoomsCard.hidden = true;
+    stopWaitingRoomsPolling();
+    renderRoomSnapshot(snapshot);
+    statusEl.textContent = `Joined room ${snapshot.roomId}.`;
+    startPollingRoom();
+    startHeartbeat();
+  }
+
+  function setJoinUiBusy(isBusy) {
+    joinBtn.disabled = isBusy;
+    if (waitingRoomListEl) {
+      waitingRoomListEl.querySelectorAll("button[data-room-id]").forEach((button) => {
+        button.disabled = isBusy;
+      });
+    }
+  }
+
+  function renderWaitingRooms(rooms) {
+    if (!waitingRoomCountEl || !waitingRoomsStatusEl || !waitingRoomListEl) {
+      return;
+    }
+
+    waitingRoomCountEl.textContent = `(${rooms.length})`;
+
+    if (rooms.length === 0) {
+      waitingRoomsStatusEl.textContent = "No rooms are waiting to start right now.";
+      waitingRoomListEl.innerHTML = '<li class="active-room-item active-room-item--empty">No waiting rooms available.</li>';
+      return;
+    }
+
+    waitingRoomsStatusEl.textContent = "Select a room to join immediately, or paste a join code below.";
+    waitingRoomListEl.innerHTML = rooms.map((room) => {
+      const hostName = room.hostName || "Host";
+      const playerCount = Array.isArray(room.players) ? room.players.length : 0;
+      const updated = formatUpdatedLabel(room.updatedUtc);
+      return `
+        <li class="active-room-item">
+          <div class="active-room-copy">
+            <strong>${escHtml(hostName)}</strong>
+            <span>Room ${escHtml(room.roomId)} · ${playerCount} player${playerCount === 1 ? "" : "s"}</span>
+            <span>${escHtml(updated)}</span>
+          </div>
+          <button class="primary-btn active-room-join-btn" type="button" data-room-id="${escHtml(room.roomId)}" data-api-base-url="${escHtml(roomApi.apiBaseUrl)}">Join</button>
+        </li>
+      `;
+    }).join("");
+  }
+
+  async function refreshWaitingRooms() {
+    try {
+      const rooms = await roomApi.listWaitingToStartRooms();
+      renderWaitingRooms(Array.isArray(rooms) ? rooms : []);
+    } catch (err) {
+      if (waitingRoomsStatusEl) {
+        waitingRoomsStatusEl.textContent = `Unable to load waiting rooms: ${err.message}`;
+      }
+      if (waitingRoomListEl) {
+        waitingRoomListEl.innerHTML = '<li class="active-room-item active-room-item--empty">Waiting rooms are unavailable right now.</li>';
+      }
+      if (waitingRoomCountEl) {
+        waitingRoomCountEl.textContent = "(0)";
+      }
+    }
+  }
+
+  function startWaitingRoomsPolling() {
+    stopWaitingRoomsPolling();
+    refreshWaitingRooms();
+    waitingRoomsPollTimer = window.setInterval(refreshWaitingRooms, POLL_INTERVAL_MS);
+  }
+
+  function stopWaitingRoomsPolling() {
+    if (waitingRoomsPollTimer) {
+      window.clearInterval(waitingRoomsPollTimer);
+      waitingRoomsPollTimer = null;
+    }
+  }
 
   async function startScanner() {
     if (!supportsQrScanning()) {
@@ -268,7 +393,7 @@ function renderRoomSnapshot(snapshot) {
     return;
   }
 
-  statusEl.textContent = `Room ${snapshot.roomId} is ${snapshot.status || "waiting"} · state v${snapshot.stateVersion || 0}`;
+    statusEl.textContent = `Room ${snapshot.roomId} is ${snapshot.status || "waiting to start"} · state v${snapshot.stateVersion || 0}`;
   statusEl.style.color = "";
 }
 
@@ -331,6 +456,15 @@ function stopTimers() {
   stopHeartbeat();
 }
 
+  function formatUpdatedLabel(updatedUtc) {
+    const parsed = Date.parse(updatedUtc || "");
+    if (Number.isNaN(parsed)) {
+      return "Updated recently";
+    }
+
+    return `Updated ${new Date(parsed).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+  }
+
 function pickLatestPlayerId(players) {
   for (let index = players.length - 1; index >= 0; index -= 1) {
     if (!players[index]?.isHost) {
@@ -347,3 +481,5 @@ function escHtml(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
+  startWaitingRoomsPolling();

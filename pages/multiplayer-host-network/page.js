@@ -110,7 +110,20 @@ export function mountPage(context) {
   // ── proceed ───────────────────────────────────────────────────────────────
 
   goSettingsBtn.addEventListener("click", () => {
-    context.setRoute("multiplayer-host-game-settings");
+    if (!activeRoomId) {
+      context.setRoute("multiplayer-host-game-settings");
+      return;
+    }
+
+    statusEl.textContent = "Starting game…";
+    statusEl.style.color = "";
+    roomApi.startRoom(activeRoomId).then((snapshot) => {
+      renderRoomSnapshot(snapshot);
+      context.setRoute("multiplayer-host-game-settings");
+    }).catch((err) => {
+      statusEl.textContent = `Error: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
+    });
   });
 
   // ── dispose ───────────────────────────────────────────────────────────────
@@ -127,7 +140,7 @@ export function mountPage(context) {
       return;
     }
 
-    statusEl.textContent = `Room ${snapshot.roomId} is ${snapshot.status || "waiting"} · state v${snapshot.stateVersion || 0}`;
+    statusEl.textContent = `Room ${snapshot.roomId} is ${snapshot.status || "waiting to start"} · state v${snapshot.stateVersion || 0}`;
     statusEl.style.color = "";
   }
 
