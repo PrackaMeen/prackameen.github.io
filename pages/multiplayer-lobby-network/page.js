@@ -103,6 +103,10 @@ export function mountPage(context) {
     }).join("");
   }
 
+  function renderPeer(peers) {
+    renderPeers(peers);
+  }
+
   // ── join ──────────────────────────────────────────────────────────────────
 
   joinForm.addEventListener("submit", async (e) => {
