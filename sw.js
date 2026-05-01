@@ -5,7 +5,7 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./app.js?v=1.0.80",
+  "./app.js?v=1.0.91",
   "./player-preferences.js",
   "./pages/menu/index.html",
   "./pages/menu/styles.css",
