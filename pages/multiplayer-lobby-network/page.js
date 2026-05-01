@@ -1,7 +1,9 @@
-import { SessionManager } from "../../session/SessionManager.js";
+import { RoomApiClient, loadStoredApiBaseUrl, parseRoomJoinCode } from "../../session/RoomApiClient.js";
 import { loadPlayerPreferences } from "../../player-preferences.js";
 
-const SIGNALING_URL_KEY = "game-signaling-server-url";
+const DEFAULT_API_BASE_URL = "https://prackameen-game-d4gqengkdwggbgcd.westeurope-01.azurewebsites.net/api";
+const HEARTBEAT_INTERVAL_MS = 15_000;
+const POLL_INTERVAL_MS = 4_000;
 
 export function mountPage(context) {
   context.setTitle("Multiplayer / Network Join");
@@ -19,16 +21,21 @@ export function mountPage(context) {
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
   const actionsCard = document.getElementById("actionsCard");
-  const goChatBtn = document.getElementById("goToChatBtn");
   const goSettingsBtn = document.getElementById("goToSettingsBtn");
 
   const prefs = loadPlayerPreferences();
   const nickname = prefs.nickname || "Player";
-  const mgr = new SessionManager();
+  const roomApi = new RoomApiClient(loadStoredApiBaseUrl() || DEFAULT_API_BASE_URL);
   const unsubs = [];
   let scanStream = null;
   let scanFrameHandle = null;
   let scanDetector = null;
+  let pollTimer = null;
+  let heartbeatTimer = null;
+  let activeRoomId = "";
+  let activePlayerId = "";
+
+  document.getElementById("goToChatBtn").hidden = true;
 
   // ── auto-fill from QR code URL param ──────────────────────────────────────
 
@@ -56,9 +63,7 @@ export function mountPage(context) {
 
   function renderPeers(peers) {
     peerCountEl.textContent = `(${peers.length})`;
-    const hasEnough = peers.length >= 2;
-    goChatBtn.disabled = !hasEnough;
-    goSettingsBtn.disabled = !hasEnough;
+    goSettingsBtn.disabled = peers.length < 2;
 
     if (peers.length === 0) {
       peerListEl.innerHTML = '<li class="peer-item peer-item--empty">No peers yet.</li>';
@@ -81,73 +86,51 @@ export function mountPage(context) {
     const raw = joinCodeInputEl.value.trim();
     if (!raw) return;
 
-    let sessionId, signalingUrls;
+    let roomId;
+    let apiBaseUrl = "";
     try {
-      const parsed = parseJoinPayload(raw);
-      sessionId = parsed.s;
-      signalingUrls = normalizeSignalingUrls(parsed);
-      if (!sessionId || signalingUrls.length === 0) throw new Error("incomplete");
+      const parsed = parseRoomJoinCode(raw);
+      roomId = parsed.roomId;
+      apiBaseUrl = parsed.apiBaseUrl || roomApi.apiBaseUrl;
+      if (!roomId) throw new Error("incomplete");
     } catch {
       statusEl.textContent = "Invalid join code. Please check you copied it correctly.";
       statusEl.style.color = "#b91c1c";
       return;
     }
 
-    // Save first candidate for next time
-    localStorage.setItem(SIGNALING_URL_KEY, signalingUrls[0]);
-
-    joinBtn.disabled = true;
-    statusEl.textContent = "Connecting to signaling server…";
-    statusEl.style.color = "";
-
-    mgr.onSessionReady(({ sessionId: sid }) => {
-      statusEl.textContent = `Connected to session.`;
-      peersCard.hidden = false;
-      actionsCard.hidden = false;
-      renderPeers(mgr.peers.getAll());
-    });
-
-    unsubs.push(mgr.peers.onChange(renderPeers));
-
-    mgr.onDisconnected(() => {
-      statusEl.textContent = "Disconnected from session.";
-    });
-
-    let lastError = null;
-    for (let i = 0; i < signalingUrls.length; i += 1) {
-      const signalingUrl = signalingUrls[i];
-      statusEl.textContent = `Connecting to signaling server (${i + 1}/${signalingUrls.length})…`;
-      try {
-        await mgr.join({ sessionId, nickname, transportType: "webrtc", signalingUrl });
-        localStorage.setItem(SIGNALING_URL_KEY, signalingUrl);
-        return;
-      } catch (err) {
-        lastError = err;
-      }
+    try {
+      roomApi.setApiBaseUrl(apiBaseUrl);
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
+      return;
     }
 
-    const triedHosts = signalingUrls.map((url) => {
-      try {
-        return new URL(url).host;
-      } catch {
-        return url;
-      }
-    }).join(", ");
+    joinBtn.disabled = true;
+    statusEl.textContent = "Joining room…";
+    statusEl.style.color = "";
 
-    statusEl.textContent = `Error: ${lastError?.message || "Unable to connect using provided signaling options."} Tried: ${triedHosts}`;
-    statusEl.style.color = "#b91c1c";
-    joinBtn.disabled = false;
+    try {
+      const snapshot = await roomApi.joinRoom(roomId, nickname);
+      activeRoomId = snapshot.roomId;
+      activePlayerId = pickLatestPlayerId(snapshot.players || []);
+      peersCard.hidden = false;
+      actionsCard.hidden = false;
+      renderRoomSnapshot(snapshot);
+      statusEl.textContent = `Joined room ${snapshot.roomId}.`;
+      startPollingRoom();
+      startHeartbeat();
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
+      joinBtn.disabled = false;
+    }
   });
 
   // ── proceed ───────────────────────────────────────────────────────────────
 
-  goChatBtn.addEventListener("click", () => {
-    window.__GAME_MULTIPLAYER_SESSION__ = mgr;
-    context.setRoute("multiplayer-chat");
-  });
-
   goSettingsBtn.addEventListener("click", () => {
-    window.__GAME_MULTIPLAYER_SESSION__ = mgr;
     context.setRoute("multiplayer-lobby-joined-game-settings");
   });
 
@@ -155,9 +138,9 @@ export function mountPage(context) {
 
   return {
     async dispose() {
+      stopTimers();
       stopScanner();
       unsubs.forEach(u => u?.());
-      // mgr.leave() intentionally not called — session continues when navigating forward
     }
   };
 
@@ -269,8 +252,8 @@ function extractJoinCode(scannedValue) {
   }
 
   try {
-    const parsed = parseJoinPayload(raw);
-    if (parsed?.s && parsed?.u) {
+    const parsed = parseRoomJoinCode(raw);
+    if (parsed?.roomId) {
       return raw;
     }
   } catch {
@@ -280,50 +263,83 @@ function extractJoinCode(scannedValue) {
   return null;
 }
 
-function parseJoinPayload(rawJoinCode) {
-  const normalized = String(rawJoinCode || "").trim();
-  const payload = normalized.startsWith("GAMEJOIN:")
-    ? normalized.slice("GAMEJOIN:".length).trim()
-    : normalized;
-
-  return JSON.parse(atob(payload));
-}
-
-function normalizeSignalingUrls(parsedPayload) {
-  const AZURE_SIGNALING_URL = "wss://prackameen-game-d4gqengkdwggbgcd.westeurope-01.azurewebsites.net/multiplayer/signaling";
-  const LOCAL_SIGNALING_URL = "ws://localhost:5000/multiplayer/signaling";
-  const list = [];
-
-  // Always prefer Azure, then join code, then local
-  list.push(AZURE_SIGNALING_URL);
-
-  if (parsedPayload && typeof parsedPayload.u === "string") {
-    list.push(parsedPayload.u);
+function renderRoomSnapshot(snapshot) {
+  renderPeers(snapshot?.players || []);
+  if (!snapshot) {
+    return;
   }
 
-  if (Array.isArray(parsedPayload?.us)) {
-    for (const url of parsedPayload.us) {
-      if (typeof url === "string") {
-        list.push(url);
-      }
+  statusEl.textContent = `Room ${snapshot.roomId} is ${snapshot.status || "waiting"} · state v${snapshot.stateVersion || 0}`;
+  statusEl.style.color = "";
+}
+
+function startPollingRoom() {
+  stopPollingRoom();
+  if (!activeRoomId) {
+    return;
+  }
+
+  const refreshRoom = async () => {
+    try {
+      const snapshot = await roomApi.getRoom(activeRoomId);
+      renderRoomSnapshot(snapshot);
+    } catch (err) {
+      statusEl.textContent = `Room refresh failed: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
+    }
+  };
+
+  refreshRoom();
+  pollTimer = window.setInterval(refreshRoom, POLL_INTERVAL_MS);
+}
+
+function stopPollingRoom() {
+  if (pollTimer) {
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+function startHeartbeat() {
+  stopHeartbeat();
+  if (!activeRoomId || !activePlayerId) {
+    return;
+  }
+
+  const sendHeartbeat = async () => {
+    try {
+      const snapshot = await roomApi.heartbeat(activeRoomId, activePlayerId);
+      renderRoomSnapshot(snapshot);
+    } catch (err) {
+      statusEl.textContent = `Room heartbeat failed: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
+    }
+  };
+
+  sendHeartbeat();
+  heartbeatTimer = window.setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) {
+    window.clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+
+function stopTimers() {
+  stopPollingRoom();
+  stopHeartbeat();
+}
+
+function pickLatestPlayerId(players) {
+  for (let index = players.length - 1; index >= 0; index -= 1) {
+    if (!players[index]?.isHost) {
+      return players[index].playerId || "";
     }
   }
 
-  list.push(LOCAL_SIGNALING_URL);
-
-  return dedupe(list.map((url) => String(url).trim()).filter(Boolean));
-}
-
-function dedupe(items) {
-  const seen = new Set();
-  const result = [];
-  for (const item of items) {
-    if (!seen.has(item)) {
-      seen.add(item);
-      result.push(item);
-    }
-  }
-  return result;
+  return "";
 }
 
 function escHtml(str) {
