@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.57",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Host via Network now focuses on room sharing",
+      "businessSummary": "The Host via Network page now starts with a simple create-room flow and, once a room is live, shows only the connected users list and the QR code for joining. This makes the host screen easier to scan on phones and tablets during multiplayer setup.",
+      "highlights": [
+        "Removed the manual backend API input from the host flow.",
+        "After room creation, the host view now keeps the connected users list above the QR code.",
+        "PWA version metadata was bumped so the streamlined host layout replaces cached copies."
+      ]
+    },
+    {
       "version": "1.0.56",
       "commit": "3660ec6",
       "date": "2026-05-01",

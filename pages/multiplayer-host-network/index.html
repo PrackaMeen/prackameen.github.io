@@ -2,46 +2,19 @@
   <section class="card">
     <p class="kicker">Multiplayer / Network</p>
     <h1>Host via Network</h1>
-    <p id="hostStatus" class="status-text">Configure the Signaling Function API base, then create your room.</p>
-  </section>
-
-  <section class="card">
-    <h2>Backend API</h2>
-    <p class="hint-text">
-      Enter the REST base URL for the Signaling Function backend.<br>
-      For <strong>local development</strong>: use <code>http://localhost:7071/api</code>.<br>
-      For <strong>deployment</strong>: use the published Azure Functions URL ending in <code>/api</code>.
-    </p>
-    <div class="url-row">
-      <input type="text" id="apiBaseUrl" class="url-input"
-             placeholder="https://your-function-app.azurewebsites.net/api"
-             autocomplete="off" spellcheck="false" />
-      <button id="startBtn" class="primary-btn" type="button">Create Room</button>
-    </div>
-  </section>
-
-  <section class="card" id="joinCodeCard" hidden>
-    <h2>Join Code</h2>
-    <p class="hint-text">Share this code with every player who wants to join.</p>
-    <textarea id="joinCode" class="join-code-display" readonly rows="3"></textarea>
-    <button id="copyJoinCodeBtn" class="copy-btn" type="button">Copy Join Code</button>
-  </section>
-
-  <section class="card" id="qrCodeCard" hidden>
-    <h2>QR Code</h2>
-    <p class="hint-text">Scan this from the Join page scanner in the G.A.M.E PWA.</p>
-    <div id="qrCodeContainer" class="qr-code-container"></div>
+    <p id="hostStatus" class="status-text">Create a room to open the connected users list and QR code.</p>
+    <button id="startBtn" class="primary-btn" type="button">Create Room</button>
   </section>
 
   <section class="card" id="peersCard" hidden>
-    <h2>Connected Peers <span id="peerCount" class="peer-count">(0)</span></h2>
-    <ul id="peerList" class="peer-list" aria-label="Connected peers">
+    <h2>Connected Users <span id="peerCount" class="peer-count">(0)</span></h2>
+    <ul id="peerList" class="peer-list" aria-label="Connected users">
       <li class="peer-item peer-item--empty">Waiting for players…</li>
     </ul>
   </section>
 
-  <section class="card actions-card" id="actionsCard" hidden>
-    <button id="goToChatBtn" class="primary-btn" type="button" disabled>Proceed to Chat</button>
-    <button id="goToSettingsBtn" class="primary-btn primary-btn--secondary" type="button" disabled>Proceed to Game Settings</button>
+  <section class="card" id="qrCodeCard" hidden>
+    <h2>QR Code</h2>
+    <div id="qrCodeContainer" class="qr-code-container"></div>
   </section>
 </main>
