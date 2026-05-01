@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.61",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join via Network now scans and joins directly",
+      "businessSummary": "The Join via Network page now focuses on QR scanning and direct room join actions. Successful scans join the room immediately, and the old join-code input has been removed to keep the flow simpler on mobile.",
+      "highlights": [
+        "Removed the pasted join-code field from the Join via Network page.",
+        "QR scans now trigger the join request directly using the parsed room payload.",
+        "PWA version metadata was bumped so the streamlined join flow replaces cached copies."
+      ]
+    },
+    {
       "version": "1.0.60",
       "commit": "pending",
       "date": "2026-05-01",

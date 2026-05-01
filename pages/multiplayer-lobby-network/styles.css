@@ -11,27 +11,6 @@
   line-height: 1.5;
 }
 
-.join-code-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--color-border, #cbd5e1);
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-family: monospace;
-  background: var(--color-surface, #fff);
-  color: var(--color-text, #1e293b);
-  resize: vertical;
-  word-break: break-all;
-  margin-bottom: 0.6rem;
-  display: block;
-}
-
-.join-code-input:focus {
-  outline: 2px solid #2563eb;
-  outline-offset: 1px;
-}
-
 .active-room-list {
   list-style: none;
   margin: 0;
