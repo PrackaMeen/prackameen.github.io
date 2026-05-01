@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.79",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now validates moves with .NET WebAssembly",
+      "businessSummary": "The game board now loads a browser-hosted .NET runtime so move validation runs in WebAssembly while the existing HTML, CSS, and JavaScript board stays in place. This keeps the UI responsive and moves the rule checks into the shared game engine layer.",
+      "highlights": [
+        "The game-board page now loads the GameWasm bridge when it is available.",
+        "Move validation runs through the shared .NET game engine in the browser.",
+        "The existing JS board remains the rendering layer and falls back to the backend if the WASM runtime is unavailable."
+      ]
+    },
+    {
       "version": "1.0.78",
       "commit": "pending",
       "date": "2026-05-01",
