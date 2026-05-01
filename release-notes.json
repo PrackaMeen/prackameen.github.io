@@ -1,6 +1,32 @@
 {
   "items": [
     {
+      "version": "1.0.40",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Room statuses now distinguish lobby, play, and idle states",
+      "businessSummary": "Network rooms now track whether they are waiting to start, active, or inactive. The Join via Network screen only shows rooms that are still waiting in the lobby, which makes it easier to connect to sessions that are actually ready to accept players.",
+      "highlights": [
+        "Rooms now resolve to waiting to start, active, or inactive based on lobby activity and room start state.",
+        "Join via Network only shows rooms that are still waiting to start.",
+        "Host via Network can mark a room active when starting the game flow.",
+        "PWA app version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
+      "version": "1.0.39",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Network join now shows active hosted rooms",
+      "businessSummary": "Join via Network now surfaces only rooms with an active host heartbeat, so players can connect straight from a live room list instead of guessing or pasting a join code first.",
+      "highlights": [
+        "The Signaling Function now exposes a dedicated active-room list endpoint.",
+        "Join via Network shows active rooms with host name, room ID, and player count.",
+        "Players can join a live room directly from the list or keep using the join code field.",
+        "PWA app version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
       "version": "1.0.38",
       "commit": "pending",
       "date": "2026-05-01",

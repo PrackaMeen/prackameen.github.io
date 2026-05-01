@@ -31,6 +31,14 @@ export class RoomApiClient {
     return await this._request("POST", "/rooms", { hostName });
   }
 
+  async listWaitingToStartRooms() {
+    return await this._request("GET", "/rooms/waiting-to-start");
+  }
+
+  async startRoom(roomId) {
+    return await this._request("POST", `/rooms/${encodeURIComponent(roomId)}/start`);
+  }
+
   async getRoom(roomId) {
     return await this._request("GET", `/rooms/${encodeURIComponent(roomId)}`);
   }
