@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.50",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Network player lists now mark the local client as You",
+      "businessSummary": "The network host and join screens now label the current client's own player row as You, so the same room is shown consistently from each device's perspective.",
+      "highlights": [
+        "The local player row is now identified by the current client player ID.",
+        "Each device shows its own player as You while keeping host/peer role labels.",
+        "PWA version metadata was bumped so the updated peer list rendering can replace cached copies."
+      ]
+    },
+    {
       "version": "1.0.49",
       "commit": "pending",
       "date": "2026-05-01",

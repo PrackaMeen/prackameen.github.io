@@ -33,7 +33,7 @@ export function mountPage(context) {
 
   // ── peer rendering ────────────────────────────────────────────────────────
 
-  function renderPeers(peers) {
+  function renderPeers(peers, localPlayerId = "") {
     peerCountEl.textContent = `(${peers.length})`;
     goSettingsBtn.disabled = peers.length < 2;
 
@@ -44,7 +44,8 @@ export function mountPage(context) {
     peerListEl.innerHTML = peers.map((p) => {
       const cls = p.isHost ? "peer-badge peer-badge--host" : "peer-badge";
       const peerIdentifier = p.peerId || p.playerId || p.id || "";
-      const displayName = p.nickname || p.playerName || (peerIdentifier ? peerIdentifier.slice(0, 8) : "Unknown");
+      const isSelf = !!localPlayerId && peerIdentifier === localPlayerId;
+      const displayName = isSelf ? "You" : p.nickname || p.playerName || (peerIdentifier ? peerIdentifier.slice(0, 8) : "Unknown");
       return `<li class="peer-item">
         <span>${escHtml(displayName)}</span>
         <span class="${cls}">${p.isHost ? "Host" : "Peer"}</span>
@@ -135,7 +136,7 @@ export function mountPage(context) {
   };
 
   function renderRoomSnapshot(snapshot) {
-    renderPeers(snapshot?.players || []);
+    renderPeers(snapshot?.players || [], activePlayerId);
     if (!snapshot) {
       return;
     }
