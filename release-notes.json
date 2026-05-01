@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.49",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join page room polling stays in scope",
+      "businessSummary": "The Join via Network page now keeps room polling and heartbeat helpers inside the page lifecycle, which prevents active-room join errors caused by undefined page state after refresh.",
+      "highlights": [
+        "Moved room polling and heartbeat helpers into the Join via Network page scope.",
+        "Prevents activeRoomId and roomApi ReferenceErrors during join and refresh.",
+        "PWA version metadata was bumped so cached copies can be replaced."
+      ]
+    },
+    {
       "version": "1.0.48",
       "commit": "pending",
       "date": "2026-05-01",
