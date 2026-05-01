@@ -1,10 +1,13 @@
-const DEFAULT_API_BASE_URL = "https://prackameen-game-d4gqengkdwggbgcd.westeurope-01.azurewebsites.net/api";
-const API_BASE_STORAGE_KEY = "game-room-api-base-url";
+import {
+  API_BASE_STORAGE_KEY,
+  ROOM_JOIN_CODE_PREFIX,
+  getDefaultApiBaseUrl
+} from "./ApiConfig.js";
 
 export class RoomApiClient {
   constructor(apiBaseUrl = null) {
     this._apiBaseUrl = normalizeApiBaseUrl(
-      apiBaseUrl || loadStoredApiBaseUrl() || DEFAULT_API_BASE_URL
+      apiBaseUrl || loadStoredApiBaseUrl() || getDefaultApiBaseUrl()
     );
   }
 
@@ -73,8 +76,8 @@ export function parseRoomJoinCode(rawJoinCode) {
     throw new Error("Join code is required.");
   }
 
-  const payload = normalized.startsWith("GAMEJOIN:")
-    ? normalized.slice("GAMEJOIN:".length).trim()
+  const payload = normalized.startsWith(ROOM_JOIN_CODE_PREFIX)
+    ? normalized.slice(ROOM_JOIN_CODE_PREFIX.length).trim()
     : normalized;
 
   let decoded = null;
@@ -119,6 +122,10 @@ export function loadStoredApiBaseUrl() {
   } catch {
     return "";
   }
+}
+
+export function createDefaultRoomApiClient() {
+  return new RoomApiClient(loadStoredApiBaseUrl() || getDefaultApiBaseUrl());
 }
 
 function readJsonResponse(response) {

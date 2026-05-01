@@ -1,9 +1,6 @@
-import { RoomApiClient, loadStoredApiBaseUrl, parseRoomJoinCode } from "../../session/RoomApiClient.js";
+import { HEARTBEAT_INTERVAL_MS, POLL_INTERVAL_MS } from "../../session/ApiConfig.js";
+import { createDefaultRoomApiClient, parseRoomJoinCode } from "../../session/RoomApiClient.js";
 import { loadPlayerPreferences } from "../../player-preferences.js";
-
-const DEFAULT_API_BASE_URL = "https://prackameen-game-d4gqengkdwggbgcd.westeurope-01.azurewebsites.net/api";
-const HEARTBEAT_INTERVAL_MS = 15_000;
-const POLL_INTERVAL_MS = 4_000;
 
 export function mountPage(context) {
   context.setTitle("Multiplayer / Network Join");
@@ -25,7 +22,7 @@ export function mountPage(context) {
 
   const prefs = loadPlayerPreferences();
   const nickname = prefs.nickname || "Player";
-  const roomApi = new RoomApiClient(loadStoredApiBaseUrl() || DEFAULT_API_BASE_URL);
+  const roomApi = createDefaultRoomApiClient();
   const unsubs = [];
   let scanStream = null;
   let scanFrameHandle = null;
