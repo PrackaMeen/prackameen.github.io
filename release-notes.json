@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.42",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join room polling now stops when you leave the page",
+      "businessSummary": "The Join via Network room list now shuts itself off as soon as you navigate away from the page, preventing unnecessary backend polling after you return to Multiplayer or another screen.",
+      "highlights": [
+        "Waiting-room polling now stops automatically when the Join via Network route is no longer active.",
+        "Leaving the page no longer keeps the room list endpoint hot in the background.",
+        "PWA version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
       "version": "1.0.41",
       "commit": "pending",
       "date": "2026-05-01",
