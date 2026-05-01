@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.46",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Swagger is now generated from live functions",
+      "businessSummary": "The Signaling Function OpenAPI document is now built from the actual HTTP-triggered functions, so newly added endpoints appear automatically instead of relying on a hand-maintained route list.",
+      "highlights": [
+        "Swagger/OpenAPI now discovers HTTP-triggered functions at runtime.",
+        "New room endpoints are included without manual document edits.",
+        "PWA version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
       "version": "1.0.45",
       "commit": "pending",
       "date": "2026-05-01",
