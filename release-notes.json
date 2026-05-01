@@ -1,6 +1,19 @@
 {
   "items": [
     {
+      "version": "1.0.37",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Multiplayer page cleanup and room API passthrough",
+      "businessSummary": "The Multiplayer page now focuses on the network flow, and GitHub Pages now forwards room API calls to the real Signaling Function backend instead of returning a mock endpoint error.",
+      "highlights": [
+        "Removed the same-device Lobby and Host section from Multiplayer.",
+        "Room API requests from prackameen.github.io now pass through to the backend.",
+        "Create Room on GitHub Pages no longer returns Unknown mock endpoint.",
+        "App version metadata was bumped to keep the PWA cache aligned."
+      ]
+    },
+    {
       "version": "1.0.36",
       "commit": "pending",
       "date": "2026-05-01",
