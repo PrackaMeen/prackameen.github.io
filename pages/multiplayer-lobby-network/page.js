@@ -68,8 +68,10 @@ export function mountPage(context) {
     }
     peerListEl.innerHTML = peers.map((p) => {
       const cls = p.isHost ? "peer-badge peer-badge--host" : "peer-badge";
+      const peerIdentifier = p.peerId || p.playerId || p.id || "";
+      const displayName = p.nickname || p.playerName || (peerIdentifier ? peerIdentifier.slice(0, 8) : "Unknown");
       return `<li class="peer-item">
-        <span>${escHtml(p.nickname || p.peerId.slice(0, 8))}</span>
+        <span>${escHtml(displayName)}</span>
         <span class="${cls}">${p.isHost ? "Host" : "Peer"}</span>
       </li>`;
     }).join("");

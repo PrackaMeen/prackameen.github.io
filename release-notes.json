@@ -1,6 +1,19 @@
 {
   "items": [
     {
+      "version": "1.0.38",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Broadened REST CORS handling for browser preflight",
+      "businessSummary": "The Signaling Function now responds to browser preflight with permissive CORS headers so the GitHub Pages PWA and local development host can call the room API without being blocked by origin checks.",
+      "highlights": [
+        "OPTIONS preflight responses now always include the necessary CORS headers.",
+        "Room API responses are returned with shared allow-origin headers.",
+        "Supports both localhost development and the GitHub Pages PWA origin.",
+        "PWA version metadata was bumped to keep cache and release notes aligned."
+      ]
+    },
+    {
       "version": "1.0.37",
       "commit": "pending",
       "date": "2026-05-01",
