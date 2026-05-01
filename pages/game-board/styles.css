@@ -5,7 +5,8 @@ body[data-page="game-board"] {
 }
 
 .page-shell {
-  width: 100vw;
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -14,10 +15,11 @@ body[data-page="game-board"] {
   gap: 0;
   padding: 0;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .game-board-hud {
-  width: min(100%, 100vw);
+  width: 100%;
   margin: 0;
   padding: 0.75rem 1rem 0.85rem;
   display: flex;
@@ -41,7 +43,7 @@ body[data-page="game-board"] {
 }
 
 .game-board-action-bar {
-  width: min(100%, 100vw);
+  width: 100%;
   margin: 0;
   padding: 0.85rem 1rem max(0.85rem, env(safe-area-inset-bottom));
   display: flex;
