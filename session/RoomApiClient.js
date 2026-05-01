@@ -59,6 +59,10 @@ export class RoomApiClient {
     return await this._request("POST", `/rooms/${encodeURIComponent(roomId)}/heartbeat`, { playerId });
   }
 
+  async removePlayer(roomId, playerId) {
+    return await this._request("POST", `/rooms/${encodeURIComponent(roomId)}/players/${encodeURIComponent(playerId)}/remove`);
+  }
+
   async _request(method, path, body) {
     const response = await fetch(`${this._apiBaseUrl}${path}`, {
       method,

@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.62",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Joined players now leave cleanly and hosts can expel peers",
+      "businessSummary": "The Join via Network page now removes the player from the room when they navigate away, and the Host via Network page can expel connected players directly from the peer list. Joined rooms also collapse to the connected peers view instead of keeping the scan flow visible.",
+      "highlights": [
+        "Leaving Join via Network now removes that player from the room.",
+        "Host via Network now includes an Expel action for connected peers.",
+        "The scan/join UI hides after a successful join so the peer list becomes the focus."
+      ]
+    },
+    {
       "version": "1.0.61",
       "commit": "pending",
       "date": "2026-05-01",
