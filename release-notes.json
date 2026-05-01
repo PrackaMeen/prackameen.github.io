@@ -1,6 +1,54 @@
 {
   "items": [
     {
+      "version": "1.0.66",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Build counter reset now follows the base version",
+      "businessSummary": "The backend API version now uses a compact three-digit build segment. When major, minor, or patch changes, the build counter resets automatically so the visible API version stays aligned with the new base release.",
+      "highlights": [
+        "Build versions now use a 3-digit numeric build segment.",
+        "Changing major, minor, or patch resets the build counter to 001.",
+        "Swagger and /api/version continue to show the same numeric version value."
+      ]
+    },
+    {
+      "version": "1.0.65",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "API build numbers are now short and numeric",
+      "businessSummary": "The backend API version still changes on every rebuild, but the build segment is now a short 8-digit numeric value so it stays compact while remaining easy to compare and display.",
+      "highlights": [
+        "Build versions now use an 8-digit numeric build segment.",
+        "Local rebuilds still advance the version immediately without waiting for a commit.",
+        "The Admin and Lab version checks continue to compare the numeric version correctly."
+      ]
+    },
+    {
+      "version": "1.0.64",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "API build numbers now stay short",
+      "businessSummary": "The backend version still updates on every local rebuild, but the build segment is now capped at 8 numeric characters so the version stays compact while remaining easy to compare.",
+      "highlights": [
+        "Build versions now use an 8-digit numeric build segment.",
+        "Local rebuilds still advance the version immediately without waiting for a commit.",
+        "The Admin and Lab version checks continue to compare the numeric version correctly."
+      ]
+    },
+    {
+      "version": "1.0.63",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Backend versioning now tracks 4-part build numbers",
+      "businessSummary": "The Admin and Lab version checks now understand numeric major.minor.patch.build API versions, and the signaling backend now stamps a new numeric build segment on every local or GitHub build run so version changes show up immediately.",
+      "highlights": [
+        "API version strings now compare all numeric segments instead of truncating at three parts.",
+        "Local signaling builds get a fresh numeric build stamp even before commit.",
+        "GitHub Actions builds also receive a new numeric build stamp on every run."
+      ]
+    },
+    {
       "version": "1.0.62",
       "commit": "pending",
       "date": "2026-05-01",

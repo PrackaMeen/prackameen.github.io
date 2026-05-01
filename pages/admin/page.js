@@ -72,21 +72,25 @@ export function mountPage(context) {
       .map((segment) => Number.parseInt(segment, 10));
 
     if (parts.some((part) => Number.isNaN(part))) {
-      return [0, 0, 0];
+      return [0, 0, 0, 0];
     }
 
-    return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
+    return parts.map((part) => part || 0);
   }
 
   function isVersionNewer(currentVersion, candidateVersion) {
     const current = parseVersion(currentVersion);
     const candidate = parseVersion(candidateVersion);
+    const segments = Math.max(current.length, candidate.length);
 
-    for (let i = 0; i < 3; i += 1) {
-      if (candidate[i] > current[i]) {
+    for (let i = 0; i < segments; i += 1) {
+      const currentPart = current[i] || 0;
+      const candidatePart = candidate[i] || 0;
+
+      if (candidatePart > currentPart) {
         return true;
       }
-      if (candidate[i] < current[i]) {
+      if (candidatePart < currentPart) {
         return false;
       }
     }
