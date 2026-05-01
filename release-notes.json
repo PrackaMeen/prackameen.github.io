@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.55",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Multiplayer now assigns temp server names for blank hosts too",
+      "businessSummary": "When the client nickname is blank, the local UI still shows You, and the backend now gives the room a temporary server-generated host name instead of the literal Host label.",
+      "highlights": [
+        "Blank nicknames stay blank in preferences and local UI identity.",
+        "Server-generated temporary host names are used for multiplayer rooms when no nickname is supplied.",
+        "PWA version metadata was bumped so the updated behavior replaces cached copies."
+      ]
+    },
+    {
       "version": "1.0.54",
       "commit": "pending",
       "date": "2026-05-01",
