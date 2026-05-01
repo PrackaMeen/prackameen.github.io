@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.71",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Battlefield tiles now load as layered sprites",
+      "businessSummary": "The single-player game flow now seeds a layered battlefield where terrain tiles render underneath player and monster sprites. The client preloads a shared PNG sprite set for the four core tile types and entity layers so the map can be drawn consistently from API-provided kinds.",
+      "highlights": [
+        "Added a shared sprite catalog for cross-road, direct-road, chamber-2, and chamber-4 tile kinds.",
+        "Terrain now renders as the bottom layer, with players and monsters drawn above it.",
+        "The sprite set is preloaded and versioned with the app shell so new releases replace cached artwork cleanly."
+      ]
+    },
+    {
       "version": "1.0.70",
       "commit": "pending",
       "date": "2026-05-01",

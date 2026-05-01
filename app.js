@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.70";
+const APP_VERSION = "1.0.71";
 const APP_COMMIT_SHORT = "3660ec6";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -154,6 +154,8 @@ const APP_ROOT = document.querySelector("#appRoot");
 const NAV_ROOT = document.querySelector("#navRoot");
 const PAGE_STYLESHEET = document.querySelector("#pageStylesheet");
 
+window.__GAME_VERSIONED_ASSET_URL__ = versionedAssetUrl;
+
 const updateState = {
   swRegistration: null,
   isReloadingForUpdate: false,
@@ -222,6 +224,13 @@ function versionedAssetUrl(assetPath) {
   const url = new URL(assetPath, window.location.href);
   url.searchParams.set("v", APP_BUILD_ID);
   return url.toString();
+}
+
+const GAME_ASSET_ROUTES = new Set(["single-player", "single-player-game"]);
+
+async function preloadGameAssets() {
+  const module = await import(versionedAssetUrl("./lib/game-assets.js"));
+  await module.preloadGameAssets();
 }
 
 function askWorkerBuildInfo(worker) {
@@ -463,6 +472,10 @@ async function loadPage(pageName) {
   const pageMarkup = await htmlResponse.text();
   APP_ROOT.innerHTML = pageMarkup;
   PAGE_STYLESHEET.href = versionedAssetUrl(`${page.basePath}styles.css`);
+
+  if (GAME_ASSET_ROUTES.has(pageName)) {
+    await preloadGameAssets();
+  }
 
   const module = await import(versionedAssetUrl(`${page.basePath}page.js`));
   if (typeof mountedPage?.dispose === "function") {
