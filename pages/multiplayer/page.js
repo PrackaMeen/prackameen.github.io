@@ -16,7 +16,6 @@ export function mountPage(context) {
     ? "Random"
     : prefs.preferredColorId;
 
-  document.getElementById("goChatBtn").addEventListener("click", () => context.setRoute("multiplayer-chat"));
   document.getElementById("goLobbyNetworkBtn").addEventListener("click", () => context.setRoute("multiplayer-lobby-network"));
   document.getElementById("goHostNetworkBtn").addEventListener("click", () => context.setRoute("multiplayer-host-network"));
 

@@ -12,6 +12,11 @@ export function mountPage(context) {
   const peersCard = document.getElementById("peersCard");
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
+  const chatCardEl = document.getElementById("chatCard");
+  const messageLogEl = document.getElementById("messageLog");
+  const chatForm = document.getElementById("chatForm");
+  const chatInput = document.getElementById("chatInput");
+  const chatSendBtn = chatForm.querySelector(".chat-send-btn");
   const peerListClickHandler = async (event) => {
     const button = event.target.closest("button[data-player-id]");
     if (!button || !activeRoomId) {
@@ -44,6 +49,9 @@ export function mountPage(context) {
   let activePlayerId = "";
   let heartbeatTimer = null;
   let pollTimer = null;
+  let chatSubmitHandler = null;
+
+  chatCardEl.hidden = true;
 
   // ── peer rendering ────────────────────────────────────────────────────────
 
@@ -72,6 +80,67 @@ export function mountPage(context) {
     }).join("");
   }
 
+  function renderMessages(messages, localPlayerId = "") {
+    const entries = Array.isArray(messages) ? messages : [];
+    if (entries.length === 0) {
+      messageLogEl.innerHTML = '<li class="message-item message-item--empty">No messages yet.</li>';
+      return;
+    }
+
+    messageLogEl.innerHTML = entries.map((message) => {
+      const isSelf = !!localPlayerId && message.playerId === localPlayerId;
+      const time = formatTime(message.createdUtc);
+      return `
+        <li class="message-item ${isSelf ? "message-item--self" : ""}">
+          <div class="message-item__copy">
+            <span class="message-sender">${escHtml(message.playerName || message.playerId.slice(0, 8))}</span>
+            <span class="message-text">${escHtml(message.text || "")}</span>
+          </div>
+          <span class="message-ts">${escHtml(time)}</span>
+        </li>
+      `;
+    }).join("");
+
+    messageLogEl.scrollTop = messageLogEl.scrollHeight;
+  }
+
+  function setChatEnabled(isEnabled) {
+    chatInput.disabled = false;
+    chatSendBtn.disabled = false;
+  }
+
+  function showChat() {
+    chatCardEl.hidden = false;
+    setChatEnabled(true);
+    window.setTimeout(() => chatInput.focus(), 0);
+  }
+
+  function ensureChatHandler() {
+    if (chatSubmitHandler) {
+      return;
+    }
+
+    chatSubmitHandler = async (event) => {
+      event.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text || !activeRoomId || !activePlayerId) {
+        return;
+      }
+
+      chatInput.value = "";
+
+      try {
+        const snapshot = await roomApi.sendRoomMessage(activeRoomId, activePlayerId, nickname, text);
+        renderRoomSnapshot(snapshot);
+      } catch (err) {
+        statusEl.textContent = `Unable to send message: ${err.message}`;
+        statusEl.style.color = "#b91c1c";
+      }
+    };
+
+    chatForm.addEventListener("submit", chatSubmitHandler);
+  }
+
   // ── start session ─────────────────────────────────────────────────────────
 
   startBtn.addEventListener("click", async () => {
@@ -95,6 +164,8 @@ export function mountPage(context) {
 
       peersCard.hidden = false;
       qrCodeCard.hidden = false;
+      showChat();
+      ensureChatHandler();
       renderRoomSnapshot(snapshot);
       startPollingRoom();
       startHeartbeat();
@@ -113,12 +184,17 @@ export function mountPage(context) {
   return {
     dispose() {
       peerListEl.removeEventListener("click", peerListClickHandler);
+      if (chatSubmitHandler) {
+        chatForm.removeEventListener("submit", chatSubmitHandler);
+        chatSubmitHandler = null;
+      }
       stopTimers();
     }
   };
 
   function renderRoomSnapshot(snapshot) {
     renderPeers(snapshot?.players || [], activePlayerId);
+    renderMessages(snapshot?.messages || [], activePlayerId);
     if (!snapshot) {
       return;
     }
@@ -184,6 +260,15 @@ export function mountPage(context) {
   function stopTimers() {
     stopPollingRoom();
     stopHeartbeat();
+  }
+
+  function formatTime(value) {
+    const parsed = Date.parse(value || "");
+    if (Number.isNaN(parsed)) {
+      return "Just now";
+    }
+
+    return new Date(parsed).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
   function storeLocalPlayerId(roomId, apiBaseUrl, playerId) {

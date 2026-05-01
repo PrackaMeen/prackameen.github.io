@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.0.70",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Network room chat now opens with the room",
+      "businessSummary": "The Host via Network and Join via Network pages now show a room chat panel as soon as a room is created or joined. Messages are stored with the room so members can talk inside the same flow without switching to another page.",
+      "highlights": [
+        "Room chat now appears immediately after a network room is created or joined.",
+        "Messages are saved with the room and reloaded as the room updates.",
+        "The network join page no longer depends on the removed placeholder chat toggle."
+      ]
+    },
+    {
+      "version": "1.0.69",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Session chat now lives inside host and join rooms",
+      "businessSummary": "The multiplayer host and join pages now include the session chat panel directly, so room members can talk without leaving the room. The old session chat launcher was removed from the main Multiplayer page to keep the entry flow focused on choosing how to play.",
+      "highlights": [
+        "Session chat is now visible inside the Host and Join room pages.",
+        "Players can talk while staying in the room flow instead of opening a separate chat screen.",
+        "The Multiplayer landing page no longer exposes the old session chat launcher."
+      ]
+    },
+    {
       "version": "1.0.68",
       "commit": "pending",
       "date": "2026-05-01",

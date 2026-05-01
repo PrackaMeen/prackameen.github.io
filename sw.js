@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.68";
+const APP_VERSION = "1.0.70";
 const APP_COMMIT_SHORT = "3660ec6";
 const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -43,6 +43,7 @@ const APP_SHELL = [
   "./session/PeerRegistry.js",
   "./session/ApiConfig.js",
   "./session/SessionManager.js",
+  "./session/SessionChat.js",
   "./session/RoomApiClient.js",
   "./session/transport/BroadcastChannelTransport.js",
     "./session/SignalingClient.js",
