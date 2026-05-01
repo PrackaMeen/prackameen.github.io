@@ -9,7 +9,9 @@
 html,
 body {
   margin: 0;
+  height: 100dvh;
   min-height: 100dvh;
+  overflow: hidden;
 }
 
 body {
@@ -17,7 +19,6 @@ body {
   flex-direction: column;
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   background: linear-gradient(180deg, #f7f5ef 0%, #f6ead7 100%);
-  overflow: hidden;
 }
 
 .nav-root {

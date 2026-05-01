@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.1.0",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "PWA version bumped for the latest mobile layout build",
+      "businessSummary": "The app version now advances to 1.1.0 so the latest mobile board layout and shell changes ship as a fresh PWA release. This keeps update checks accurate and ensures users receive the newest experience through the normal confirmation flow.",
+      "highlights": [
+        "Moved the app and PWA metadata to version 1.1.0.",
+        "Kept the update flow aligned with the latest shipped shell build.",
+        "Preserved the release-notes history for the current build line."
+      ]
+    },
+    {
+      "version": "1.0.96",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game board now stays fully framed on mobile",
+      "businessSummary": "The mobile game-board view now keeps the board, empty play area, and action bar inside the viewport without introducing page scroll. This makes the play screen feel stable on phones and keeps the confirm controls visible where players expect them.",
+      "highlights": [
+        "Kept the mobile game-board page locked to the visible viewport.",
+        "Added a narrow-screen layout tweak for the board and action buttons.",
+        "Bumped the app version so the updated PWA shell ships as a new build."
+      ]
+    },
+    {
       "version": "1.0.95",
       "commit": "pending",
       "date": "2026-05-01",

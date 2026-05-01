@@ -199,3 +199,27 @@ body[data-page="game-board"] {
     opacity: 1;
   }
 }
+
+@media (max-width: 700px) {
+  .page-shell {
+    justify-content: flex-start;
+  }
+
+  .game-board-stage {
+    padding: 0.25rem 0 max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .game-board-map {
+    max-width: 100%;
+  }
+
+  .game-board-action-bar {
+    padding: 0.75rem 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+    gap: 0.5rem;
+  }
+
+  .game-board-action-btn {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+}
