@@ -42,6 +42,18 @@
     );
   }
 
+  async function readJsonBody(init) {
+    if (!init?.body || typeof init.body !== "string") {
+      return null;
+    }
+
+    try {
+      return JSON.parse(init.body);
+    } catch {
+      return null;
+    }
+  }
+
   function handleRequest(url, init) {
     const requestUrl = new URL(url, window.location.origin);
 
@@ -89,6 +101,22 @@
       return jsonResponse({
         message: event.message,
         time
+      });
+    }
+
+    if (requestUrl.pathname === "/api/session/action" && (init?.method || "GET").toUpperCase() === "POST") {
+      return readJsonBody(init).then((body) => {
+        const targetX = Number.isInteger(body?.targetX) ? body.targetX : null;
+        const targetY = Number.isInteger(body?.targetY) ? body.targetY : null;
+        const now = new Date();
+        const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+        return jsonResponse({
+          message: targetX !== null && targetY !== null
+            ? `Mock move accepted for (${targetX}, ${targetY}).`
+            : "Mock action accepted.",
+          time
+        });
       });
     }
 

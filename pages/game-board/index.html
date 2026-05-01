@@ -1,0 +1,11 @@
+<main class="page-shell">
+  <section class="game-board-hud" aria-live="polite" aria-label="Turn and action controls">
+    <div class="game-board-hud__label">Turn / Action</div>
+    <div id="gameBoardStatus" class="game-board-status">Select your player, then choose a tile.</div>
+    <button id="performActionBtn" class="game-board-action-btn" type="button" disabled>Perform Action</button>
+  </section>
+  <div id="gameBoardStage" class="game-board-stage" aria-label="Map container">
+    <svg id="gameBoardArrowLayer" class="game-board-arrow-layer" aria-hidden="true"></svg>
+    <div id="gameBoard" class="game-board" role="grid" aria-label="Game board"></div>
+  </div>
+</main>
