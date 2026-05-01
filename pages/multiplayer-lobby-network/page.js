@@ -27,6 +27,7 @@ export function mountPage(context) {
   const prefs = loadPlayerPreferences();
   const nickname = prefs.nickname || "Player";
   const roomApi = createDefaultRoomApiClient();
+  const localPlayerIdStorageKeyPrefix = "game-network-local-player-id";
   const unsubs = [];
   let scanStream = null;
   let scanFrameHandle = null;
@@ -183,6 +184,44 @@ export function mountPage(context) {
     return "";
   }
 
+  function resolveLocalPlayerId(snapshot, roomId, apiBaseUrl) {
+    const storedPlayerId = loadStoredLocalPlayerId(roomId, apiBaseUrl);
+    if (storedPlayerId && Array.isArray(snapshot?.players) && snapshot.players.some((player) => player.playerId === storedPlayerId)) {
+      return storedPlayerId;
+    }
+
+    const exactNicknameMatches = (snapshot?.players || []).filter((player) => !player.isHost && player.playerName === nickname);
+    if (exactNicknameMatches.length === 1) {
+      return exactNicknameMatches[0].playerId || "";
+    }
+
+    return pickLatestPlayerId(snapshot?.players || []);
+  }
+
+  function loadStoredLocalPlayerId(roomId, apiBaseUrl) {
+    try {
+      return localStorage.getItem(getLocalPlayerStorageKey(roomId, apiBaseUrl)) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function storeLocalPlayerId(roomId, apiBaseUrl, playerId) {
+    if (!roomId || !apiBaseUrl || !playerId) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(getLocalPlayerStorageKey(roomId, apiBaseUrl), playerId);
+    } catch {
+      // Persistence is best-effort only.
+    }
+  }
+
+  function getLocalPlayerStorageKey(roomId, apiBaseUrl) {
+    return `${localPlayerIdStorageKeyPrefix}:${apiBaseUrl}:${roomId}`;
+  }
+
   function escHtml(str) {
     return String(str)
       .replace(/&/g, "&amp;")
@@ -281,6 +320,8 @@ export function mountPage(context) {
 
     try {
       const snapshot = await roomApi.joinRoom(roomId, nickname);
+      activePlayerId = resolveLocalPlayerId(snapshot, roomId, apiBaseUrl);
+      storeLocalPlayerId(roomId, apiBaseUrl, activePlayerId);
       handleJoinedRoom(snapshot);
       return snapshot;
     } catch (err) {
@@ -293,7 +334,6 @@ export function mountPage(context) {
 
   function handleJoinedRoom(snapshot) {
     activeRoomId = snapshot.roomId;
-    activePlayerId = pickLatestPlayerId(snapshot.players || []);
     peersCard.hidden = false;
     actionsCard.hidden = false;
     activeRoomsCard.hidden = true;

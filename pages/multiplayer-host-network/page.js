@@ -26,6 +26,7 @@ export function mountPage(context) {
 
   const prefs = loadPlayerPreferences();
   const nickname = prefs.nickname || "Host";
+  const localPlayerIdStorageKeyPrefix = "game-network-local-player-id";
   let activeRoomId = "";
   let activePlayerId = "";
   let heartbeatTimer = null;
@@ -78,6 +79,7 @@ export function mountPage(context) {
       const snapshot = await roomApi.createRoom(nickname);
       activeRoomId = snapshot.roomId;
       activePlayerId = snapshot.hostPlayerId;
+      storeLocalPlayerId(snapshot.roomId, roomApi.apiBaseUrl, activePlayerId);
 
       const joinCode = buildRoomJoinCode({ roomId: snapshot.roomId, apiBaseUrl: roomApi.apiBaseUrl });
       joinCodeEl.value = joinCode;
@@ -202,6 +204,22 @@ export function mountPage(context) {
   function stopTimers() {
     stopPollingRoom();
     stopHeartbeat();
+  }
+
+  function storeLocalPlayerId(roomId, apiBaseUrl, playerId) {
+    if (!roomId || !apiBaseUrl || !playerId) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(getLocalPlayerStorageKey(roomId, apiBaseUrl), playerId);
+    } catch {
+      // Persistence is best-effort only.
+    }
+  }
+
+  function getLocalPlayerStorageKey(roomId, apiBaseUrl) {
+    return `${localPlayerIdStorageKeyPrefix}:${apiBaseUrl}:${roomId}`;
   }
 }
 
