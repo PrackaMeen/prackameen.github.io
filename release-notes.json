@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.47",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "API requests bypass the PWA cache",
+      "businessSummary": "Network room and other API requests now skip the service worker cache, which prevents stale empty responses from being reused on mobile after the backend data changes.",
+      "highlights": [
+        "API GET requests now go straight to the network instead of being served from the app cache.",
+        "Room list responses should reflect the live backend state after a refresh.",
+        "PWA version metadata was bumped so the new service worker replaces the old cache."
+      ]
+    },
+    {
       "version": "1.0.46",
       "commit": "pending",
       "date": "2026-05-01",

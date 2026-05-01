@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.46";
+const APP_VERSION = "1.0.47";
 const APP_COMMIT_SHORT = "3660ec6";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -87,6 +87,17 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+
+  if (requestUrl.pathname.startsWith("/api/")) {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" }).catch(() => {
+        return new Response("Offline", { status: 503, statusText: "Offline" });
+      })
+    );
     return;
   }
 
