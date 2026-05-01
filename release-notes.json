@@ -1,6 +1,42 @@
 {
   "items": [
     {
+      "version": "1.0.74",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Tile set demo page added to the menu",
+      "businessSummary": "The app now includes a dedicated tile-set demo page reachable directly from the main Menu. It renders the full tile catalog in orientation order as a visual-only reference so artwork changes can be reviewed quickly without gameplay text or extra UI clutter.",
+      "highlights": [
+        "Added a direct Menu link to the tile-set demo page.",
+        "The demo page shows only tiles in orientation order with no descriptions or body copy.",
+        "PWA version metadata was bumped so the new demo page replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.73",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Road and chamber tile metadata now supports dead ends",
+      "businessSummary": "The tile catalog now defines road and chamber families from 0 to 4 exits, including dead-end tiles, and stores wall metadata for each orientation in JSON. The loader still preloads all artwork once per version, but the renderer can now resolve the correct tile family, rotation, and wall layout from the definition file.",
+      "highlights": [
+        "Added road0 and chamber0 dead-end definitions with wall metadata.",
+        "The loader now recognizes numeric road/chamber keys and the older alias names.",
+        "PWA version metadata was bumped so the updated tile catalog replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.72",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Tile orientations now come from JSON",
+      "businessSummary": "The game client now loads a JSON tile catalog that defines four orientations per tile family and records wall presence for each side. The battle map can now pick the correct rotated tile and use the same definition data for future movement and wall checks.",
+      "highlights": [
+        "Added a JSON tile catalog with orientation-specific sprites and wall metadata.",
+        "The game renderer now reads tile orientation from the session and shows the proper rotated variant.",
+        "The app shell and service worker were versioned so the new tile catalog replaces cached copies."
+      ]
+    },
+    {
       "version": "1.0.71",
       "commit": "pending",
       "date": "2026-05-01",

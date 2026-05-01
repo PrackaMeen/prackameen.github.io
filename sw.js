@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.71";
+const APP_VERSION = "1.0.74";
 const APP_COMMIT_SHORT = "3660ec6";
 const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
@@ -57,6 +57,9 @@ const APP_SHELL = [
     "./pages/multiplayer-lobby-network/index.html",
     "./pages/multiplayer-lobby-network/styles.css",
     "./pages/multiplayer-lobby-network/page.js",
+    "./pages/tile-set-demo/index.html",
+    "./pages/tile-set-demo/styles.css",
+    "./pages/tile-set-demo/page.js",
   "./pages/settings/index.html",
   "./pages/settings/styles.css",
   "./pages/settings/page.js",
@@ -64,6 +67,7 @@ const APP_SHELL = [
   "./pages/release-notes/styles.css",
   "./pages/release-notes/page.js",
   "./lib/game-assets.js",
+  "./assets/game/tile-definitions.json",
   "./release-notes.json",
   "./mock-api.js",
   "./manifest.webmanifest",

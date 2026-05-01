@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.71";
+const APP_VERSION = "1.0.74";
 const APP_COMMIT_SHORT = "3660ec6";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -52,6 +52,10 @@ const PAGES = {
   "multiplayer-lobby-network": {
     title: "Multiplayer / Network Join",
     basePath: "./pages/multiplayer-lobby-network/"
+  },
+  "tile-set-demo": {
+    title: "Tile Set Demo",
+    basePath: "./pages/tile-set-demo/"
   },
   settings: {
     title: "Settings",
@@ -135,6 +139,11 @@ const NAV_TREE = [
         id: "settings",
         label: "Settings",
         route: "settings"
+      },
+      {
+        id: "tile-set-demo",
+        label: "Tile Set",
+        route: "tile-set-demo"
       },
       {
         id: "release-notes",
@@ -226,7 +235,7 @@ function versionedAssetUrl(assetPath) {
   return url.toString();
 }
 
-const GAME_ASSET_ROUTES = new Set(["single-player", "single-player-game"]);
+const GAME_ASSET_ROUTES = new Set(["single-player", "single-player-game", "tile-set-demo"]);
 
 async function preloadGameAssets() {
   const module = await import(versionedAssetUrl("./lib/game-assets.js"));
@@ -521,6 +530,7 @@ async function bootCurrentRoute() {
 
 window.addEventListener("hashchange", bootCurrentRoute);
 registerServiceWorker();
+void preloadGameAssets();
 
 if (!window.location.hash) {
   setRoute(DEFAULT_ROUTE);
