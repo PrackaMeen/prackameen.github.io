@@ -2,6 +2,8 @@ import { getEntityAssetUrl, getTileAssetUrl, normalizeEntityKind, normalizeTileK
 import { buildGameStartSession } from "../../lib/game-start-session.js";
 import { createDefaultRoomApiClient } from "../../session/RoomApiClient.js";
 
+let gameWasmLoadPromise = null;
+
 export function mountPage(context) {
   context.setTitle("Game");
 
@@ -11,6 +13,7 @@ export function mountPage(context) {
   const performActionBtn = document.getElementById("performActionBtn");
   const roomApi = createDefaultRoomApiClient();
   const session = window.__GAME_SESSION__ || createFallbackSession();
+  const gameWasmScriptUrl = `/assets/game-wasm/wwwroot/js/game-runtime.js?v=${encodeURIComponent(context.appBuildId || context.appVersion || "latest")}`;
   const state = {
     session,
     activePlayerId: session.currentPlayerId ?? session.activePlayerId ?? session.players?.[0]?.id ?? null,
@@ -24,6 +27,8 @@ export function mountPage(context) {
     pinchStartScale: 1,
     activeTouchPoints: new Map()
   };
+
+  void ensureGameWasmHydrated(state.session).catch(() => undefined);
 
   const handleBoardClick = (event) => {
     const cell = event.target.closest?.(".game-board-cell");
@@ -76,37 +81,50 @@ export function mountPage(context) {
     }
 
     state.isSubmitting = true;
-    state.feedback = "Submitting action to backend...";
+    state.feedback = "Validating action...";
     syncHud();
 
     try {
-      const response = await fetch(`${roomApi.apiBaseUrl}/session/action`, {
-        method: "POST",
-        cache: "no-store",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          command: "move",
+      const wasm = await ensureGameWasmRuntime().catch(() => null);
+      let payload = null;
+
+      if (wasm) {
+        await wasm.hydrate(state.session);
+        payload = await wasm.applyAction({
+          actionName: "move",
+          sourceX: state.selectedSource.x,
+          sourceY: state.selectedSource.y,
           targetX: state.pendingTarget.x,
           targetY: state.pendingTarget.y
-        })
-      });
+        });
+      } else {
+        const response = await fetch(`${roomApi.apiBaseUrl}/session/action`, {
+          method: "POST",
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            command: "move",
+            targetX: state.pendingTarget.x,
+            targetY: state.pendingTarget.y
+          })
+        });
 
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload?.message || payload?.error || `Action failed (${response.status})`);
+        payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload?.message || payload?.error || `Action failed (${response.status})`);
+        }
       }
 
-      if (payload && Array.isArray(payload.board)) {
-        state.session = payload;
-        window.__GAME_SESSION__ = payload;
-        state.activePlayerId = payload.currentPlayerId ?? payload.activePlayerId ?? state.activePlayerId;
-        state.activePlayerName = payload.currentPlayerName ?? state.activePlayerName;
+      if (!payload?.success) {
+        throw new Error(payload?.message || "Action failed.");
       }
 
+      applyWasmSnapshotToSession(state.session, payload.snapshot);
+      window.__GAME_SESSION__ = state.session;
       clearSelection();
-      state.feedback = payload?.lastMessage || payload?.message || "Action sent for backend validation.";
+      state.feedback = payload?.message || "Move resolved by WASM runtime.";
       renderBoard(state.session);
       syncHud();
     } catch (error) {
@@ -218,6 +236,100 @@ export function mountPage(context) {
 
   function createFallbackSession() {
     return buildGameStartSession([]);
+  }
+
+  async function ensureGameWasmRuntime() {
+    if (window.GameWasm?.ready) {
+      return window.GameWasm.ready.then(() => window.GameWasm);
+    }
+
+    if (!gameWasmLoadPromise) {
+      gameWasmLoadPromise = new Promise((resolve, reject) => {
+        const existingScript = document.querySelector(`script[data-game-wasm-runtime="true"]`);
+        if (existingScript && window.GameWasm) {
+          resolve(window.GameWasm);
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.type = "module";
+        script.src = gameWasmScriptUrl;
+        script.dataset.gameWasmRuntime = "true";
+        script.addEventListener("load", () => {
+          if (!window.GameWasm?.ready) {
+            reject(new Error("GameWasm bridge did not initialize."));
+            return;
+          }
+
+          window.GameWasm.ready.then(() => resolve(window.GameWasm)).catch(reject);
+        }, { once: true });
+        script.addEventListener("error", () => reject(new Error("Failed to load GameWasm bridge.")), { once: true });
+        document.head.appendChild(script);
+      });
+    }
+
+    return gameWasmLoadPromise;
+  }
+
+  async function ensureGameWasmHydrated(currentSession) {
+    try {
+      const wasm = await ensureGameWasmRuntime();
+      await wasm.hydrate(currentSession);
+    } catch {
+      // Keep the page usable if the runtime assets are unavailable.
+    }
+  }
+
+  function applyWasmSnapshotToSession(currentSession, snapshot) {
+    if (!currentSession || !Array.isArray(currentSession.board)) {
+      return;
+    }
+
+    if (!snapshot || !Array.isArray(snapshot.characters)) {
+      return;
+    }
+
+    const boardByCoordinate = new Map(
+      currentSession.board.map((cell) => [`${Number(cell.x)},${Number(cell.y)}`, cell])
+    );
+
+    for (const character of snapshot.characters) {
+      if (!character || !Number.isInteger(character.id)) {
+        continue;
+      }
+
+      const nextPositionKey = `${character.x},${character.y}`;
+      const nextCell = boardByCoordinate.get(nextPositionKey);
+      if (!nextCell) {
+        continue;
+      }
+
+      const currentCell = currentSession.board.find((cell) => String(cell.entityId) === String(character.id));
+      if (currentCell && currentCell !== nextCell) {
+        ["entityKind", "entityId", "entityName", "entityColorHex", "occupantId", "occupantName", "occupantAlive"].forEach((key) => {
+          delete currentCell[key];
+        });
+      }
+
+      nextCell.entityKind = "player";
+      nextCell.entityId = character.id;
+      nextCell.entityName = character.name || `Player ${character.id}`;
+      nextCell.entityColorHex = nextCell.entityColorHex || null;
+      nextCell.occupantId = character.id;
+      nextCell.occupantName = character.name || `Player ${character.id}`;
+      nextCell.occupantAlive = Boolean(character.isAlive);
+    }
+
+    if (Array.isArray(currentSession.players)) {
+      for (const player of currentSession.players) {
+        const matchingCharacter = snapshot.characters.find((character) => String(character.id) === String(player.id));
+        if (!matchingCharacter) {
+          continue;
+        }
+
+        player.position = { x: matchingCharacter.x, y: matchingCharacter.y };
+      }
+    }
   }
 
   function renderBoard(currentSession) {

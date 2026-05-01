@@ -1,11 +1,11 @@
-const APP_VERSION = "1.0.78";
+const APP_VERSION = "1.0.79";
 const APP_COMMIT_SHORT = "3660ec6";
 const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./app.js",
+  "./app.js?v=1.0.79",
   "./player-preferences.js",
   "./pages/menu/index.html",
   "./pages/menu/styles.css",
@@ -22,6 +22,8 @@ const APP_SHELL = [
   "./pages/game-board/index.html",
   "./pages/game-board/styles.css",
   "./pages/game-board/page.js",
+  "./assets/game-wasm/wwwroot/index.html",
+  "./assets/game-wasm/wwwroot/js/game-runtime.js",
   "./pages/multiplayer/index.html",
   "./pages/multiplayer/styles.css",
   "./pages/multiplayer/page.js",

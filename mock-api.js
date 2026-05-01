@@ -2,7 +2,8 @@
   const host = window.location.hostname.toLowerCase();
   const isGitHubPages = host.endsWith("github.io") || host.includes("githubpreview.dev");
   const isFileMode = window.location.protocol === "file:";
-  const shouldMock = isGitHubPages || isFileMode;
+  const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0";
+  const shouldMock = isGitHubPages || isFileMode || isLocalHost;
 
   window.__GAME_API_MODE__ = shouldMock ? "mock" : "live";
 
