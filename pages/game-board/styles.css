@@ -103,7 +103,7 @@ body[data-page="game-board"] {
   position: relative;
   width: fit-content;
   transform: translate(var(--game-board-pan-x, 0px), var(--game-board-pan-y, 0px)) scale(var(--game-board-zoom, 1));
-  transform-origin: center top;
+  transform-origin: top left;
   will-change: transform;
 }
 

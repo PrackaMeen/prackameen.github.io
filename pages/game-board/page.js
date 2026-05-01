@@ -48,6 +48,7 @@ export async function mountPage(context) {
   const layoutResizeObserver = typeof ResizeObserver !== "undefined" && stageEl
     ? new ResizeObserver(() => {
         fitBoardToStage(state.boardWidth, state.boardHeight);
+        centerCameraOnActivePlayer(state.session);
       })
     : null;
 
@@ -445,6 +446,7 @@ export async function mountPage(context) {
       boardEl.appendChild(tile);
     });
 
+    centerCameraOnActivePlayer(currentSession);
     renderArrowOverlay(width, height);
   }
 
@@ -475,6 +477,63 @@ export async function mountPage(context) {
     const nextCellSize = Math.max(8, Math.floor(Math.min(fitWidth, fitHeight)));
 
     boardEl.style.setProperty("--game-cell-size", `${nextCellSize}px`);
+  }
+
+  function centerCameraOnActivePlayer(currentSession) {
+    if (!boardEl || !stageEl || !mapEl) {
+      return;
+    }
+
+    const targetCell = getCameraTargetCell(currentSession);
+    if (!targetCell) {
+      return;
+    }
+
+    const cellSize = getBoardCellSize();
+    if (cellSize <= 0) {
+      return;
+    }
+
+    const stageStyle = window.getComputedStyle(stageEl);
+    const paddingLeft = Number.parseFloat(stageStyle.paddingLeft || "0") || 0;
+    const paddingRight = Number.parseFloat(stageStyle.paddingRight || "0") || 0;
+    const paddingTop = Number.parseFloat(stageStyle.paddingTop || "0") || 0;
+    const paddingBottom = Number.parseFloat(stageStyle.paddingBottom || "0") || 0;
+    const contentWidth = Math.max(0, stageEl.clientWidth - paddingLeft - paddingRight);
+    const contentHeight = Math.max(0, stageEl.clientHeight - paddingTop - paddingBottom);
+    const boardPixelWidth = state.boardWidth * cellSize;
+    const boardPixelHeight = state.boardHeight * cellSize;
+    const centeredLeft = paddingLeft + Math.max(0, (contentWidth - boardPixelWidth) / 2);
+    const centeredTop = paddingTop;
+    const targetX = (targetCell.x + 0.5) * cellSize;
+    const targetY = (targetCell.y + 0.5) * cellSize;
+
+    state.panX = (paddingLeft + (contentWidth / 2)) - centeredLeft - (targetX * state.zoomScale);
+    state.panY = (paddingTop + (contentHeight / 2)) - centeredTop - (targetY * state.zoomScale);
+    syncZoom();
+  }
+
+  function getBoardCellSize() {
+    const rawValue = boardEl?.style.getPropertyValue("--game-cell-size") || "";
+    const parsed = Number.parseFloat(rawValue);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function getCameraTargetCell(currentSession) {
+    const cells = Array.isArray(currentSession?.board) ? currentSession.board : [];
+    if (state.activePlayerId !== null && state.activePlayerId !== undefined) {
+      const activeCell = cells.find((cell) => String(cell?.entityId ?? cell?.occupantId ?? "") === String(state.activePlayerId));
+      if (activeCell && Number.isInteger(activeCell.x) && Number.isInteger(activeCell.y)) {
+        return { x: activeCell.x, y: activeCell.y };
+      }
+    }
+
+    const fallbackCell = cells.find((cell) => cell?.entityKind === "player" && Number.isInteger(cell.x) && Number.isInteger(cell.y));
+    if (fallbackCell) {
+      return { x: fallbackCell.x, y: fallbackCell.y };
+    }
+
+    return null;
   }
 
   function renderArrowOverlay(width, height) {
