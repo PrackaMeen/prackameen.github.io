@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.53",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Inactive rooms can now be cleaned up via API",
+      "businessSummary": "The Signaling Function now exposes a cleanup endpoint that removes inactive rooms from storage, helping keep room listings and room data tidy over time.",
+      "highlights": [
+        "Adds a new API endpoint to delete inactive rooms in bulk.",
+        "Returns how many rooms were deleted and which room IDs were removed.",
+        "PWA version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
       "version": "1.0.52",
       "commit": "pending",
       "date": "2026-05-01",
