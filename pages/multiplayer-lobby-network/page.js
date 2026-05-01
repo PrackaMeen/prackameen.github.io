@@ -193,6 +193,65 @@ export function mountPage(context) {
     return document.body?.dataset?.page === "multiplayer-lobby-network";
   }
 
+  function startPollingRoom() {
+    stopPollingRoom();
+    if (!activeRoomId) {
+      return;
+    }
+
+    const refreshRoom = async () => {
+      try {
+        const snapshot = await roomApi.getRoom(activeRoomId);
+        renderRoomSnapshot(snapshot);
+      } catch (err) {
+        statusEl.textContent = `Room refresh failed: ${err.message}`;
+        statusEl.style.color = "#b91c1c";
+      }
+    };
+
+    refreshRoom();
+    pollTimer = window.setInterval(refreshRoom, POLL_INTERVAL_MS);
+  }
+
+  function stopPollingRoom() {
+    if (typeof pollTimer !== "undefined" && pollTimer) {
+      window.clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  function startHeartbeat() {
+    stopHeartbeat();
+    if (!activeRoomId || !activePlayerId) {
+      return;
+    }
+
+    const sendHeartbeat = async () => {
+      try {
+        const snapshot = await roomApi.heartbeat(activeRoomId, activePlayerId);
+        renderRoomSnapshot(snapshot);
+      } catch (err) {
+        statusEl.textContent = `Room heartbeat failed: ${err.message}`;
+        statusEl.style.color = "#b91c1c";
+      }
+    };
+
+    sendHeartbeat();
+    heartbeatTimer = window.setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
+  }
+
+  function stopHeartbeat() {
+    if (typeof heartbeatTimer !== "undefined" && heartbeatTimer) {
+      window.clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  }
+
+  function stopTimers() {
+    stopPollingRoom();
+    stopHeartbeat();
+  }
+
   // ── dispose ───────────────────────────────────────────────────────────────
 
   startWaitingRoomsPolling();
@@ -440,63 +499,4 @@ function extractJoinCode(scannedValue) {
   }
 
   return null;
-}
-
-function startPollingRoom() {
-  stopPollingRoom();
-  if (!activeRoomId) {
-    return;
-  }
-
-  const refreshRoom = async () => {
-    try {
-      const snapshot = await roomApi.getRoom(activeRoomId);
-      renderRoomSnapshot(snapshot);
-    } catch (err) {
-      statusEl.textContent = `Room refresh failed: ${err.message}`;
-      statusEl.style.color = "#b91c1c";
-    }
-  };
-
-  refreshRoom();
-  pollTimer = window.setInterval(refreshRoom, POLL_INTERVAL_MS);
-}
-
-function stopPollingRoom() {
-  if (typeof pollTimer !== "undefined" && pollTimer) {
-    window.clearInterval(pollTimer);
-    pollTimer = null;
-  }
-}
-
-function startHeartbeat() {
-  stopHeartbeat();
-  if (!activeRoomId || !activePlayerId) {
-    return;
-  }
-
-  const sendHeartbeat = async () => {
-    try {
-      const snapshot = await roomApi.heartbeat(activeRoomId, activePlayerId);
-      renderRoomSnapshot(snapshot);
-    } catch (err) {
-      statusEl.textContent = `Room heartbeat failed: ${err.message}`;
-      statusEl.style.color = "#b91c1c";
-    }
-  };
-
-  sendHeartbeat();
-  heartbeatTimer = window.setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
-}
-
-function stopHeartbeat() {
-  if (typeof heartbeatTimer !== "undefined" && heartbeatTimer) {
-    window.clearInterval(heartbeatTimer);
-    heartbeatTimer = null;
-  }
-}
-
-function stopTimers() {
-  stopPollingRoom();
-  stopHeartbeat();
 }
