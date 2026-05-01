@@ -7,11 +7,10 @@ export function mountPage(context) {
 
   const statusEl = document.getElementById("joinStatus");
   const activeRoomsCard = document.getElementById("activeRoomsCard");
+   const joinFormCard = document.getElementById("joinFormCard");
   const waitingRoomCountEl = document.getElementById("waitingRoomCount");
   const waitingRoomsStatusEl = document.getElementById("waitingRoomsStatus");
   const waitingRoomListEl = document.getElementById("waitingRoomList");
-  const joinForm = document.getElementById("joinForm");
-  const joinCodeInputEl = document.getElementById("joinCodeInput");
   const joinBtn = document.getElementById("joinBtn");
   const scanQrBtn = document.getElementById("scanQrBtn");
   const stopScanBtn = document.getElementById("stopScanBtn");
@@ -148,6 +147,28 @@ export function mountPage(context) {
     statusEl.style.color = "";
   }
 
+   function resetJoinView(message) {
+     activeRoomId = "";
+     activePlayerId = "";
+     pendingScanJoinTarget = null;
+     stopTimers();
+     stopWaitingRoomsPolling();
+     joinFormCard.hidden = false;
+     activeRoomsCard.hidden = false;
+     peersCard.hidden = true;
+     actionsCard.hidden = true;
+     joinBtn.disabled = false;
+     setJoinUiBusy(false);
+     statusEl.textContent = message || "Scan the host QR code or join from the waiting rooms list below.";
+     statusEl.style.color = "";
+     startWaitingRoomsPolling();
+   }
+
+   function isRoomMissingError(err) {
+     const message = String(err?.message || "").toLowerCase();
+     return message.includes("room not found") || message.includes("player not found") || message.includes("room or player not found");
+   }
+
   function formatUpdatedLabel(updatedUtc) {
     const parsed = Date.parse(updatedUtc || "");
     if (Number.isNaN(parsed)) {
@@ -227,6 +248,11 @@ export function mountPage(context) {
         const snapshot = await roomApi.getRoom(activeRoomId);
         renderRoomSnapshot(snapshot);
       } catch (err) {
+         if (isRoomMissingError(err)) {
+           resetJoinView("You were removed from the room.");
+           return;
+         }
+
         statusEl.textContent = `Room refresh failed: ${err.message}`;
         statusEl.style.color = "#b91c1c";
       }
@@ -254,6 +280,11 @@ export function mountPage(context) {
         const snapshot = await roomApi.heartbeat(activeRoomId, activePlayerId);
         renderRoomSnapshot(snapshot);
       } catch (err) {
+         if (isRoomMissingError(err)) {
+           resetJoinView("You were removed from the room.");
+           return;
+         }
+
         statusEl.textContent = `Room heartbeat failed: ${err.message}`;
         statusEl.style.color = "#b91c1c";
       }
@@ -281,6 +312,11 @@ export function mountPage(context) {
 
   return {
     async dispose() {
+       if (activeRoomId && activePlayerId) {
+         void roomApi.removePlayer(activeRoomId, activePlayerId).catch(() => {
+           // Best-effort leave only; navigation is already in progress.
+         });
+       }
       stopTimers();
       stopWaitingRoomsPolling();
       stopScanner();
@@ -318,7 +354,8 @@ export function mountPage(context) {
   function handleJoinedRoom(snapshot) {
     activeRoomId = snapshot.roomId;
     peersCard.hidden = false;
-    actionsCard.hidden = false;
+    actionsCard.hidden = true;
+    joinFormCard.hidden = true;
     activeRoomsCard.hidden = true;
     stopWaitingRoomsPolling();
     renderRoomSnapshot(snapshot);
@@ -349,7 +386,7 @@ export function mountPage(context) {
       return;
     }
 
-    waitingRoomsStatusEl.textContent = "Select a room to join immediately, or paste a join code below.";
+    waitingRoomsStatusEl.textContent = "Select a room to join immediately, or scan a QR code.";
     waitingRoomListEl.innerHTML = rooms.map((room) => {
       const hostName = room.hostName || "Host";
       const playerCount = Array.isArray(room.players) ? room.players.length : 0;
@@ -408,7 +445,7 @@ export function mountPage(context) {
 
   async function startScanner() {
     if (!supportsQrScanning()) {
-      statusEl.textContent = "In-app QR scanning is not supported on this device/browser. Paste Join Code instead.";
+      statusEl.textContent = "In-app QR scanning is not supported on this device/browser. Use the waiting rooms list instead.";
       statusEl.style.color = "#b91c1c";
       return;
     }

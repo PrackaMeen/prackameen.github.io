@@ -150,6 +150,14 @@
   background: var(--color-surface-alt, #f8fafc);
   border-radius: 6px;
   font-size: 0.9rem;
+  gap: 0.75rem;
+}
+
+.peer-item__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .peer-item--empty {
@@ -174,6 +182,26 @@
 .peer-badge--host {
   background: rgba(37, 99, 235, 0.12);
   color: #1d4ed8;
+}
+
+.peer-expel-btn {
+  flex-shrink: 0;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid #b91c1c;
+  background: rgba(185, 28, 28, 0.08);
+  color: #b91c1c;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.peer-expel-btn:hover:not(:disabled) {
+  background: rgba(185, 28, 28, 0.15);
+}
+
+.peer-expel-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .primary-btn {

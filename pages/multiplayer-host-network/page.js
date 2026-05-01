@@ -12,6 +12,28 @@ export function mountPage(context) {
   const peersCard = document.getElementById("peersCard");
   const peerListEl = document.getElementById("peerList");
   const peerCountEl = document.getElementById("peerCount");
+  const peerListClickHandler = async (event) => {
+    const button = event.target.closest("button[data-player-id]");
+    if (!button || !activeRoomId) {
+      return;
+    }
+
+    const playerId = button.dataset.playerId || "";
+    if (!playerId || playerId === activePlayerId) {
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      const snapshot = await roomApi.removePlayer(activeRoomId, playerId);
+      renderRoomSnapshot(snapshot);
+    } catch (err) {
+      statusEl.textContent = `Unable to expel player: ${err.message}`;
+      statusEl.style.color = "#b91c1c";
+      button.disabled = false;
+    }
+  };
 
   const roomApi = createDefaultRoomApiClient();
 
@@ -37,9 +59,15 @@ export function mountPage(context) {
       const peerIdentifier = p.peerId || p.playerId || p.id || "";
       const isSelf = !!localPlayerId && peerIdentifier === localPlayerId;
       const displayName = isSelf ? "You" : p.nickname || p.playerName || (peerIdentifier ? peerIdentifier.slice(0, 8) : "Unknown");
+      const peerAction = p.isHost
+        ? '<span class="peer-badge peer-badge--host">Host</span>'
+        : `<button class="peer-expel-btn" type="button" data-player-id="${escHtml(peerIdentifier)}">Expel</button>`;
       return `<li class="peer-item">
-        <span>${escHtml(displayName)}</span>
-        <span class="${cls}">${p.isHost ? "Host" : "Peer"}</span>
+        <div class="peer-item__copy">
+          <span>${escHtml(displayName)}</span>
+          <span class="${cls}">${p.isHost ? "Host" : "Peer"}</span>
+        </div>
+        ${peerAction}
       </li>`;
     }).join("");
   }
@@ -80,8 +108,11 @@ export function mountPage(context) {
 
   // ── dispose ───────────────────────────────────────────────────────────────
 
+  peerListEl.addEventListener("click", peerListClickHandler);
+
   return {
     dispose() {
+      peerListEl.removeEventListener("click", peerListClickHandler);
       stopTimers();
     }
   };
