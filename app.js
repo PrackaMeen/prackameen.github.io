@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.50";
+const APP_VERSION = "1.0.51";
 const APP_COMMIT_SHORT = "3660ec6";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -212,6 +212,17 @@ function isVersionNewer(currentVersion, candidateVersion) {
   return false;
 }
 
+function buildUpdateReloadUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("__update", APP_BUILD_ID);
+  url.searchParams.set("__reload", Date.now().toString());
+  return url.toString();
+}
+
+function forceUpdateReload() {
+  window.location.replace(buildUpdateReloadUrl());
+}
+
 function askWorkerBuildInfo(worker) {
   return new Promise((resolve) => {
     if (!worker) {
@@ -354,7 +365,7 @@ function registerServiceWorker() {
       return;
     }
     updateState.hasReloadedForControllerChange = true;
-    window.location.reload();
+    forceUpdateReload();
   });
 }
 

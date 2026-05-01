@@ -36,7 +36,10 @@ export function mountPage(context) {
       return;
     }
 
-    window.location.reload();
+    const url = new URL(window.location.href);
+    url.searchParams.set("__update", context.appBuildId);
+    url.searchParams.set("__reload", Date.now().toString());
+    window.location.replace(url.toString());
   };
 
   function setAppVersion() {
