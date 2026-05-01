@@ -75,6 +75,8 @@ The network host/join screens use the Signaling Function REST API. The Admin pag
 
 For every repository change, increment the app code version and keep PWA version metadata aligned.
 
+Keep the canonical version in `app-version.json`, then run `scripts/sync-pwa-version.ps1` so `app.js`, `sw.js`, `index.html`, `manifest.webmanifest`, and the GameWasm bootstrap files all stay in sync.
+
 When the app version is increased, add a new item to `release-notes.json` with a business-focused summary and user-visible highlights for that version/build.
 
 At runtime, compare current running version with latest available version:
