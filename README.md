@@ -69,7 +69,7 @@ Open `index.html` directly, or serve this folder with any static host.
 
 The Swagger/OpenAPI document is generated from the live Signaling Function endpoints, so the route list stays aligned with the code.
 
-The network host/join screens use the Signaling Function REST API. The lab page still uses the local mock API for its test endpoints.
+The network host/join screens use the Signaling Function REST API. The Admin page now uses the live room APIs for room listing and cleanup instead of the old mock test endpoints.
 
 ## PWA Versioning Policy
 

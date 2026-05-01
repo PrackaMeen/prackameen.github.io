@@ -1,6 +1,6 @@
-const APP_VERSION = "1.0.57";
+const APP_VERSION = "1.0.58";
 const APP_COMMIT_SHORT = "3660ec6";
-const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
+const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -47,6 +47,9 @@ const APP_SHELL = [
   "./session/transport/BroadcastChannelTransport.js",
     "./session/SignalingClient.js",
     "./session/transport/WebRtcTransport.js",
+    "./pages/admin/index.html",
+    "./pages/admin/styles.css",
+    "./pages/admin/page.js",
     "./pages/multiplayer-host-network/index.html",
     "./pages/multiplayer-host-network/styles.css",
     "./pages/multiplayer-host-network/page.js",
