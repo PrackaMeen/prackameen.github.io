@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.0.60",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Admin backend selector now shows all available options",
+      "businessSummary": "The Admin backend selector now renders the available room APIs as an actual option list. On localhost it shows both Local and Live, while on non-local origins it shows only Live and disables selection when there is only one available backend.",
+      "highlights": [
+        "Replaced the hidden-button pattern with a visible backend option list.",
+        "Local appears only in local runtime, and Live stays available as the default option.",
+        "Single-option states are now disabled so the Admin page matches the available backend choices."
+      ]
+    },
+    {
+      "version": "1.0.59",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Admin can now switch backend API",
+      "businessSummary": "The Admin console now includes a backend picker for Local and Live room APIs. It shows each backend version, keeps the live option available at all times, and makes it easier to point the room-management tools at the right environment without editing settings by hand.",
+      "highlights": [
+        "Admin now exposes Local and Live backend buttons with version labels.",
+        "Local is only shown when the app runs on localhost or file://, while Live remains available everywhere.",
+        "PWA version metadata was bumped so the backend selection UI replaces cached copies."
+      ]
+    },
+    {
       "version": "1.0.58",
       "commit": "pending",
       "date": "2026-05-01",

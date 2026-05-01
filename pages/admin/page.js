@@ -1,4 +1,5 @@
-import { createDefaultRoomApiClient } from "../../session/RoomApiClient.js";
+import { DEFAULT_LOCAL_API_BASE_URL, DEFAULT_REMOTE_API_BASE_URL } from "../../session/ApiConfig.js";
+import { createDefaultRoomApiClient, normalizeApiBaseUrl } from "../../session/RoomApiClient.js";
 
 export function mountPage(context) {
   const state = {
@@ -13,6 +14,8 @@ export function mountPage(context) {
   const SEE_GAMES_BUTTON = document.querySelector("#seeGamesBtn");
   const CLEAN_INACTIVE_BUTTON = document.querySelector("#cleanInactiveBtn");
   const CHECK_LATEST_BUTTON = document.querySelector("#checkLatestBtn");
+  const BACKEND_OPTION_LIST = document.querySelector("#backendOptionList");
+  const BACKEND_STATE = document.querySelector("#backendState");
   const NETWORK_MODE = document.querySelector("#networkMode");
   const INSTALL_STATE = document.querySelector("#installState");
   const APP_VERSION_PILL = document.querySelector("#appVersion");
@@ -23,6 +26,18 @@ export function mountPage(context) {
   const GAMES_EMPTY_STATE = document.querySelector("#gamesEmptyState");
 
   const roomApi = createDefaultRoomApiClient();
+  const apiBases = {
+    local: normalizeApiBaseUrl(DEFAULT_LOCAL_API_BASE_URL),
+    live: normalizeApiBaseUrl(DEFAULT_REMOTE_API_BASE_URL)
+  };
+  const isLocalRuntime = isLocalOrigin();
+  const backendVersions = {
+    local: null,
+    live: null
+  };
+  let currentBackendKey = "live";
+
+  ensureAllowedBackendBaseUrl();
 
   const beforeInstallPromptHandler = (event) => {
     event.preventDefault();
@@ -213,18 +228,148 @@ export function mountPage(context) {
   }
 
   function setNetworkStatus() {
-    const apiBaseUrl = roomApi.apiBaseUrl || "";
-    let label = "ready";
+    const version = backendVersions[currentBackendKey];
+    const label = currentBackendKey === "local" ? "Local" : "Live";
+    NETWORK_MODE.textContent = version ? `API: ${label} (${version})` : `API: ${label}`;
+    BACKEND_STATE.textContent = version ? `${label} backend ready (${version})` : `${label} backend ready`;
+  }
 
-    try {
-      const url = new URL(apiBaseUrl);
-      label = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1" ? "local" : url.hostname;
-    } catch {
-      label = "ready";
+  function getAvailableBackendOptions() {
+    const options = [
+      { key: "live", label: "Live", baseUrl: apiBases.live, alwaysAvailable: true }
+    ];
+
+    if (isLocalRuntime) {
+      options.unshift({ key: "local", label: "Local", baseUrl: apiBases.local, alwaysAvailable: false });
     }
 
-    NETWORK_MODE.textContent = `API: ${label}`;
+    return options;
   }
+
+  function isLocalOrigin() {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    const hostname = String(window.location.hostname || "").toLowerCase();
+    const protocol = String(window.location.protocol || "").toLowerCase();
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || protocol === "file:";
+  }
+
+  function ensureAllowedBackendBaseUrl() {
+    const currentBaseUrl = normalizeApiBaseUrl(roomApi.apiBaseUrl);
+    if (currentBaseUrl === apiBases.local) {
+      currentBackendKey = "local";
+      return;
+    }
+
+    if (currentBaseUrl === apiBases.live) {
+      currentBackendKey = "live";
+      return;
+    }
+
+    selectBackend(isLocalRuntime ? "local" : "live", false);
+  }
+
+  function getBackendVersionLabel(version) {
+    return version ? `version: ${version}` : "version: loading...";
+  }
+
+  function renderBackendOptions() {
+    const options = getAvailableBackendOptions();
+    BACKEND_OPTION_LIST.textContent = "";
+
+    for (const option of options) {
+      const button = document.createElement("button");
+      const version = backendVersions[option.key];
+      button.type = "button";
+      button.className = "backend-option";
+      button.dataset.backendKey = option.key;
+      button.textContent = `${option.label} (${getBackendVersionLabel(version)})`;
+      button.classList.toggle("backend-option--selected", currentBackendKey === option.key);
+      button.setAttribute("aria-pressed", currentBackendKey === option.key ? "true" : "false");
+      button.disabled = options.length === 1;
+      BACKEND_OPTION_LIST.appendChild(button);
+    }
+
+    NETWORK_MODE.textContent = currentBackendKey === "local" ? "API: Local" : "API: Live";
+  }
+
+  async function fetchBackendVersion(apiBaseUrl) {
+    const versionUrl = `${normalizeApiBaseUrl(apiBaseUrl)}/version`;
+    const response = await fetch(versionUrl, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status})`);
+    }
+
+    const payload = await response.json();
+    return String(payload?.version || "unknown");
+  }
+
+  async function refreshBackendVersions() {
+    const jobs = [
+      fetchBackendVersion(apiBases.live).then((version) => {
+        backendVersions.live = version;
+      }).catch(() => {
+        backendVersions.live = "unavailable";
+      })
+    ];
+
+    if (isLocalRuntime) {
+      jobs.push(
+        fetchBackendVersion(apiBases.local).then((version) => {
+          backendVersions.local = version;
+        }).catch(() => {
+          backendVersions.local = "unavailable";
+        })
+      );
+    }
+
+    renderBackendOptions();
+    BACKEND_STATE.textContent = "Refreshing backend versions...";
+
+    await Promise.allSettled(jobs);
+
+    const availableKeys = new Set(getAvailableBackendOptions().map((option) => option.key));
+    if (!availableKeys.has(currentBackendKey)) {
+      selectBackend(availableKeys.has("local") ? "local" : "live", false);
+    } else {
+      renderBackendOptions();
+    }
+
+    BACKEND_STATE.textContent = "Choose where Admin talks to for rooms.";
+  }
+
+  function selectBackend(backendKey, shouldReload = true) {
+    const availableKeys = new Set(getAvailableBackendOptions().map((option) => option.key));
+    if (!availableKeys.has(backendKey)) {
+      return;
+    }
+
+    const normalizedKey = backendKey;
+    const nextBaseUrl = apiBases[normalizedKey];
+
+    if (roomApi.apiBaseUrl !== nextBaseUrl) {
+      roomApi.setApiBaseUrl(nextBaseUrl);
+    }
+
+    currentBackendKey = normalizedKey;
+    renderBackendOptions();
+    setNetworkStatus();
+
+    if (shouldReload) {
+      loadGames();
+    }
+  }
+
+  const backendOptionClickHandler = (event) => {
+    const button = event.target.closest("[data-backend-key]");
+    if (!button || !BACKEND_OPTION_LIST.contains(button)) {
+      return;
+    }
+
+    selectBackend(button.dataset.backendKey);
+  };
 
   function renderGames(rooms) {
     GAMES_TABLE_BODY.textContent = "";
@@ -391,6 +536,7 @@ export function mountPage(context) {
     SEE_GAMES_BUTTON.addEventListener("click", loadGames);
     CLEAN_INACTIVE_BUTTON.addEventListener("click", cleanupInactiveGames);
     CHECK_LATEST_BUTTON.addEventListener("click", forceCheckLatestVersion);
+    BACKEND_OPTION_LIST.addEventListener("click", backendOptionClickHandler);
     INSTALL_STATE.addEventListener("click", installApp);
     UPDATE_BUTTON.addEventListener("click", activateWaitingUpdate);
     window.addEventListener("beforeinstallprompt", beforeInstallPromptHandler);
@@ -401,11 +547,13 @@ export function mountPage(context) {
   function init() {
     context.setTitle("Admin");
     setAppVersion();
+    renderBackendOptions();
     setNetworkStatus();
     setInstallStatus("unavailable");
     hideUpdateButton();
     wireEvents();
     registerServiceWorker();
+    refreshBackendVersions();
     loadGames();
   }
 
@@ -416,6 +564,7 @@ export function mountPage(context) {
       SEE_GAMES_BUTTON.removeEventListener("click", loadGames);
       CLEAN_INACTIVE_BUTTON.removeEventListener("click", cleanupInactiveGames);
       CHECK_LATEST_BUTTON.removeEventListener("click", forceCheckLatestVersion);
+      BACKEND_OPTION_LIST.removeEventListener("click", backendOptionClickHandler);
       INSTALL_STATE.removeEventListener("click", installApp);
       UPDATE_BUTTON.removeEventListener("click", activateWaitingUpdate);
       window.removeEventListener("beforeinstallprompt", beforeInstallPromptHandler);
