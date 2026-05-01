@@ -3,8 +3,10 @@
     <div id="gameBoardStatus" class="game-board-status">Select your player, then choose a tile.</div>
   </section>
   <div id="gameBoardStage" class="game-board-stage" aria-label="Map container">
-    <svg id="gameBoardArrowLayer" class="game-board-arrow-layer" aria-hidden="true"></svg>
-    <div id="gameBoard" class="game-board" role="grid" aria-label="Game board"></div>
+    <div id="gameBoardMap" class="game-board-map">
+      <svg id="gameBoardArrowLayer" class="game-board-arrow-layer" aria-hidden="true"></svg>
+      <div id="gameBoard" class="game-board" role="grid" aria-label="Game board"></div>
+    </div>
   </div>
   <section class="game-board-action-bar" aria-label="Action controls">
     <button id="cancelSelectionBtn" class="game-board-action-btn game-board-action-btn--ghost" type="button" disabled>Cancel</button>

@@ -14,6 +14,7 @@ export async function mountPage(context) {
   } = await import(`../../lib/game-assets.js?v=${encodeURIComponent(context.appBuildId || context.appVersion || "latest")}`);
 
   const boardEl = document.getElementById("gameBoard");
+  const mapEl = document.getElementById("gameBoardMap");
   const arrowLayerEl = document.getElementById("gameBoardArrowLayer");
   const statusEl = document.getElementById("gameBoardStatus");
   const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
@@ -408,16 +409,15 @@ export async function mountPage(context) {
       boardEl.appendChild(tile);
     });
 
-    boardEl.style.setProperty("--game-cell-scale", String(state.zoomScale));
     renderArrowOverlay(width, height);
   }
 
   function syncZoom() {
-    if (!boardEl) {
+    if (!mapEl) {
       return;
     }
 
-    boardEl.style.setProperty("--game-cell-scale", String(state.zoomScale));
+    mapEl.style.setProperty("--game-board-zoom", String(state.zoomScale));
   }
 
   function renderArrowOverlay(width, height) {
