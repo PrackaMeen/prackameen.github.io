@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.87",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Map now supports two-finger pan",
+      "businessSummary": "The game board map can now be moved with a two-finger gesture while zoom remains isolated to the map itself. This makes it easier to inspect different parts of the battlefield without affecting the bottom action bar or other page controls.",
+      "highlights": [
+        "Two-finger touch on the map now pans the board.",
+        "Zoom stays scoped to the map wrapper only.",
+        "The bottom action bar remains outside the zoomed area."
+      ]
+    },
+    {
       "version": "1.0.86",
       "commit": "pending",
       "date": "2026-05-01",

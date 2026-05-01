@@ -32,8 +32,13 @@ export async function mountPage(context) {
     isRuntimeReady: false,
     feedback: "",
     zoomScale: 1,
+    panX: 0,
+    panY: 0,
     pinchStartDistance: null,
     pinchStartScale: 1,
+    gestureStartMidpoint: null,
+    gestureStartPanX: 0,
+    gestureStartPanY: 0,
     activeTouchPoints: new Map()
   };
 
@@ -160,8 +165,11 @@ export async function mountPage(context) {
       return;
     }
 
+    state.gestureStartMidpoint = getPointerMidpoint(points[0], points[1]);
     state.pinchStartDistance = getPointerDistance(points[0], points[1]);
     state.pinchStartScale = state.zoomScale;
+    state.gestureStartPanX = state.panX;
+    state.gestureStartPanY = state.panY;
     state.feedback = "";
     syncHud();
   };
@@ -184,17 +192,25 @@ export async function mountPage(context) {
       return;
     }
 
+    const currentMidpoint = getPointerMidpoint(points[0], points[1]);
     const currentDistance = getPointerDistance(points[0], points[1]);
     if (currentDistance <= 0) {
       return;
     }
 
     const nextScale = clampScale(state.pinchStartScale * (currentDistance / state.pinchStartDistance));
-    if (nextScale === state.zoomScale) {
-      return;
+    const nextPanX = state.gestureStartPanX + (currentMidpoint.clientX - state.gestureStartMidpoint.clientX);
+    const nextPanY = state.gestureStartPanY + (currentMidpoint.clientY - state.gestureStartMidpoint.clientY);
+
+    if (nextScale !== state.zoomScale) {
+      state.zoomScale = nextScale;
     }
 
-    state.zoomScale = nextScale;
+    if (nextPanX !== state.panX || nextPanY !== state.panY) {
+      state.panX = nextPanX;
+      state.panY = nextPanY;
+    }
+
     syncZoom();
 
     if (event.cancelable) {
@@ -210,6 +226,7 @@ export async function mountPage(context) {
     if (state.activeTouchPoints.size < 2) {
       state.pinchStartDistance = null;
       state.pinchStartScale = state.zoomScale;
+      state.gestureStartMidpoint = null;
     }
   };
 
@@ -418,6 +435,8 @@ export async function mountPage(context) {
     }
 
     mapEl.style.setProperty("--game-board-zoom", String(state.zoomScale));
+    mapEl.style.setProperty("--game-board-pan-x", `${state.panX}px`);
+    mapEl.style.setProperty("--game-board-pan-y", `${state.panY}px`);
   }
 
   function renderArrowOverlay(width, height) {
@@ -511,6 +530,13 @@ export async function mountPage(context) {
 
   function getPointerDistance(firstPoint, secondPoint) {
     return Math.hypot(firstPoint.clientX - secondPoint.clientX, firstPoint.clientY - secondPoint.clientY);
+  }
+
+  function getPointerMidpoint(firstPoint, secondPoint) {
+    return {
+      clientX: (firstPoint.clientX + secondPoint.clientX) / 2,
+      clientY: (firstPoint.clientY + secondPoint.clientY) / 2
+    };
   }
 
   function getTouchPoint(touch) {
