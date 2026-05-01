@@ -49,6 +49,16 @@
       return null;
     }
 
+    if (
+      requestUrl.pathname.startsWith("/api/rooms")
+      || requestUrl.pathname === "/api/version"
+      || requestUrl.pathname === "/api/health"
+      || requestUrl.pathname === "/api/openapi.json"
+      || requestUrl.pathname.startsWith("/api/swagger/")
+    ) {
+      return null;
+    }
+
     if (requestUrl.pathname === "/api/game/state") {
       return jsonResponse({
         turn: inMemory.turn,
