@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.56",
+      "commit": "3660ec6",
+      "date": "2026-05-01",
+      "title": "PWA page scripts now always load by build",
+      "businessSummary": "Page HTML, styles, and module scripts now include the active build ID in their request URLs, so the app loads the newest page code instead of reusing stale cached modules during route changes and refreshes.",
+      "highlights": [
+        "Page asset requests now carry the current build ID as a cache-busting version parameter.",
+        "Route changes fetch the latest page module and stylesheet for the active build.",
+        "PWA version metadata was bumped so the new asset-loading behavior replaces cached copies."
+      ]
+    },
+    {
       "version": "1.0.55",
       "commit": "pending",
       "date": "2026-05-01",
