@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.52",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Network client identity now persists by room",
+      "businessSummary": "The network host and join pages now remember the current client's player ID for each room, so the local player is labeled as You consistently instead of being guessed from the current peer list.",
+      "highlights": [
+        "Local player IDs are now stored per room and backend URL.",
+        "Join and host pages restore the same self identity after refresh.",
+        "PWA version metadata was bumped so the updated identity logic can replace cached copies."
+      ]
+    },
+    {
       "version": "1.0.51",
       "commit": "pending",
       "date": "2026-05-01",
