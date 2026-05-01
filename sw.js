@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.41";
+const APP_VERSION = "1.0.42";
 const APP_COMMIT_SHORT = "3660ec6";
 const CACHE_NAME = `game-mobile-lab-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [

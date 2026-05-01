@@ -241,6 +241,11 @@ export function mountPage(context) {
   }
 
   async function refreshWaitingRooms() {
+    if (!isJoinPageActive()) {
+      stopWaitingRoomsPolling();
+      return;
+    }
+
     try {
       const rooms = await roomApi.listWaitingToStartRooms();
       renderWaitingRooms(Array.isArray(rooms) ? rooms : []);
@@ -258,6 +263,10 @@ export function mountPage(context) {
   }
 
   function startWaitingRoomsPolling() {
+    if (!isJoinPageActive()) {
+      return;
+    }
+
     stopWaitingRoomsPolling();
     refreshWaitingRooms();
     waitingRoomsPollTimer = window.setInterval(refreshWaitingRooms, POLL_INTERVAL_MS);
@@ -482,4 +491,8 @@ function escHtml(str) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function isJoinPageActive() {
+  return document.body?.dataset?.page === "multiplayer-lobby-network";
 }
