@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.0.51",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Update reload now forces a fresh app shell",
+      "businessSummary": "When a new version is activated, the app now reloads through a cache-busted URL instead of a plain refresh, which keeps the new worker, HTML, and JavaScript bundle in sync on mobile browsers.",
+      "highlights": [
+        "Update activation now navigates to a cache-busted URL.",
+        "Prevents mixed old/new app shell state after version changes.",
+        "PWA version metadata was bumped so the new reload behavior replaces cached copies."
+      ]
+    },
+    {
       "version": "1.0.50",
       "commit": "pending",
       "date": "2026-05-01",
