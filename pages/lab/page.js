@@ -9,6 +9,7 @@ export function mountPage(context) {
   };
 
   const REFRESH_BUTTON = document.querySelector("#refreshBtn");
+  const CHECK_LATEST_BUTTON = document.querySelector("#checkLatestBtn");
   const ACTION_BUTTON = document.querySelector("#actionBtn");
   const NETWORK_MODE = document.querySelector("#networkMode");
   const INSTALL_STATE = document.querySelector("#installState");
@@ -109,6 +110,19 @@ export function mountPage(context) {
     return -1;
   }
 
+  async function promptAndActivateUpdate(registration) {
+    await evaluateAvailableUpdate(registration);
+    const waitingWorker = registration?.waiting;
+
+    if (!waitingWorker) {
+      return false;
+    }
+
+    state.isReloadingForUpdate = true;
+    waitingWorker.postMessage({ type: "SKIP_WAITING" });
+    return true;
+  }
+
   function askWorkerBuildInfo(worker) {
     return new Promise((resolve) => {
       if (!worker) {
@@ -158,6 +172,34 @@ export function mountPage(context) {
     state.latestAvailableVersion = waitingBuild.version;
     state.latestAvailableCommit = waitingBuild.commit;
     showUpdateButton(waitingBuild.version, waitingBuild.commit);
+  }
+
+  async function forceCheckLatestVersion() {
+    if (!state.swRegistration) {
+      LAST_UPDATED.textContent = "Update check unavailable until the service worker is ready.";
+      return;
+    }
+
+    CHECK_LATEST_BUTTON.disabled = true;
+    CHECK_LATEST_BUTTON.textContent = "Checking...";
+
+    try {
+      state.promptedBuildIds.clear();
+      await state.swRegistration.update();
+      const activated = await promptAndActivateUpdate(state.swRegistration);
+
+      if (activated) {
+        LAST_UPDATED.textContent = "Update found. Reloading to the latest version...";
+        return;
+      }
+
+      LAST_UPDATED.textContent = "No newer version was found yet. Try again in a moment.";
+    } catch (error) {
+      LAST_UPDATED.textContent = `Update check failed: ${error.message}`;
+    } finally {
+      CHECK_LATEST_BUTTON.disabled = false;
+      CHECK_LATEST_BUTTON.textContent = "Check Latest Version";
+    }
   }
 
   function setInstallStatus(text) {
@@ -351,6 +393,7 @@ export function mountPage(context) {
 
   function wireEvents() {
     REFRESH_BUTTON.addEventListener("click", refreshState);
+    CHECK_LATEST_BUTTON.addEventListener("click", forceCheckLatestVersion);
     ACTION_BUTTON.addEventListener("click", performAction);
     INSTALL_STATE.addEventListener("click", installApp);
     UPDATE_BUTTON.addEventListener("click", activateWaitingUpdate);
@@ -375,6 +418,7 @@ export function mountPage(context) {
   return {
     dispose() {
       REFRESH_BUTTON.removeEventListener("click", refreshState);
+      CHECK_LATEST_BUTTON.removeEventListener("click", forceCheckLatestVersion);
       ACTION_BUTTON.removeEventListener("click", performAction);
       INSTALL_STATE.removeEventListener("click", installApp);
       UPDATE_BUTTON.removeEventListener("click", activateWaitingUpdate);
