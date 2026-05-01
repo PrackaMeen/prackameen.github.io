@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.1.1",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game now starts on a compact 3x3 arena",
+      "businessSummary": "The game now starts with the requested player count on a smaller 3x3 board, with the first player placed on the center Road4 tile. Movement also respects walls between tiles, so blocked passages are rejected instead of allowing impossible moves.",
+      "highlights": [
+        "Started new games on a 3x3 board instead of the larger default map.",
+        "Placed the first player on the center Road4 tile at game start.",
+        "Rejected movement when walls block the shared edge between tiles."
+      ]
+    },
+    {
       "version": "1.1.0",
       "commit": "pending",
       "date": "2026-05-02",

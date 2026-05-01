@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "GameWasm",
   "resources": {
-    "hash": "sha256-qEaxVV/Vay1rid+kOlVRCqihPRjoezBzLRB96AZ6KGg=",
+    "hash": "sha256-GiRw7L2vZUc4ZFTgGaE/afhK0mN9/TKMofGA7ny/Psw=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-nElGk+CZFyq0PbPm4JU8avD6lER7x9Z1C54BK7qY12Q="
     },
@@ -18,8 +18,8 @@
     },
     "coreAssembly": {},
     "assembly": {
-      "GameEngine.wasm": "sha256-nCzblmVH/sLYGA3bF/Al+NBkRCANw2Jc6p1ykmJVf/k=",
-      "GameWasm.wasm": "sha256-mS0Jl/nKSeBJPHse9DVN8isOj64YiYwwchCM7nkf7Bc=",
+      "GameEngine.wasm": "sha256-sbKLiEYNG6tXuXeL5kypeAbyvMCttsGQtsyiigkFGMQ=",
+      "GameWasm.wasm": "sha256-1CeqUBVmBJs7H+/8SsYMa8TE/k+l3NP9j8DxRQRLTZw=",
       "Microsoft.AspNetCore.Components.Web.wasm": "sha256-W5OwpEZK2sBh3ndrVSpAMkA8YVa7yYC2aRd34J9ONuk=",
       "Microsoft.AspNetCore.Components.WebAssembly.wasm": "sha256-PaYVc22cm/3FqgqE5ekc3qtVE8viRs9KdVeFKKNsRts=",
       "Microsoft.AspNetCore.Components.wasm": "sha256-ZbBLQ5DhiOI4V3mYxdGonbmMrNiZINy/fHxED9/fuiI=",
@@ -34,12 +34,12 @@
       "Microsoft.Extensions.Primitives.wasm": "sha256-jLo6FXr+jliGEvOzNn1Q59o7Nu9X7gMB626shZ36H0A=",
       "Microsoft.JSInterop.WebAssembly.wasm": "sha256-Px6z5DU/gBGylV4ob9sdcAVH4KKxpByP7WNTn+lZUro=",
       "Microsoft.JSInterop.wasm": "sha256-5YCTBeqPLBCgnNIAwn6sgKyBKS13Ooms1CiP1kN6el8=",
-      "Shared.wasm": "sha256-aJR2nDDIkj7KUC+Snb7rLSYBJpJ23emFugJRMD18hEo=",
+      "Shared.wasm": "sha256-n47RRrw9CPLr30NRBbFHm2JKl8s0kaEKITl9uNOyG6o=",
       "System.Collections.Concurrent.wasm": "sha256-6BHtSaDmiOZrq4h7FyfdQbdkdJxVRDjHIK8YxU37xnM=",
       "System.Collections.wasm": "sha256-cQQTjU8nisSAxh41WDKVFVRkS92gaHuFm+S8pzrrmFM=",
       "System.ComponentModel.wasm": "sha256-Kb7hdl6dKgHlWyXzGYr2Mo6jLQGRYtOIVlEf3Dmnj04=",
       "System.Console.wasm": "sha256-VW8eFHYCH3iXW5f6srQwS7I6ZorOYiU2h5ruYBh2Q7U=",
-      "System.Linq.wasm": "sha256-8TnyAzsozXILUIEQYzw/lJSS+wlyt/CF050wZHjroe4=",
+      "System.Linq.wasm": "sha256-+akH57DQU7RpXKpOD7WwUCOGMjie3X2IJ8CxjSqOEmc=",
       "System.Memory.wasm": "sha256-Kleae0lQNAgLQJOqgk0Bk8pHKwOLk9TyQU0ooh95onQ=",
       "System.Private.CoreLib.wasm": "sha256-VTrEPDsCwr67x/6EEwG3+sl207xwvBv+llqf0UFYCSo=",
       "System.Private.Uri.wasm": "sha256-OTF814CHNr1bHVALMuyN+OTQErG5Ij6+OREtZrgQdDc=",
