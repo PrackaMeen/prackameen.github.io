@@ -30,6 +30,16 @@ JavaScript canvas layer
 └── input-to-tile mapping
 ```
 
+## Code Quality Rules
+
+- Keep renderer code split into small modules with focused exports and imports.
+- Do not put the entire canvas system into one large JavaScript file.
+- Reuse shared helpers for sprite-sheet lookup, coordinate math, and animation timing.
+- Keep rendering code side-effect free where possible and make game state updates explicit.
+- Put shared behavior such as the animation service under unit tests before wiring it into the page.
+- Prefer data-driven rendering over duplicated per-tile conditionals.
+- Keep .NET WASM as the source of truth for board state and action rules.
+
 ## Phase 0 - Baseline And Test Harness
 
 ### Transform
@@ -37,6 +47,7 @@ JavaScript canvas layer
 - Document the current DOM shell and the future canvas contract.
 - Define the selectors that must remain stable: `#navRoot`, `#appRoot`, `#statsGrid`, `#eventFeed`, and the future `#mapViewport`.
 - Add Playwright test scaffolding to the repo so the validation path is versioned with the code.
+- Add a JS unit-test harness for shared renderer services so animation and sprite-sheet behavior can be exercised outside the browser.
 - Keep all existing HTML, CSS, and .NET behavior unchanged.
 
 ### Validation
@@ -44,6 +55,7 @@ JavaScript canvas layer
 - Run a shell smoke test against the current PWA shell.
 - Verify the menu page still mounts and the current route system still loads.
 - Verify the tile-set demo page still renders.
+- Verify the renderer service unit tests pass before any canvas wiring is merged.
 
 ## Phase 1 - Canvas Viewport Skeleton
 
@@ -69,12 +81,14 @@ JavaScript canvas layer
 - Cache sprite-sheet assets for reuse across frames.
 - Resolve frame names to source rectangles.
 - Draw static tiles first, then decorative tiles, then entities, then effects.
+- Keep sprite-sheet loading, animation timing, and frame selection in reusable modules instead of inline page code.
 
 ### Validation
 
 - Add a Playwright check that the renderer can resolve at least one named frame.
 - Add a visual regression capture for the map viewport.
 - Confirm missing sprite frames fail fast with a useful error.
+- Add unit tests for sprite-sheet lookup, animation frame progression, and cache reuse.
 
 ## Phase 3 - Animation And WASM Bridge
 
@@ -84,12 +98,14 @@ JavaScript canvas layer
 - Have WASM emit a render snapshot that the canvas layer reads.
 - Advance animations in the renderer based on the snapshot and elapsed time.
 - Keep update logic separate from draw logic.
+- Put animation state and frame advancement behind a dedicated service or module that can be unit-tested without a browser.
 
 ### Validation
 
 - Verify that state updates from WASM produce a redraw without touching DOM tiles.
 - Verify animation frame advancement on a timer or on state change.
 - Verify input events can be translated back into game actions.
+- Verify animation service behavior with deterministic unit tests for frame stepping, looping, and reset behavior.
 
 ## Phase 4 - Cleanup And Hardening
 
@@ -126,13 +142,16 @@ Each Playwright spec runs twice: once in `desktop-fullhd` (1920 x 1080) and once
 - Sprite sheets are loaded from PixelStudio PNG + JSON pairs.
 - .NET WASM remains the owner of game state and rules.
 - Playwright tests live in the repo and can be run locally.
+- Shared renderer services, especially animation logic, are covered by unit tests in the repo.
+- The implementation stays modular and does not collapse into a single monolithic JavaScript file.
 
 ## How To Run Validation
 
 1. Start the local static server for `prackameen.github.io`.
 2. Install Playwright dependencies in `prackameen.github.io/tests/playwright`.
-3. Run `npm test` from that folder.
-4. Review the smoke test output before enabling the next phase.
+3. Run the renderer service unit tests.
+4. Run `npm test` from `prackameen.github.io/tests/playwright`.
+5. Review the smoke test output before enabling the next phase.
 
 ## Notes
 

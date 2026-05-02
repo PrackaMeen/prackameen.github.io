@@ -141,6 +141,15 @@ Canvas render pass
 - Draws the map viewport on a canvas.
 - Converts pointer input into tile coordinates.
 - Schedules redraws when state changes.
+- Delegates reusable behavior to small services instead of embedding everything in one file.
+
+### Shared Renderer Services
+
+- Animation service: advances frame indices, loop state, and elapsed time.
+- Sprite-sheet service: resolves frame metadata and image cache entries.
+- Coordinate service: converts pointer space to tile space and back.
+- Scene service: builds the draw order for tiles, entities, and effects.
+- These services should be imported by the renderer and tested separately.
 
 ### HTML + CSS Layer
 
@@ -159,16 +168,37 @@ prackameen.github.io/
 ├── styles.css
 ├── sw.js
 ├── renderer/
-│   ├── assets.js
-│   ├── draw.js
-│   ├── input.js
-│   ├── loop.js
-│   └── viewport.js
+│   ├── assets/
+│   │   └── sprite-sheet.js
+│   ├── animation/
+│   │   └── animation-service.js
+│   ├── draw/
+│   │   ├── draw-map.js
+│   │   ├── draw-entities.js
+│   │   └── draw-effects.js
+│   ├── input/
+│   │   └── pointer-to-tile.js
+│   ├── loop/
+│   │   └── render-loop.js
+│   └── viewport/
+│       └── map-viewport.js
+├── tests/
+│   └── renderer/
+│       ├── animation-service.test.js
+│       ├── sprite-sheet.test.js
+│       └── pointer-to-tile.test.js
 └── assets/
     └── sprites/
         ├── tiles.png
         └── tiles.json
 ```
+
+## Testing Boundary
+
+- Renderer services should have unit tests for deterministic behavior.
+- Animation logic should be tested as a pure service, not only through Playwright.
+- Playwright should verify end-to-end rendering behavior in desktop and mobile viewports.
+- .NET tests should continue to prove the board rules and runtime state transitions.
 
 ## Summary
 
