@@ -1,6 +1,7 @@
 # Canvas Rendering Transition Plan
 
 **Project:** G.A.M.E Mobile Test Lab (`prackameen.github.io`)  
+**Branch:** `gh-pages` (active implementation branch)  
 **Status:** Proposed  
 **Created:** 2026-05-02  
 **Audience:** Developers · Product · Stakeholders
