@@ -1,6 +1,186 @@
 {
   "items": [
     {
+      "version": "1.1.23",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game board startup now comes only from WASM state",
+      "businessSummary": "The board page no longer invents a 19x19 fallback map in JavaScript. It waits for the WASM runtime to provide the actual board dimensions and state, so the UI always reflects the module that owns game state.",
+      "highlights": [
+        "Removed the JS-generated 19x19 fallback board.",
+        "Made the game board render only from WASM-provided state.",
+        "Bumped the app version so the startup behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.22",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Legal discovery previews now show the hidden tile again",
+      "businessSummary": "When you hover a legal unexplored target, the board now shows the temporary hidden tile overlay on top of the white cell. Blocked targets stay red and do not show the preview, so the hidden sprite only appears when the move can actually be committed.",
+      "highlights": [
+        "Restored the hidden preview overlay for legal unrevealed targets.",
+        "Kept blocked moves red with no hidden tile preview.",
+        "Bumped the app version so the corrected discovery preview ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.21",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Unrevealed tiles now stay plain white until previewed",
+      "businessSummary": "The board now renders unrevealed map space as plain white cells, and the hidden tile only appears as the temporary preview overlay when the move target is legal. This keeps committed moves from showing an extra hidden tile while preserving the planning cue during selection.",
+      "highlights": [
+        "Switched unrevealed board cells to plain white space.",
+        "Kept the hidden tile sprite as a temporary preview only.",
+        "Bumped the app version so the cleaner commit view ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.20",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Hidden previews now respect wall-blocked moves",
+      "businessSummary": "Blank move previews are now only shown when the source tile actually has an open edge toward the target direction. If a wall blocks the move, the target stays red and no hidden preview tile appears.",
+      "highlights": [
+        "Added wall-aware validation for blank move targets in the board preview.",
+        "Prevented hidden preview tiles from appearing on blocked moves.",
+        "Bumped the app version so the corrected preview behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.19",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Move preview now stays on top of hidden board space",
+      "businessSummary": "Temporary hidden move previews now appear only for legal targets, and the arrow is rendered above the preview tile so the selected path stays readable. This makes planning moves on unexplored board space clearer without changing the committed move behavior.",
+      "highlights": [
+        "Restricted hidden previews to legal green move targets.",
+        "Put the arrow overlay above the temporary hidden tile.",
+        "Bumped the app version so the improved preview behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.18",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Move previews now work on empty board space",
+      "businessSummary": "You can now click empty white cells on the board to place a temporary hidden move preview. The arrow follows your latest click until you confirm the action, which makes planning exploration feel much more direct.",
+      "highlights": [
+        "Added click-to-preview support for empty board positions.",
+        "Rendered a temporary hidden tile overlay while the action is still pending.",
+        "Bumped the app version so the updated board interaction ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.17",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Exploration now adds one hidden frontier tile at a time",
+      "businessSummary": "When a move reveals new map space, the runtime now appends only the single next frontier tile in that direction instead of materializing a whole row or column. This keeps exploration compact while still allowing players to keep moving outward.",
+      "highlights": [
+        "Changed map growth to add one frontier tile per move.",
+        "Kept move validation working across north and west exploration.",
+        "Bumped the app version so the compact growth behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.16",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Move actions now update the actual tile position",
+      "businessSummary": "The runtime now treats negative target coordinates as real board positions all the way through the shared action request path, so successful moves finally relocate the player to the destination tile even after the board extends north or west of zero.",
+      "highlights": [
+        "Fixed the shared action request sentinel used by GameRuntime move effects.",
+        "Kept the browser and runtime coordinate handling consistent for negative tiles.",
+        "Bumped the app version so the corrected movement behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.15",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "North and west exploration now keeps working past zero",
+      "businessSummary": "The WASM runtime now carries negative board coordinates correctly, so players can keep moving into newly revealed tiles after the map extends north or west of the starting area. This removes the dead-end behavior that appeared after the first few steps of exploration.",
+      "highlights": [
+        "Fixed the runtime action request handling for negative map coordinates.",
+        "Kept adjacent exploration valid after the board expands past zero.",
+        "Bumped the app version so the movement fix ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.14",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Board snapshots restored to rectangular layout",
+      "businessSummary": "The runtime now publishes the full rectangular board bounds again, while still keeping the hidden tiles and origin offsets used for exploration. This keeps adjacent tiles clickable for north and west movement without shifting world coordinates.",
+      "highlights": [
+        "Restored rectangular board snapshots for consistent adjacency.",
+        "Kept hidden tiles and board origin offsets in the runtime payload.",
+        "Bumped the app version so the corrected movement behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.13",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Discovery now reveals only nearby hidden tiles",
+      "businessSummary": "When a tile is revealed, the runtime now adds only the missing tiles in that tile’s immediate neighborhood instead of growing an entire row or column. This keeps exploration local and allows north and west reveals to work consistently.",
+      "highlights": [
+        "Changed discovery growth from full-line appends to a sparse neighborhood model.",
+        "Kept only the nearby hidden tiles around the revealed tile.",
+        "Bumped the app version so the tighter reveal behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.12",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Board now grows in the move direction",
+      "businessSummary": "The map no longer shifts when a reveal reaches the edge. Instead, it appends new tiles on the side you moved toward while keeping existing world coordinates stable, which preserves the player icon and camera position.",
+      "highlights": [
+        "Changed map growth from ring shifting to directional tile appends.",
+        "Kept existing revealed tiles and player positions stable.",
+        "Bumped the app version so the new movement behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.11",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Revealed tiles now grow the hidden perimeter",
+      "businessSummary": "When a move reveals a tile on the edge of the visible map, the runtime now expands the board by one ring so the new tile stays visible and gains eight hidden neighbors. This keeps the fog-of-war area growing naturally as players explore.",
+      "highlights": [
+        "Expanded the runtime board when a revealed move reaches the current edge.",
+        "Preserved player position and revealed tiles across the resize.",
+        "Bumped the app version so the larger exploration area ships in the next PWA build."
+      ]
+    },
+    {
+      "version": "1.1.10",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Board now starts with a revealed center tile",
+      "businessSummary": "New games now begin with one revealed Road4_0 tile in the center and eight hidden neighbors around it. The runtime also includes the revealed tile list in snapshots so the board consistently shows fog-of-war state from the first frame.",
+      "highlights": [
+        "Started games with the center tile revealed instead of showing the full board immediately.",
+        "Kept the surrounding eight tiles hidden at start.",
+        "Included revealed tile state in snapshots so the board renderer can show Hidden.png correctly."
+      ]
+    },
+    {
+      "version": "1.1.9",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Undiscovered tiles now render as Hidden",
+      "businessSummary": "The board now shows Hidden.png for tiles that have not been revealed yet, which makes fog-of-war state visible in the map itself. Revealed tiles continue to show their actual terrain and entities.",
+      "highlights": [
+        "Added a hidden-tile asset to the board renderer.",
+        "Preloaded and precached the hidden tile image.",
+        "Bumped the app version so the new fog-of-war behavior ships in the PWA build."
+      ]
+    },
+    {
       "version": "1.1.8",
       "commit": "pending",
       "date": "2026-05-02",

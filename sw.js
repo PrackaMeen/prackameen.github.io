@@ -1,11 +1,11 @@
-const APP_VERSION = "1.1.8";
+const APP_VERSION = "1.1.23";
 const APP_COMMIT_SHORT = "3660ec6";
 const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=1.1.8",
-  "./app.js?v=1.1.8",
+  "./styles.css?v=1.1.23",
+  "./app.js?v=1.1.23",
   "./player-preferences.js",
   "./pages/menu/index.html",
   "./pages/menu/styles.css",
@@ -118,6 +118,7 @@ const APP_SHELL = [
   "./assets/game/tiles/Chamber4/Chamber4_1.png",
   "./assets/game/tiles/Chamber4/Chamber4_2.png",
   "./assets/game/tiles/Chamber4/Chamber4_3.png",
+  "./assets/game/tiles/Hidden.png",
   "./assets/game/entities/player.png",
   "./assets/game/entities/monster.png"
 ];
