@@ -11,6 +11,12 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure'
   },
+  webServer: {
+    command: 'dotnet serve --port 5500 --directory ../../',
+    url: 'http://127.0.0.1:5500',
+    reuseExistingServer: true,
+    timeout: 120_000
+  },
   projects: [
     {
       name: 'desktop-fullhd',
