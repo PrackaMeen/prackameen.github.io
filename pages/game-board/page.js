@@ -9,6 +9,7 @@ export async function mountPage(context) {
     applyTileDefinitionsFromRuntime,
     getEntityAssetUrl,
     getTileAssetUrl,
+    getTileWalls,
     normalizeEntityKind,
     normalizeTileKind
   } = await import(`../../lib/game-assets.js?v=${encodeURIComponent(context.appBuildId || context.appVersion || "latest")}`);
@@ -29,6 +30,7 @@ export async function mountPage(context) {
     activePlayerName: session.currentPlayerName ?? session.players?.[0]?.name ?? "Player A",
     selectedSource: null,
     pendingTarget: null,
+    selectionPreviewTone: null,
     isSubmitting: false,
     isRuntimeReady: false,
     feedback: "",
@@ -87,6 +89,7 @@ export async function mountPage(context) {
         colorHex: cell.dataset.entityColorHex || null
       };
       state.pendingTarget = null;
+      state.selectionPreviewTone = { tone: "green", color: "#14532d", message: "" };
       state.feedback = "";
       renderBoard(state.session);
       syncHud();
@@ -97,8 +100,9 @@ export async function mountPage(context) {
       return;
     }
 
+    state.selectionPreviewTone = classifyTargetPreview(state.session, state.selectedSource, { x, y });
     state.pendingTarget = { x, y };
-    state.feedback = "";
+    state.feedback = state.selectionPreviewTone.message;
     renderBoard(state.session);
     syncHud();
   };
@@ -422,10 +426,12 @@ export async function mountPage(context) {
 
       if (isSelectedSource(Number(cell.x), Number(cell.y))) {
         tile.classList.add("game-board-cell--selected-player");
+        applySelectionAccent(tile);
       }
 
       if (isPendingTarget(Number(cell.x), Number(cell.y))) {
         tile.classList.add("game-board-cell--selected-target");
+        applySelectionAccent(tile);
       }
 
       const terrainLayer = document.createElement("span");
@@ -561,7 +567,7 @@ export async function mountPage(context) {
 
     const markerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     markerPath.setAttribute("d", "M 0 0 L 2 1 L 0 2 z");
-    markerPath.setAttribute("fill", state.selectedSource.colorHex || "#285c77");
+    markerPath.setAttribute("fill", getSelectionPreviewColor());
     marker.appendChild(markerPath);
     defs.appendChild(marker);
     arrowLayerEl.appendChild(defs);
@@ -571,7 +577,7 @@ export async function mountPage(context) {
     line.setAttribute("y1", (state.selectedSource.y + 0.5).toString());
     line.setAttribute("x2", (state.pendingTarget.x + 0.5).toString());
     line.setAttribute("y2", (state.pendingTarget.y + 0.5).toString());
-    line.setAttribute("stroke", state.selectedSource.colorHex || "#285c77");
+    line.setAttribute("stroke", getSelectionPreviewColor());
     line.setAttribute("stroke-width", "0.14");
     line.setAttribute("stroke-linecap", "round");
     line.setAttribute("stroke-linejoin", "round");
@@ -586,7 +592,7 @@ export async function mountPage(context) {
       || (!state.selectedSource
         ? `Click ${state.activePlayerName} to select it.`
         : !state.pendingTarget
-          ? `Selected ${state.activePlayerName}. Click a tile to queue movement.`
+          ? `Selected ${state.activePlayerName}. Click a tile to preview movement.`
           : `Queued move to (${state.pendingTarget.x}, ${state.pendingTarget.y}). Backend validates on action.`);
 
     setNavMessage(statusMessage);
@@ -596,7 +602,7 @@ export async function mountPage(context) {
     }
 
     if (performActionBtn) {
-      performActionBtn.disabled = !state.selectedSource || !state.pendingTarget || state.isSubmitting;
+      performActionBtn.disabled = !state.selectedSource || !state.pendingTarget || state.isSubmitting || state.selectionPreviewTone?.tone === "red";
       performActionBtn.textContent = state.isSubmitting ? "Sending..." : "Confirm Move";
     }
   }
@@ -604,6 +610,7 @@ export async function mountPage(context) {
   function clearSelection() {
     state.selectedSource = null;
     state.pendingTarget = null;
+    state.selectionPreviewTone = null;
   }
 
   function isActivePlayerCell(entityId) {
@@ -620,6 +627,118 @@ export async function mountPage(context) {
 
   function isPendingTarget(x, y) {
     return Boolean(state.pendingTarget && state.pendingTarget.x === x && state.pendingTarget.y === y);
+  }
+
+  function applySelectionAccent(tile) {
+    const color = getSelectionPreviewColor();
+    tile.style.setProperty("--selection-accent", color);
+  }
+
+  function getSelectionPreviewColor() {
+    if (state.selectionPreviewTone && typeof state.selectionPreviewTone === "object") {
+      return state.selectionPreviewTone.color || state.selectedSource?.colorHex || "#14532d";
+    }
+
+    return state.selectedSource?.colorHex || "#14532d";
+  }
+
+  function getSelectionPreviewMessage() {
+    return state.selectionPreviewTone?.message || "";
+  }
+
+  function classifyTargetPreview(currentSession, source, target) {
+    const fromCell = getBoardCell(currentSession, source?.x, source?.y);
+    const toCell = getBoardCell(currentSession, target?.x, target?.y);
+
+    if (!fromCell || !toCell) {
+      return { tone: "red", color: "#b91c1c", message: "Movement is not possible." };
+    }
+
+    if (!areOrthogonallyAdjacent(source, target)) {
+      return { tone: "red", color: "#b91c1c", message: "Movement is not possible." };
+    }
+
+    if (!canTraverseBetweenCells(fromCell, toCell)) {
+      return { tone: "red", color: "#b91c1c", message: "Movement is blocked by walls." };
+    }
+
+    if (isTargetEngaged(currentSession, toCell)) {
+      return { tone: "blue", color: "#1d4ed8", message: "This tile will trigger an attack." };
+    }
+
+    if (isDiscoveryTracked(currentSession) && !isTileRevealed(currentSession, target?.x, target?.y)) {
+      return { tone: "blue", color: "#1d4ed8", message: "This tile will be discovered." };
+    }
+
+    return { tone: "green", color: "#14532d", message: "Movement is available." };
+  }
+
+  function getBoardCell(currentSession, x, y) {
+    const cells = Array.isArray(currentSession?.board) ? currentSession.board : [];
+    return cells.find((cell) => Number(cell?.x) === Number(x) && Number(cell?.y) === Number(y)) || null;
+  }
+
+  function areOrthogonallyAdjacent(source, target) {
+    if (!Number.isInteger(source?.x) || !Number.isInteger(source?.y) || !Number.isInteger(target?.x) || !Number.isInteger(target?.y)) {
+      return false;
+    }
+
+    const dx = Math.abs(source.x - target.x);
+    const dy = Math.abs(source.y - target.y);
+    return dx + dy === 1;
+  }
+
+  function canTraverseBetweenCells(fromCell, toCell) {
+    const fromWalls = getTileWalls(
+      normalizeTileKind(fromCell.tileKind || fromCell.kind || fromCell.terrainKind),
+      Number.isInteger(fromCell.tileOrientation) ? fromCell.tileOrientation : Number.isInteger(fromCell.orientation) ? fromCell.orientation : 0
+    );
+    const toWalls = getTileWalls(
+      normalizeTileKind(toCell.tileKind || toCell.kind || toCell.terrainKind),
+      Number.isInteger(toCell.tileOrientation) ? toCell.tileOrientation : Number.isInteger(toCell.orientation) ? toCell.orientation : 0
+    );
+
+    if (fromCell.x === toCell.x) {
+      if (fromCell.y < toCell.y) {
+        return !fromWalls.south && !toWalls.north;
+      }
+
+      return !fromWalls.north && !toWalls.south;
+    }
+
+    if (fromCell.y === toCell.y) {
+      if (fromCell.x < toCell.x) {
+        return !fromWalls.east && !toWalls.west;
+      }
+
+      return !fromWalls.west && !toWalls.east;
+    }
+
+    return false;
+  }
+
+  function isTargetEngaged(currentSession, targetCell) {
+    if (!targetCell) {
+      return false;
+    }
+
+    const entityKind = String(targetCell.entityKind || targetCell.occupantKind || targetCell.monsterKind || targetCell.playerKind || "").toLowerCase();
+    if (!entityKind) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function isDiscoveryTracked(currentSession) {
+    return Array.isArray(currentSession?.revealedTiles)
+      && currentSession.revealedTiles.length > 0
+      && currentSession.revealedTiles.length < state.boardWidth * state.boardHeight;
+  }
+
+  function isTileRevealed(currentSession, x, y) {
+    const revealedTiles = Array.isArray(currentSession?.revealedTiles) ? currentSession.revealedTiles : [];
+    return revealedTiles.some((tile) => Number(tile?.x) === Number(x) && Number(tile?.y) === Number(y));
   }
 
   function getPointerDistance(firstPoint, secondPoint) {
