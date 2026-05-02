@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.1.27",
+      "commit": "ae19bb8",
+      "date": "2026-05-02",
+      "title": "PWA cache keys now move with the build stamp",
+      "businessSummary": "The PWA now uses a fresh build identifier and service-worker cache name so updated page modules are not stuck behind an older cached shell. This makes the game board reflect the latest placement and discovery behavior after a deploy.",
+      "highlights": [
+        "Bumped the PWA build version to force a new asset URL set.",
+        "Synced the service worker commit stamp so its cache name changes too.",
+        "Reduced the chance of stale game-board code surviving a new release."
+      ]
+    },
+    {
       "version": "1.1.26",
       "commit": "pending",
       "date": "2026-05-02",
