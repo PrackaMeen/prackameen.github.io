@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.1.7",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Runtime tile definitions now emit current sprite paths",
+      "businessSummary": "The GameWasm tile definition generator was still emitting the old flat Road4.png-style URLs. It now produces the same directory-based sprite paths as the canonical tile definitions, so the latest build stops requesting stale tile assets.",
+      "highlights": [
+        "Updated the GameWasm tile definition generator to match the canonical JSON paths.",
+        "Eliminated the remaining source of Road4.png requests.",
+        "Bumped the app version so the runtime fix ships in the next PWA build."
+      ]
+    },
+    {
+      "version": "1.1.6",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Service worker now precaches the latest tile sprites",
+      "businessSummary": "The app was still requesting old flat tile image names from the service worker cache. The precache list now uses the current tile-definitions.json sprite paths, which keeps the latest version on the correct assets.",
+      "highlights": [
+        "Replaced stale service-worker tile sprite URLs.",
+        "Aligned precache entries with the canonical tile definitions.",
+        "Bumped the app version so the fix ships in the next PWA build."
+      ]
+    },
+    {
       "version": "1.1.5",
       "commit": "pending",
       "date": "2026-05-02",
