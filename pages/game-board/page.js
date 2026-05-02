@@ -18,9 +18,8 @@ export async function mountPage(context) {
   const boardEl = document.getElementById("gameBoard");
   const mapEl = document.getElementById("gameBoardMap");
   const stageEl = document.getElementById("gameBoardStage");
+  const actionBarEl = document.querySelector(".game-board-action-bar");
   const arrowLayerEl = document.getElementById("gameBoardArrowLayer");
-  const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
-  const performActionBtn = document.getElementById("performActionBtn");
   const roomApi = createDefaultRoomApiClient();
   const session = window.__GAME_SESSION__ || createEmptySession();
   const gameWasmScriptUrl = `/assets/game-wasm/wwwroot/js/game-runtime.js?v=${encodeURIComponent(context.appBuildId || context.appVersion || "latest")}`;
@@ -31,6 +30,7 @@ export async function mountPage(context) {
     activePlayerName: session.currentPlayerName ?? session.players?.[0]?.name ?? "Player A",
     selectedSource: null,
     pendingTarget: null,
+    pendingPlacement: null,
     selectionPreviewTone: null,
     isSubmitting: false,
     isRuntimeReady: false,
@@ -64,6 +64,10 @@ export async function mountPage(context) {
   void ensureGameWasmHydrated().catch(() => undefined);
 
   const handleBoardClick = (event) => {
+    if (state.pendingPlacement) {
+      return;
+    }
+
     const cell = event.target.closest?.(".game-board-cell");
     const point = cell && boardEl?.contains(cell)
       ? getBoardPointFromCell(cell)
@@ -111,12 +115,18 @@ export async function mountPage(context) {
   };
 
   const handlePerformAction = async () => {
-    if (!state.selectedSource || !state.pendingTarget || state.isSubmitting) {
+    if (state.isSubmitting) {
+      return;
+    }
+
+    const placement = state.pendingPlacement || state.session?.pendingPlacement || null;
+    const hasQueuedSelection = state.selectedSource && state.pendingTarget;
+    if (!placement && !hasQueuedSelection) {
       return;
     }
 
     state.isSubmitting = true;
-    state.feedback = "Validating action...";
+    state.feedback = placement ? "Committing tile placement..." : "Validating action...";
     syncHud();
 
     try {
@@ -125,13 +135,25 @@ export async function mountPage(context) {
         throw new Error("GameWasm bridge is unavailable.");
       }
 
-      const payload = await wasm.applyAction({
-        actionName: "move",
-        sourceX: state.selectedSource.x,
-        sourceY: state.selectedSource.y,
-        targetX: state.pendingTarget.x,
-        targetY: state.pendingTarget.y
-      });
+      const request = placement
+        ? {
+            actionName: "commit_placement",
+            sourceX: placement.sourceX,
+            sourceY: placement.sourceY,
+            targetX: placement.targetX,
+            targetY: placement.targetY
+          }
+        : {
+            actionName: isTileRevealed(state.session, state.pendingTarget.x, state.pendingTarget.y)
+              ? "move"
+              : "discover",
+            sourceX: state.selectedSource.x,
+            sourceY: state.selectedSource.y,
+            targetX: state.pendingTarget.x,
+            targetY: state.pendingTarget.y
+          };
+
+      const payload = await wasm.applyAction(request);
 
       if (!payload?.success) {
         throw new Error(payload?.message || "Action failed.");
@@ -157,7 +179,12 @@ export async function mountPage(context) {
   };
 
   const handleCancelSelection = () => {
-    if (!state.selectedSource && !state.pendingTarget) {
+    if (!state.selectedSource && !state.pendingTarget && !state.pendingPlacement) {
+      return;
+    }
+
+    if (state.pendingPlacement) {
+      void cancelPendingPlacement();
       return;
     }
 
@@ -260,8 +287,6 @@ export async function mountPage(context) {
   syncHud();
 
   boardEl?.addEventListener("click", handleBoardClick);
-  cancelSelectionBtn?.addEventListener("click", handleCancelSelection);
-  performActionBtn?.addEventListener("click", handlePerformAction);
   boardEl?.addEventListener("touchstart", handleMapTouchStart, { passive: false });
   boardEl?.addEventListener("touchmove", handleMapTouchMove, { passive: false });
   boardEl?.addEventListener("touchend", handleMapTouchEnd, { passive: false });
@@ -270,8 +295,6 @@ export async function mountPage(context) {
   return {
     dispose() {
       boardEl?.removeEventListener("click", handleBoardClick);
-      cancelSelectionBtn?.removeEventListener("click", handleCancelSelection);
-      performActionBtn?.removeEventListener("click", handlePerformAction);
       boardEl?.removeEventListener("touchstart", handleMapTouchStart);
       boardEl?.removeEventListener("touchmove", handleMapTouchMove);
       boardEl?.removeEventListener("touchend", handleMapTouchEnd);
@@ -288,6 +311,7 @@ export async function mountPage(context) {
       boardOriginX: 0,
       boardOriginY: 0,
       board: [],
+      pendingPlacement: null,
       players: []
     };
   }
@@ -396,6 +420,13 @@ export async function mountPage(context) {
     state.boardHeight = height;
     state.boardOriginX = originX;
     state.boardOriginY = originY;
+    state.pendingPlacement = currentSession?.pendingPlacement || null;
+
+    if (state.pendingPlacement) {
+      state.selectedSource = null;
+      state.pendingTarget = null;
+      state.selectionPreviewTone = null;
+    }
 
     if (width <= 0 || height <= 0) {
       boardEl.innerHTML = "";
@@ -452,6 +483,11 @@ export async function mountPage(context) {
 
       if (isPendingTarget(Number(cell.x), Number(cell.y))) {
         tile.classList.add("game-board-cell--selected-target");
+        applySelectionAccent(tile);
+      }
+
+      if (state.pendingPlacement && state.pendingPlacement.targetX === Number(cell.x) && state.pendingPlacement.targetY === Number(cell.y)) {
+        tile.classList.add("game-board-cell--placement-target");
         applySelectionAccent(tile);
       }
 
@@ -617,21 +653,112 @@ export async function mountPage(context) {
   function syncHud() {
     const statusMessage = state.feedback
       || (!state.selectedSource
-        ? `Click ${state.activePlayerName} to select it.`
+        ? state.pendingPlacement
+          ? (state.pendingPlacement.canCommit
+            ? `Tile aligned. Use the action bar to rotate or place & move.`
+            : `Rotate the revealed tile using the action bar until it connects.`)
+          : `Click ${state.activePlayerName} to select it.`
         : !state.pendingTarget
           ? `Selected ${state.activePlayerName}. Click a tile to preview movement.`
-          : `Queued move to (${state.pendingTarget.x}, ${state.pendingTarget.y}). Backend validates on action.`);
+          : `Queued ${isTileRevealed(state.session, state.pendingTarget.x, state.pendingTarget.y) ? "move" : "tile placement"} to (${state.pendingTarget.x}, ${state.pendingTarget.y}). Backend validates on action.`);
 
     setNavMessage(statusMessage);
 
-    if (cancelSelectionBtn) {
-      cancelSelectionBtn.disabled = !state.selectedSource && !state.pendingTarget;
+    if (actionBarEl) {
+      const placement = state.pendingPlacement || state.session?.pendingPlacement || null;
+      renderActionBar(actionBarEl, placement);
+    }
+  }
+
+  function renderActionBar(container, placement) {
+    const nodes = [];
+
+    if (placement) {
+      nodes.push(createPlacementPreview(placement));
     }
 
-    if (performActionBtn) {
-      performActionBtn.disabled = !state.selectedSource || !state.pendingTarget || state.isSubmitting || state.selectionPreviewTone?.tone === "red";
-      performActionBtn.textContent = state.isSubmitting ? "Sending..." : "Confirm Move";
-    }
+    const buttonConfig = placement
+      ? [
+          {
+            label: "Rotate Left",
+            className: "game-board-action-btn game-board-action-btn--ghost",
+            disabled: state.isSubmitting,
+            onClick: () => void handleRotatePlacement(-1)
+          },
+          {
+            label: state.isSubmitting ? "Placing..." : "Place & Move",
+            className: "game-board-action-btn",
+            disabled: state.isSubmitting || placement.canCommit === false,
+            onClick: () => void handlePerformAction()
+          },
+          {
+            label: "Rotate Right",
+            className: "game-board-action-btn game-board-action-btn--ghost",
+            disabled: state.isSubmitting,
+            onClick: () => void handleRotatePlacement(1)
+          }
+        ]
+      : [
+          {
+            label: "Cancel",
+            className: "game-board-action-btn game-board-action-btn--ghost",
+            disabled: !state.selectedSource && !state.pendingTarget,
+            onClick: handleCancelSelection
+          },
+          {
+            label: state.isSubmitting
+              ? "Sending..."
+              : isTileRevealed(state.session, state.pendingTarget?.x, state.pendingTarget?.y)
+                ? "Confirm Move"
+                : "Place Tile",
+            className: "game-board-action-btn",
+            disabled: state.isSubmitting
+              || (!state.selectedSource || !state.pendingTarget || state.selectionPreviewTone?.tone === "red"),
+            onClick: () => void handlePerformAction()
+          }
+        ];
+
+    nodes.push(...buttonConfig.map(createActionButton));
+    container.replaceChildren(...nodes);
+  }
+
+  function createActionButton(config) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = config.className;
+    button.disabled = config.disabled;
+    button.textContent = config.label;
+    button.addEventListener("click", config.onClick);
+    return button;
+  }
+
+  function createPlacementPreview(placement) {
+    const card = document.createElement("div");
+    card.className = "game-board-placement-preview";
+
+    const tile = document.createElement("div");
+    tile.className = "game-board-placement-preview__tile";
+    tile.style.backgroundImage = `url(${getTileAssetUrl(placement.tileKind, placement.tileOrientation)})`;
+    tile.setAttribute("aria-hidden", "true");
+
+    const details = document.createElement("div");
+    details.className = "game-board-placement-preview__details";
+
+    const title = document.createElement("div");
+    title.className = "game-board-placement-preview__title";
+    title.textContent = `${placement.tileKind} · ${placement.tileOrientation}`;
+
+    const subtitle = document.createElement("div");
+    subtitle.className = "game-board-placement-preview__subtitle";
+    subtitle.textContent = placement.canCommit
+      ? "Tile ready to commit"
+      : "Rotate the tile until it connects";
+
+    details.appendChild(title);
+    details.appendChild(subtitle);
+    card.appendChild(tile);
+    card.appendChild(details);
+    return card;
   }
 
   function clearSelection() {
@@ -685,16 +812,24 @@ export async function mountPage(context) {
       return { tone: "red", color: "#b91c1c", message: "Movement is not possible." };
     }
 
-    if (toCell && !canTraverseBetweenCells(fromCell, toCell)) {
+    if (!toCell) {
+      return { tone: "red", color: "#b91c1c", message: "Movement is not possible." };
+    }
+
+    if (!isTileRevealed(currentSession, target?.x, target?.y)) {
+      if (!canExitTowardsTarget(fromCell, source, target)) {
+        return { tone: "red", color: "#b91c1c", message: "Movement is blocked by walls." };
+      }
+
+      return { tone: "green", color: "#14532d", message: "Hidden tile preview." };
+    }
+
+    if (!canTraverseBetweenCells(fromCell, toCell)) {
       return { tone: "red", color: "#b91c1c", message: "Movement is blocked by walls." };
     }
 
     if (isTargetEngaged(currentSession, toCell)) {
       return { tone: "blue", color: "#1d4ed8", message: "This tile will trigger an attack." };
-    }
-
-    if (!toCell || !isTileRevealed(currentSession, target?.x, target?.y)) {
-      return { tone: "green", color: "#14532d", message: "Hidden tile preview." };
     }
 
     return { tone: "green", color: "#14532d", message: "Movement is available." };
@@ -772,6 +907,93 @@ export async function mountPage(context) {
     boardEl.appendChild(tile);
   }
 
+  async function handleRotatePlacement(delta) {
+    if (!state.pendingPlacement || state.isSubmitting) {
+      return;
+    }
+
+    state.isSubmitting = true;
+    state.feedback = delta < 0 ? "Rotating tile left..." : "Rotating tile right...";
+    syncHud();
+
+    try {
+      const wasm = await ensureGameWasmRuntime().catch(() => null);
+      if (!wasm) {
+        throw new Error("GameWasm bridge is unavailable.");
+      }
+
+      const payload = await wasm.applyAction({
+        actionName: "rotate_placement",
+        rotationDelta: delta
+      });
+
+      if (!payload?.success) {
+        throw new Error(payload?.message || "Rotation failed.");
+      }
+
+      if (payload?.snapshot) {
+        state.session = payload.snapshot;
+        window.__GAME_SESSION__ = payload.snapshot;
+        state.activePlayerId = payload.snapshot.currentPlayerId ?? payload.snapshot.activePlayerId ?? state.activePlayerId;
+        state.activePlayerName = payload.snapshot.currentPlayerName ?? payload.snapshot.activePlayerName ?? state.activePlayerName;
+      }
+
+      clearSelection();
+      state.feedback = payload?.message || "Tile rotated.";
+      renderBoard(state.session);
+      syncHud();
+    } catch (error) {
+      state.feedback = error instanceof Error ? error.message : "Rotation failed.";
+      syncHud();
+    } finally {
+      state.isSubmitting = false;
+      syncHud();
+    }
+  }
+
+  async function cancelPendingPlacement() {
+    if (!state.pendingPlacement || state.isSubmitting) {
+      return;
+    }
+
+    state.isSubmitting = true;
+    state.feedback = "Canceling tile placement...";
+    syncHud();
+
+    try {
+      const wasm = await ensureGameWasmRuntime().catch(() => null);
+      if (!wasm) {
+        throw new Error("GameWasm bridge is unavailable.");
+      }
+
+      const payload = await wasm.applyAction({
+        actionName: "cancel_placement"
+      });
+
+      if (!payload?.success) {
+        throw new Error(payload?.message || "Cancel failed.");
+      }
+
+      if (payload?.snapshot) {
+        state.session = payload.snapshot;
+        window.__GAME_SESSION__ = payload.snapshot;
+        state.activePlayerId = payload.snapshot.currentPlayerId ?? payload.snapshot.activePlayerId ?? state.activePlayerId;
+        state.activePlayerName = payload.snapshot.currentPlayerName ?? payload.snapshot.activePlayerName ?? state.activePlayerName;
+      }
+
+      clearSelection();
+      state.feedback = payload?.message || "Tile placement canceled.";
+      renderBoard(state.session);
+      syncHud();
+    } catch (error) {
+      state.feedback = error instanceof Error ? error.message : "Cancel failed.";
+      syncHud();
+    } finally {
+      state.isSubmitting = false;
+      syncHud();
+    }
+  }
+
   function areOrthogonallyAdjacent(source, target) {
     if (!Number.isInteger(source?.x) || !Number.isInteger(source?.y) || !Number.isInteger(target?.x) || !Number.isInteger(target?.y)) {
       return false;
@@ -809,6 +1031,31 @@ export async function mountPage(context) {
     }
 
     return false;
+  }
+
+  function canExitTowardsTarget(fromCell, source, target) {
+    if (!fromCell || !areOrthogonallyAdjacent(source, target)) {
+      return false;
+    }
+
+    const fromWalls = getTileWalls(
+      normalizeTileKind(fromCell.tileKind || fromCell.kind || fromCell.terrainKind),
+      Number.isInteger(fromCell.tileOrientation) ? fromCell.tileOrientation : Number.isInteger(fromCell.orientation) ? fromCell.orientation : 0
+    );
+
+    if (target.x > source.x) {
+      return !fromWalls.east;
+    }
+
+    if (target.x < source.x) {
+      return !fromWalls.west;
+    }
+
+    if (target.y > source.y) {
+      return !fromWalls.south;
+    }
+
+    return !fromWalls.north;
   }
 
   function isTargetEngaged(currentSession, targetCell) {

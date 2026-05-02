@@ -1,6 +1,42 @@
 {
   "items": [
     {
+      "version": "1.1.26",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Placement preview now appears in the action bar",
+      "businessSummary": "When a tile is revealed, the bottom action bar now shows the pending tile itself alongside rotate left, place & move, and rotate right. This makes the two-step placement flow easier to understand before the move is committed.",
+      "highlights": [
+        "Added a visible preview card for the pending revealed tile.",
+        "Kept the three placement actions in the bottom bar.",
+        "Preserved the WASM-owned validation and commit flow."
+      ]
+    },
+    {
+      "version": "1.1.25",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Placement actions now live in the action bar",
+      "businessSummary": "When a tile is revealed, the board now shows three clear action-bar controls: rotate left, place & move, and rotate right. Rotation wraps through the tile variants, so the player can align the revealed tile before committing the move.",
+      "highlights": [
+        "Moved tile rotation controls into the main action bar.",
+        "Kept rotate left/right behavior wrapping through the tile orientation set.",
+        "Preserved the WASM-owned placement flow for validation and commit handling."
+      ]
+    },
+    {
+      "version": "1.1.24",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Hidden tile placement now reveals and rotates before commit",
+      "businessSummary": "The game board now uses a two-step discovery flow for unrevealed tiles: the first commit places and reveals the tile, then the player can rotate it with the on-board arrows until the path lines up before finalizing the move. The browser only renders the placement state while WASM keeps the validation rules authoritative.",
+      "highlights": [
+        "Moved hidden-tile placement and rotation validation into the WASM runtime.",
+        "Added a pending placement state so the revealed tile can be rotated before the final commit.",
+        "Kept the browser layer visual-only for the new placement controls."
+      ]
+    },
+    {
       "version": "1.1.23",
       "commit": "pending",
       "date": "2026-05-02",
