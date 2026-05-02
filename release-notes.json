@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.1.8",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Tile click previews now show move outcome",
+      "businessSummary": "Clicking a destination tile now validates the move before confirmation and colors the selection and arrow to explain the outcome. Valid quiet moves appear dark green, blocked moves appear red, and moves that lead into combat or discovery appear blue.",
+      "highlights": [
+        "Added click-time validation for destination tiles on the game board.",
+        "Colored selection and arrow previews by move result.",
+        "Bumped the app version so the new UI ships in the PWA build."
+      ]
+    },
+    {
       "version": "1.1.7",
       "commit": "pending",
       "date": "2026-05-02",
