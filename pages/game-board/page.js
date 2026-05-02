@@ -8,6 +8,7 @@ export async function mountPage(context) {
   const {
     applyTileDefinitionsFromRuntime,
     getEntityAssetUrl,
+    getHiddenTileAssetUrl,
     getTileAssetUrl,
     getTileWalls,
     normalizeEntityKind,
@@ -21,7 +22,7 @@ export async function mountPage(context) {
   const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
   const performActionBtn = document.getElementById("performActionBtn");
   const roomApi = createDefaultRoomApiClient();
-  const session = window.__GAME_SESSION__ || createFallbackSession();
+  const session = window.__GAME_SESSION__ || createEmptySession();
   const gameWasmScriptUrl = `/assets/game-wasm/wwwroot/js/game-runtime.js?v=${encodeURIComponent(context.appBuildId || context.appVersion || "latest")}`;
   const setNavMessage = typeof context.setNavMessage === "function" ? context.setNavMessage : () => {};
   const state = {
@@ -43,8 +44,10 @@ export async function mountPage(context) {
     gestureStartPanX: 0,
     gestureStartPanY: 0,
     activeTouchPoints: new Map(),
-    boardWidth: 19,
-    boardHeight: 19
+    boardWidth: 0,
+    boardHeight: 0,
+    boardOriginX: 0,
+    boardOriginY: 0
   };
 
   const layoutResizeObserver = typeof ResizeObserver !== "undefined" && stageEl
@@ -62,18 +65,18 @@ export async function mountPage(context) {
 
   const handleBoardClick = (event) => {
     const cell = event.target.closest?.(".game-board-cell");
-    if (!cell || !boardEl?.contains(cell)) {
+    const point = cell && boardEl?.contains(cell)
+      ? getBoardPointFromCell(cell)
+      : getBoardPointFromPointer(event);
+
+    if (!point) {
       return;
     }
 
-    const x = Number.parseInt(cell.dataset.x || "", 10);
-    const y = Number.parseInt(cell.dataset.y || "", 10);
-    if (!Number.isInteger(x) || !Number.isInteger(y)) {
-      return;
-    }
+    const { x, y } = point;
 
-    const entityKind = cell.dataset.entityKind || "";
-    const entityId = cell.dataset.entityId || null;
+    const entityKind = cell?.dataset.entityKind || "";
+    const entityId = cell?.dataset.entityId || null;
 
     if (entityKind === "player" && isActivePlayerCell(entityId, x, y)) {
       if (state.selectedSource && state.selectedSource.x === x && state.selectedSource.y === y && !state.pendingTarget) {
@@ -85,8 +88,8 @@ export async function mountPage(context) {
         x,
         y,
         entityId,
-        name: cell.dataset.entityName || state.activePlayerName,
-        colorHex: cell.dataset.entityColorHex || null
+        name: cell?.dataset.entityName || state.activePlayerName,
+        colorHex: cell?.dataset.entityColorHex || null
       };
       state.pendingTarget = null;
       state.selectionPreviewTone = { tone: "green", color: "#14532d", message: "" };
@@ -278,10 +281,12 @@ export async function mountPage(context) {
     }
   };
 
-  function createFallbackSession() {
+  function createEmptySession() {
     return {
-      boardWidth: 19,
-      boardHeight: 19,
+      boardWidth: 0,
+      boardHeight: 0,
+      boardOriginX: 0,
+      boardOriginY: 0,
       board: [],
       players: []
     };
@@ -337,10 +342,13 @@ export async function mountPage(context) {
         ? bootstrapSession.board.filter((cell) => cell?.entityKind === "monster").length
         : 9;
         const hasParticipants = participants.length > 0;
+      const requestedBoardSize = Number.isInteger(bootstrapSession?.boardWidth) && bootstrapSession.boardWidth > 0
+        ? bootstrapSession.boardWidth
+        : undefined;
       const [runtimeState, runtimeTileDefinitions] = await Promise.all([
           typeof wasm.startGame === "function" && hasParticipants
           ? wasm.startGame({
-              boardSize: Number.isInteger(bootstrapSession?.boardWidth) ? bootstrapSession.boardWidth : 19,
+              ...(requestedBoardSize ? { boardSize: requestedBoardSize } : {}),
               monsterCount,
               participants
             })
@@ -377,13 +385,23 @@ export async function mountPage(context) {
     const cells = Array.isArray(currentSession?.board) ? currentSession.board : [];
     const width = Number.isInteger(currentSession?.boardWidth) && currentSession.boardWidth > 0
       ? currentSession.boardWidth
-      : 19;
+      : 0;
     const height = Number.isInteger(currentSession?.boardHeight) && currentSession.boardHeight > 0
       ? currentSession.boardHeight
-      : 19;
+      : 0;
+    const originX = Number.isInteger(currentSession?.boardOriginX) ? currentSession.boardOriginX : 0;
+    const originY = Number.isInteger(currentSession?.boardOriginY) ? currentSession.boardOriginY : 0;
 
     state.boardWidth = width;
     state.boardHeight = height;
+    state.boardOriginX = originX;
+    state.boardOriginY = originY;
+
+    if (width <= 0 || height <= 0) {
+      boardEl.innerHTML = "";
+      arrowLayerEl.innerHTML = "";
+      return;
+    }
 
     boardEl.style.gridTemplateColumns = `repeat(${width}, var(--game-cell-size))`;
     boardEl.style.gridTemplateRows = `repeat(${height}, var(--game-cell-size))`;
@@ -395,6 +413,7 @@ export async function mountPage(context) {
       const tileKind = normalizeTileKind(cell.tileKind || cell.kind || cell.terrainKind);
       const entityKind = normalizeEntityKind(cell.entityKind || cell.occupantKind || cell.monsterKind || cell.playerKind);
       const hasEntity = Boolean(cell.entityKind || cell.occupantKind || cell.monsterKind || cell.playerKind);
+      const isRevealed = isTileRevealed(currentSession, Number(cell.x), Number(cell.y));
       const tileOrientation = Number.isInteger(cell.tileOrientation)
         ? cell.tileOrientation
         : Number.isInteger(cell.orientation)
@@ -419,6 +438,8 @@ export async function mountPage(context) {
         tile.style.setProperty("--entity-color", cell.entityColorHex);
       }
       tile.dataset.orientation = String(tileOrientation);
+      tile.style.gridColumnStart = String(Number(cell.x) - originX + 1);
+      tile.style.gridRowStart = String(Number(cell.y) - originY + 1);
 
       if (isActivePlayerCell(entityId, Number(cell.x), Number(cell.y))) {
         tile.classList.add("game-board-cell--active-player");
@@ -436,10 +457,14 @@ export async function mountPage(context) {
 
       const terrainLayer = document.createElement("span");
       terrainLayer.className = `game-board-cell__layer game-board-cell__layer--terrain game-board-cell__layer--${tileKind}`;
-      terrainLayer.style.backgroundImage = `url(${getTileAssetUrl(tileKind, tileOrientation)})`;
+      if (isRevealed) {
+        terrainLayer.style.backgroundImage = `url(${getTileAssetUrl(tileKind, tileOrientation)})`;
+      } else {
+        tile.classList.add("game-board-cell--hidden-space");
+      }
       tile.appendChild(terrainLayer);
 
-      if (hasEntity) {
+      if (hasEntity && isRevealed) {
         const entityLayer = document.createElement("span");
         entityLayer.className = `game-board-cell__layer game-board-cell__layer--entity game-board-cell__layer--${entityKind}`;
         entityLayer.style.backgroundImage = `url(${getEntityAssetUrl(entityKind)})`;
@@ -451,6 +476,8 @@ export async function mountPage(context) {
 
       boardEl.appendChild(tile);
     });
+
+    renderTemporaryTargetPreview(currentSession);
 
     centerCameraOnActivePlayer(currentSession);
     renderArrowOverlay(width, height);
@@ -511,8 +538,8 @@ export async function mountPage(context) {
     const boardPixelHeight = state.boardHeight * cellSize;
     const centeredLeft = paddingLeft + Math.max(0, (contentWidth - boardPixelWidth) / 2);
     const centeredTop = paddingTop;
-    const targetX = (targetCell.x + 0.5) * cellSize;
-    const targetY = (targetCell.y + 0.5) * cellSize;
+    const targetX = (targetCell.x - state.boardOriginX + 0.5) * cellSize;
+    const targetY = (targetCell.y - state.boardOriginY + 0.5) * cellSize;
 
     state.panX = (paddingLeft + (contentWidth / 2)) - centeredLeft - (targetX * state.zoomScale);
     state.panY = (paddingTop + (contentHeight / 2)) - centeredTop - (targetY * state.zoomScale);
@@ -573,10 +600,10 @@ export async function mountPage(context) {
     arrowLayerEl.appendChild(defs);
 
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", (state.selectedSource.x + 0.5).toString());
-    line.setAttribute("y1", (state.selectedSource.y + 0.5).toString());
-    line.setAttribute("x2", (state.pendingTarget.x + 0.5).toString());
-    line.setAttribute("y2", (state.pendingTarget.y + 0.5).toString());
+    line.setAttribute("x1", (state.selectedSource.x - state.boardOriginX + 0.5).toString());
+    line.setAttribute("y1", (state.selectedSource.y - state.boardOriginY + 0.5).toString());
+    line.setAttribute("x2", (state.pendingTarget.x - state.boardOriginX + 0.5).toString());
+    line.setAttribute("y2", (state.pendingTarget.y - state.boardOriginY + 0.5).toString());
     line.setAttribute("stroke", getSelectionPreviewColor());
     line.setAttribute("stroke-width", "0.14");
     line.setAttribute("stroke-linecap", "round");
@@ -650,7 +677,7 @@ export async function mountPage(context) {
     const fromCell = getBoardCell(currentSession, source?.x, source?.y);
     const toCell = getBoardCell(currentSession, target?.x, target?.y);
 
-    if (!fromCell || !toCell) {
+    if (!fromCell) {
       return { tone: "red", color: "#b91c1c", message: "Movement is not possible." };
     }
 
@@ -658,7 +685,7 @@ export async function mountPage(context) {
       return { tone: "red", color: "#b91c1c", message: "Movement is not possible." };
     }
 
-    if (!canTraverseBetweenCells(fromCell, toCell)) {
+    if (toCell && !canTraverseBetweenCells(fromCell, toCell)) {
       return { tone: "red", color: "#b91c1c", message: "Movement is blocked by walls." };
     }
 
@@ -666,8 +693,8 @@ export async function mountPage(context) {
       return { tone: "blue", color: "#1d4ed8", message: "This tile will trigger an attack." };
     }
 
-    if (isDiscoveryTracked(currentSession) && !isTileRevealed(currentSession, target?.x, target?.y)) {
-      return { tone: "blue", color: "#1d4ed8", message: "This tile will be discovered." };
+    if (!toCell || !isTileRevealed(currentSession, target?.x, target?.y)) {
+      return { tone: "green", color: "#14532d", message: "Hidden tile preview." };
     }
 
     return { tone: "green", color: "#14532d", message: "Movement is available." };
@@ -676,6 +703,73 @@ export async function mountPage(context) {
   function getBoardCell(currentSession, x, y) {
     const cells = Array.isArray(currentSession?.board) ? currentSession.board : [];
     return cells.find((cell) => Number(cell?.x) === Number(x) && Number(cell?.y) === Number(y)) || null;
+  }
+
+  function getBoardPointFromCell(cell) {
+    const x = Number.parseInt(cell?.dataset.x || "", 10);
+    const y = Number.parseInt(cell?.dataset.y || "", 10);
+
+    if (!Number.isInteger(x) || !Number.isInteger(y)) {
+      return null;
+    }
+
+    return { x, y };
+  }
+
+  function getBoardPointFromPointer(event) {
+    if (!boardEl || !event || !Number.isInteger(state.boardWidth) || !Number.isInteger(state.boardHeight) || state.boardWidth <= 0 || state.boardHeight <= 0) {
+      return null;
+    }
+
+    const boardRect = boardEl.getBoundingClientRect();
+    if (!Number.isFinite(boardRect.width) || !Number.isFinite(boardRect.height) || boardRect.width <= 0 || boardRect.height <= 0) {
+      return null;
+    }
+
+    const columnSize = boardRect.width / state.boardWidth;
+    const rowSize = boardRect.height / state.boardHeight;
+    if (columnSize <= 0 || rowSize <= 0) {
+      return null;
+    }
+
+    const offsetX = event.clientX - boardRect.left;
+    const offsetY = event.clientY - boardRect.top;
+    const x = state.boardOriginX + Math.floor(offsetX / columnSize);
+    const y = state.boardOriginY + Math.floor(offsetY / rowSize);
+
+    if (x < state.boardOriginX || y < state.boardOriginY || x >= state.boardOriginX + state.boardWidth || y >= state.boardOriginY + state.boardHeight) {
+      return null;
+    }
+
+    return { x, y };
+  }
+
+  function renderTemporaryTargetPreview(currentSession) {
+    if (!state.pendingTarget || !boardEl || state.selectionPreviewTone?.tone !== "green") {
+      return;
+    }
+
+    if (isTileRevealed(currentSession, state.pendingTarget.x, state.pendingTarget.y)) {
+      return;
+    }
+
+    const tile = document.createElement("div");
+    tile.className = "game-board-cell game-board-cell--selected-target game-board-cell--temporary-preview";
+    tile.setAttribute("role", "gridcell");
+    tile.dataset.x = String(state.pendingTarget.x);
+    tile.dataset.y = String(state.pendingTarget.y);
+    tile.style.gridColumnStart = String(state.pendingTarget.x - state.boardOriginX + 1);
+    tile.style.gridRowStart = String(state.pendingTarget.y - state.boardOriginY + 1);
+    tile.style.pointerEvents = "none";
+    applySelectionAccent(tile);
+    tile.style.zIndex = "0";
+
+    const terrainLayer = document.createElement("span");
+    terrainLayer.className = "game-board-cell__layer game-board-cell__layer--terrain game-board-cell__layer--temporary-preview";
+    terrainLayer.style.backgroundImage = `url(${getHiddenTileAssetUrl()})`;
+    tile.appendChild(terrainLayer);
+
+    boardEl.appendChild(tile);
   }
 
   function areOrthogonallyAdjacent(source, target) {
