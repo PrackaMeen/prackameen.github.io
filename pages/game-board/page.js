@@ -1,4 +1,5 @@
 import { createDefaultRoomApiClient } from "../../session/RoomApiClient.js";
+import { createGameBoardCanvas } from "../../renderer/game-board-canvas.js";
 
 let gameWasmLoadPromise = null;
 
@@ -18,6 +19,7 @@ export async function mountPage(context) {
   const boardEl = document.getElementById("gameBoard");
   const mapEl = document.getElementById("gameBoardMap");
   const stageEl = document.getElementById("gameBoardStage");
+  const canvasEl = document.getElementById("gameBoardCanvas");
   const actionBarEl = document.querySelector(".game-board-action-bar");
   const arrowLayerEl = document.getElementById("gameBoardArrowLayer");
   const roomApi = createDefaultRoomApiClient();
@@ -49,6 +51,16 @@ export async function mountPage(context) {
     boardOriginX: 0,
     boardOriginY: 0
   };
+  const gameBoardCanvas = createGameBoardCanvas({
+    canvasEl,
+    boardEl,
+    getSession: () => state.session,
+    getTileAssetUrl,
+    getEntityAssetUrl,
+    normalizeTileKind,
+    normalizeEntityKind,
+    isTileRevealed
+  });
 
   const layoutResizeObserver = typeof ResizeObserver !== "undefined" && stageEl
     ? new ResizeObserver(() => {
@@ -300,6 +312,7 @@ export async function mountPage(context) {
       boardEl?.removeEventListener("touchend", handleMapTouchEnd);
       boardEl?.removeEventListener("touchcancel", handleMapTouchCancel);
       layoutResizeObserver?.disconnect();
+      gameBoardCanvas.dispose();
       setNavMessage("");
     }
   };
@@ -431,6 +444,7 @@ export async function mountPage(context) {
     if (width <= 0 || height <= 0) {
       boardEl.innerHTML = "";
       arrowLayerEl.innerHTML = "";
+      gameBoardCanvas.render(currentSession);
       return;
     }
 
@@ -515,6 +529,7 @@ export async function mountPage(context) {
 
     renderTemporaryTargetPreview(currentSession);
 
+    gameBoardCanvas.render(currentSession);
     centerCameraOnActivePlayer(currentSession);
     renderArrowOverlay(width, height);
   }

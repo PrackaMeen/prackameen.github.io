@@ -150,9 +150,19 @@ body[data-page="game-board"] {
 .game-board-map {
   position: relative;
   width: fit-content;
+  isolation: isolate;
   transform: translate(var(--game-board-pan-x, 0px), var(--game-board-pan-y, 0px)) scale(var(--game-board-zoom, 1));
   transform-origin: top left;
   will-change: transform;
+}
+
+.game-board-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .game-board-arrow-layer {
@@ -166,6 +176,8 @@ body[data-page="game-board"] {
 }
 
 .game-board {
+  position: relative;
+  z-index: 2;
   --game-cell-base-size: clamp(1.35rem, 3.1vw, 2rem);
   --game-cell-size: var(--game-cell-base-size);
   display: grid;

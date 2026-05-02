@@ -134,6 +134,7 @@ Each Playwright spec runs twice: once in `desktop-fullhd` (1920 x 1080) and once
 | Test file | Purpose | Phase |
 |---|---|---|
 | `tests/playwright/specs/app-shell.spec.js` | Confirms the app shell and current routes still mount | 0 |
+| `tests/playwright/specs/game-board-canvas.spec.js` | Confirms the canvas host mounts inside the game board route | 1 |
 | `tests/playwright/specs/move-player.spec.js` | Confirms revealed-tile player movement | 1 |
 | `tests/playwright/specs/place-hidden-tile.spec.js` | Confirms hidden-tile preview and placement | 1 |
 | `tests/playwright/specs/rotate-revealed-tile.spec.js` | Confirms revealed-tile rotation before commit | 1 |
