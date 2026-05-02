@@ -1,6 +1,42 @@
 {
   "items": [
     {
+      "version": "1.1.5",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Removed obsolete tile kind aliases",
+      "businessSummary": "The game asset loader now relies only on the canonical tile kinds from tile-definitions.json. This reduces fallback complexity and keeps tile resolution aligned with the authoritative asset data.",
+      "highlights": [
+        "Removed the unused tile kind alias map from the asset loader.",
+        "Kept tile resolution tied to the canonical JSON definitions.",
+        "Bumped the app version so the cleanup ships in the next PWA build."
+      ]
+    },
+    {
+      "version": "1.1.4",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game assets fallback now matches tile definitions",
+      "businessSummary": "The static game-assets fallback table now mirrors tile-definitions.json, so the app shows the same tile sprites and orientations whether it is using runtime-loaded definitions or the built-in fallback. This keeps the board visuals consistent during startup and offline use.",
+      "highlights": [
+        "Aligned the fallback sprites with the canonical tile definition JSON.",
+        "Kept startup and offline board rendering consistent.",
+        "Bumped the app version so the refreshed asset map ships as a new PWA build."
+      ]
+    },
+    {
+      "version": "1.1.3",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Startup board now uses the Road4_0 center tile",
+      "businessSummary": "The startup board now shows the Road4_0 asset for the center tile on the compact 3x3 map, so the visual board matches the intended opening layout even before runtime assets finish hydrating.",
+      "highlights": [
+        "Switched the static tile fallback to the Road4_0 center asset.",
+        "Kept the 3x3 startup board aligned with the runtime map.",
+        "Bumped the app version so the corrected tile ships in the next PWA build."
+      ]
+    },
+    {
       "version": "1.1.2",
       "commit": "pending",
       "date": "2026-05-02",
