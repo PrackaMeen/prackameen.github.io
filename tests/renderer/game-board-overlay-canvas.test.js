@@ -6,22 +6,9 @@ import { classifyTargetPreview } from '../../renderer/board-selection.js';
 import { canTraverseBetweenCells } from '../../renderer/board-movement.js';
 import { createGameBoardOverlayCanvas } from '../../renderer/game-board-overlay-canvas.js';
 
-applyTileDefinitionsFromRuntime({
-  tileKinds: {
-    road2: [
-      { orientation: 0, sprite: './assets/game/tiles/Road2/Road2_0.png', walls: { north: true, east: true, south: false, west: false } },
-      { orientation: 1, sprite: './assets/game/tiles/Road2/Road2_1.png', walls: { north: false, east: true, south: true, west: false } },
-      { orientation: 2, sprite: './assets/game/tiles/Road2/Road2_2.png', walls: { north: false, east: false, south: true, west: true } },
-      { orientation: 3, sprite: './assets/game/tiles/Road2/Road2_3.png', walls: { north: true, east: false, south: false, west: true } }
-    ],
-    road4: [
-      { orientation: 0, sprite: './assets/game/tiles/Road4/Road4_0.png', walls: { north: false, east: false, south: false, west: false } },
-      { orientation: 1, sprite: './assets/game/tiles/Road4/Road4_1.png', walls: { north: false, east: false, south: false, west: false } },
-      { orientation: 2, sprite: './assets/game/tiles/Road4/Road4_2.png', walls: { north: false, east: false, south: false, west: false } },
-      { orientation: 3, sprite: './assets/game/tiles/Road4/Road4_3.png', walls: { north: false, east: false, south: false, west: false } }
-    ]
-  }
-});
+const TILE_KINDS = ['road0', 'road1', 'road2', 'road3', 'road4', 'chamber0', 'chamber1', 'chamber2', 'chamber3', 'chamber4'];
+
+applyTileDefinitionsFromRuntime(buildAllTileDefinitions());
 
 test('overlay preview uses the locked cell size instead of stretching to the canvas aspect ratio', async () => {
   const calls = [];
@@ -195,22 +182,194 @@ test('overlay preview resolves the discovered tile sprite from the pending place
   overlay.dispose();
 });
 
-test('overlay preview colors a road2_1 corner according to the wall layout', async () => {
-  const session = {
+test('overlay preview colors every tile kind and orientation according to the wall layout', async () => {
+  const context = createMockContext();
+  let overlayState = null;
+  const overlay = createGameBoardOverlayCanvas({
+    canvasEl: {
+      width: 300,
+      height: 300,
+      style: {},
+      getContext: () => context
+    },
+    mapEl: {
+      getBoundingClientRect: () => ({ width: 300, height: 300 })
+    },
+    getSession: () => null,
+    getCellSize: () => 100,
+    getOverlayState: () => overlayState,
+    getHiddenTileAssetUrl: () => null,
+    isTileRevealed: () => false
+  });
+
+  for (const tileKind of TILE_KINDS) {
+    for (let orientation = 0; orientation < 4; orientation += 1) {
+      const session = createSession(tileKind, orientation);
+
+      for (const target of getTargetsForTile(tileKind, orientation)) {
+        const previewTone = classifyTargetPreview({
+          currentSession: session,
+          source: { x: 1, y: 1 },
+          target,
+          isTileRevealed: () => false,
+          getBoardCell: (currentSession, x, y) => currentSession.board.find((cell) => cell.x === x && cell.y === y) || null,
+          canTraverseBetweenCells: (fromCell, toCell) => canTraverseBetweenCells(fromCell, toCell, {
+            normalizeTileKind,
+            getTileWalls
+          }),
+          isTargetEngaged: () => false
+        });
+
+        overlayState = {
+          selectedSource: { x: 1, y: 1, colorHex: '#14532d' },
+          pendingTarget: target,
+          selectionPreviewTone: previewTone,
+          boardOriginX: 0,
+          boardOriginY: 0,
+          viewportScale: 1,
+          viewportPanX: 0,
+          viewportPanY: 0
+        };
+
+        context._strokeStyle = null;
+
+        await overlay.render(session);
+
+        assert.equal(previewTone.tone, isOpenTowards(tileKind, orientation, target) ? 'green' : 'red');
+        assert.equal(context.strokeStyle, previewTone.color);
+      }
+    }
+  }
+
+  overlay.dispose();
+});
+
+function buildAllTileDefinitions() {
+  const tileKinds = {};
+
+  for (const tileKind of TILE_KINDS) {
+    const folderName = toFolderName(tileKind);
+    tileKinds[tileKind] = [0, 1, 2, 3].map((orientation) => ({
+      orientation,
+      sprite: `./assets/game/tiles/${folderName}/${folderName}_${orientation}.png`,
+      walls: createWalls(tileKind, orientation)
+    }));
+  }
+
+  return { tileKinds };
+}
+
+function createSession(tileKind, orientation) {
+  return {
     boardWidth: 3,
     boardHeight: 3,
     boardOriginX: 0,
     boardOriginY: 0,
     board: [
-      { x: 1, y: 1, tileKind: 'road2', tileOrientation: 1 },
+      { x: 1, y: 1, tileKind, tileOrientation: orientation },
       { x: 1, y: 0, tileKind: 'road4', tileOrientation: 0 },
       { x: 2, y: 1, tileKind: 'road4', tileOrientation: 0 },
       { x: 1, y: 2, tileKind: 'road4', tileOrientation: 0 },
       { x: 0, y: 1, tileKind: 'road4', tileOrientation: 0 }
     ]
   };
+}
 
-  const context = {
+function getTargetsForTile(tileKind, orientation) {
+  const targets = [];
+
+  if (isOpenTowards(tileKind, orientation, { x: 1, y: 0 })) {
+    targets.push({ x: 1, y: 0 });
+  }
+  if (isOpenTowards(tileKind, orientation, { x: 2, y: 1 })) {
+    targets.push({ x: 2, y: 1 });
+  }
+  if (isOpenTowards(tileKind, orientation, { x: 1, y: 2 })) {
+    targets.push({ x: 1, y: 2 });
+  }
+  if (isOpenTowards(tileKind, orientation, { x: 0, y: 1 })) {
+    targets.push({ x: 0, y: 1 });
+  }
+
+  return targets;
+}
+
+function createWalls(tileKind, orientation) {
+  const open = getOpenDirections(tileKind, orientation);
+
+  return {
+    north: !open.north,
+    east: !open.east,
+    south: !open.south,
+    west: !open.west
+  };
+}
+
+function getOpenDirections(tileKind, orientation) {
+  const family = tileKind.replace(/[0-9]+$/, '');
+
+  switch (family) {
+    case 'road0':
+    case 'chamber0':
+      return [
+        { north: false, east: true, south: true, west: true },
+        { north: true, east: false, south: true, west: true },
+        { north: true, east: true, south: false, west: true },
+        { north: true, east: true, south: true, west: false }
+      ][orientation];
+    case 'road1':
+    case 'chamber1':
+      return orientation % 2 === 0
+        ? { north: true, east: false, south: true, west: false }
+        : { north: false, east: true, south: false, west: true };
+    case 'road2':
+    case 'chamber2':
+      return [
+        { north: false, east: false, south: true, west: true },
+        { north: true, east: false, south: false, west: true },
+        { north: true, east: true, south: false, west: false },
+        { north: false, east: true, south: true, west: false }
+      ][orientation];
+    case 'road3':
+    case 'chamber3':
+      return [
+        { north: false, east: true, south: true, west: true },
+        { north: true, east: false, south: true, west: true },
+        { north: true, east: true, south: false, west: true },
+        { north: true, east: true, south: true, west: false }
+      ][orientation];
+    case 'road4':
+    case 'chamber4':
+      return { north: true, east: true, south: true, west: true };
+    default:
+      return { north: true, east: true, south: true, west: true };
+  }
+}
+
+function isOpenTowards(tileKind, orientation, target) {
+  const open = getOpenDirections(tileKind, orientation);
+
+  if (target.x === 1 && target.y === 0) {
+    return open.north;
+  }
+
+  if (target.x === 2 && target.y === 1) {
+    return open.east;
+  }
+
+  if (target.x === 1 && target.y === 2) {
+    return open.south;
+  }
+
+  return open.west;
+}
+
+function toFolderName(tileKind) {
+  return `${tileKind[0].toUpperCase()}${tileKind.slice(1)}`;
+}
+
+function createMockContext() {
+  return {
     save() {},
     restore() {},
     clearRect() {},
@@ -246,65 +405,4 @@ test('overlay preview colors a road2_1 corner according to the wall layout', asy
     },
     setLineDash() {}
   };
-
-  let overlayState = null;
-  const overlay = createGameBoardOverlayCanvas({
-    canvasEl: {
-      width: 300,
-      height: 300,
-      style: {},
-      getContext: () => context
-    },
-    mapEl: {
-      getBoundingClientRect: () => ({ width: 300, height: 300 })
-    },
-    getSession: () => session,
-    getCellSize: () => 100,
-    getOverlayState: () => overlayState,
-    getHiddenTileAssetUrl: () => null,
-    isTileRevealed: (_currentSession, x, y) => (x === 1 && y === 1) || (x === overlayState?.pendingTarget?.x && y === overlayState?.pendingTarget?.y)
-  });
-
-  const cases = [
-    { target: { x: 1, y: 0 }, expectedTone: 'green', expectedColor: '#14532d' },
-    { target: { x: 2, y: 1 }, expectedTone: 'red', expectedColor: '#b91c1c' },
-    { target: { x: 1, y: 2 }, expectedTone: 'red', expectedColor: '#b91c1c' },
-    { target: { x: 0, y: 1 }, expectedTone: 'green', expectedColor: '#14532d' }
-  ];
-
-  for (const testCase of cases) {
-    const previewTone = classifyTargetPreview({
-      currentSession: session,
-      source: { x: 1, y: 1 },
-      target: testCase.target,
-      isTileRevealed: (_currentSession, x, y) => x === testCase.target.x && y === testCase.target.y,
-      getBoardCell: (currentSession, x, y) => currentSession.board.find((cell) => cell.x === x && cell.y === y) || null,
-      canTraverseBetweenCells: (fromCell, toCell) => canTraverseBetweenCells(fromCell, toCell, {
-        normalizeTileKind,
-        getTileWalls
-      }),
-      isTargetEngaged: () => false
-    });
-
-    overlayState = {
-      selectedSource: { x: 1, y: 1, colorHex: '#14532d' },
-      pendingTarget: testCase.target,
-      selectionPreviewTone: previewTone,
-      boardOriginX: 0,
-      boardOriginY: 0,
-      viewportScale: 1,
-      viewportPanX: 0,
-      viewportPanY: 0
-    };
-
-    context._strokeStyle = null;
-    context._fillStyle = null;
-
-    await overlay.render(session);
-
-    assert.equal(previewTone.tone, testCase.expectedTone);
-    assert.equal(context.strokeStyle, testCase.expectedColor);
-  }
-
-  overlay.dispose();
-});
+}
