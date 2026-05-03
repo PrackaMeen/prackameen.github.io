@@ -8,7 +8,7 @@ const baseSession = {
   boardHeight: 1,
   board: [
     { x: 0, y: 0, tileKind: 'road1', tileOrientation: 0 },
-    { x: 1, y: 0, tileKind: 'chamber4', tileOrientation: 3, entityKind: 'player' }
+    { x: 1, y: 0, tileKind: 'chamber4', tileOrientation: 3, entityKind: 'player', tileAnimation: { frameNames: ['chamber4-0', 'chamber4-1'], elapsedMs: 125, frameDurationMs: 100 }, entityAnimation: { frameNames: ['player-0', 'player-1'], elapsedMs: 25, frameDurationMs: 50 } }
   ]
 };
 
@@ -22,8 +22,8 @@ test('orders hidden fills before revealed sprites and grid lines last', () => {
     isTileRevealed: (_session, x) => x === 1,
     normalizeTileKind: (value) => value,
     normalizeEntityKind: (value) => value,
-    getTileAssetUrl: (kind, orientation) => `${kind}:${orientation}`,
-    getEntityAssetUrl: (kind) => `entity:${kind}`
+    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}` }),
+    getEntitySpriteSheetSource: (kind) => ({ imageUrl: `entity:${kind}` })
   });
 
   assert.deepEqual(plan[0], {
@@ -38,8 +38,8 @@ test('orders hidden fills before revealed sprites and grid lines last', () => {
   });
   assert.deepEqual(plan[1], {
     type: 'tile-sprite',
-    frameName: 'default',
-    source: 'chamber4:3',
+    frameName: 'chamber4-1',
+    source: { imageUrl: 'chamber4:3' },
     x: 100,
     y: 0,
     width: 100,
@@ -51,8 +51,8 @@ test('orders hidden fills before revealed sprites and grid lines last', () => {
   });
   assert.deepEqual(plan[2], {
     type: 'entity-sprite',
-    frameName: 'default',
-    source: 'entity:player',
+    frameName: 'player-0',
+    source: { imageUrl: 'entity:player' },
     x: 114,
     y: 14,
     width: 72,

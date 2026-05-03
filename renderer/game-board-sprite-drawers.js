@@ -1,7 +1,6 @@
 export function createGameBoardSpriteDrawers({
   context,
-  drawSpriteFrame,
-  createSpriteSheetSource
+  drawSpriteFrame
 }) {
   return {
     drawTileSprite,
@@ -10,14 +9,14 @@ export function createGameBoardSpriteDrawers({
   };
 
   async function drawTileSprite(sourceUrl, x, y, width, height, frameName = 'default') {
-    await drawSpriteFrame(context, createSpriteSheetSource(sourceUrl), frameName, x, y, width, height);
+    await drawSpriteFrame(context, sourceUrl, frameName, x, y, width, height);
   }
 
   async function drawEntitySprite(sourceUrl, x, y, width, height, frameName = 'default') {
     const inset = getEntityInset(width, height);
     await drawSpriteFrame(
       context,
-      createSpriteSheetSource(sourceUrl),
+      sourceUrl,
       frameName,
       x + inset,
       y + inset,

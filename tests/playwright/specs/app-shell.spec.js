@@ -4,7 +4,7 @@ test.describe('App shell smoke tests', () => {
   test('loads the menu shell', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page).toHaveTitle(/G\.A\.M\.E Mobile Test Lab/);
+    await expect(page).toHaveTitle('Menu');
     await expect(page.locator('#navRoot')).toBeVisible();
     await expect(page.locator('#appRoot')).toBeVisible();
   });

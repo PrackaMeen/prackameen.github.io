@@ -10,6 +10,18 @@ export function createSpriteSheetSource(imageUrl, options = {}) {
   };
 }
 
+export function normalizeSpriteSheetSource(source) {
+  if (typeof source === 'string') {
+    return createSpriteSheetSource(source);
+  }
+
+  return {
+    imageUrl: String(source?.imageUrl || '').trim(),
+    metadataUrl: source?.metadataUrl ? String(source.metadataUrl).trim() : null,
+    defaultFrameName: String(source?.defaultFrameName || 'default')
+  };
+}
+
 export async function loadSpriteSheet(source, dependencies = {}) {
   const normalizedSource = normalizeSpriteSheetSource(source);
   const cacheKey = `${normalizedSource.imageUrl}::${normalizedSource.metadataUrl || ''}`;
@@ -97,22 +109,6 @@ export async function loadSpriteSheetMetadata(metadataUrl, dependencies = {}) {
   } catch {
     return null;
   }
-}
-
-function normalizeSpriteSheetSource(source) {
-  if (typeof source === 'string') {
-    return {
-      imageUrl: source,
-      metadataUrl: null,
-      defaultFrameName: 'default'
-    };
-  }
-
-  return {
-    imageUrl: String(source?.imageUrl || '').trim(),
-    metadataUrl: source?.metadataUrl ? String(source.metadataUrl).trim() : null,
-    defaultFrameName: String(source?.defaultFrameName || 'default')
-  };
 }
 
 function normalizeFrame(frameValue) {

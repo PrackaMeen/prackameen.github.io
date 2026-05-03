@@ -4,7 +4,11 @@ import { createGameBoardSession, installGameBoardStub } from '../helpers/game-bo
 test.describe('Tile animation behavior', () => {
   test('applies the pop animation to player and monster entities', async ({ page }) => {
     await installGameBoardStub(page, createGameBoardSession({
-      monster: { x: 2, y: 1 }
+      monster: { x: 2, y: 1 },
+      revealedTiles: [
+        { x: 1, y: 1 },
+        { x: 2, y: 1 }
+      ]
     }));
 
     await page.goto('/#/game-board');

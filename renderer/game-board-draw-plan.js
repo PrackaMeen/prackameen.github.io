@@ -1,3 +1,4 @@
+import { resolveAnimationFrameName } from './animation-frame.js';
 import { getCellBounds, getGridLinePositions } from './render-grid.js';
 
 export function buildGameBoardDrawPlan({
@@ -9,8 +10,8 @@ export function buildGameBoardDrawPlan({
   isTileRevealed,
   normalizeTileKind,
   normalizeEntityKind,
-  getTileAssetUrl,
-  getEntityAssetUrl
+  getTileSpriteSheetSource,
+  getEntitySpriteSheetSource
 }) {
   const cells = Array.isArray(session?.board) ? session.board : [];
   const plan = [];
@@ -47,11 +48,15 @@ export function buildGameBoardDrawPlan({
       : Number.isInteger(cell?.orientation)
         ? cell.orientation
         : 0;
+    const tileFrameName = resolveAnimationFrameName(cell?.tileAnimation);
+    const tileSpriteSource = typeof getTileSpriteSheetSource === 'function'
+      ? getTileSpriteSheetSource(tileKind, tileOrientation)
+      : null;
 
     plan.push({
       type: 'tile-sprite',
-      frameName: 'default',
-      source: getTileAssetUrl(tileKind, tileOrientation),
+      frameName: tileFrameName,
+      source: tileSpriteSource,
       x: bounds.x,
       y: bounds.y,
       width: bounds.width,
@@ -66,11 +71,15 @@ export function buildGameBoardDrawPlan({
     if (hasEntity) {
       const entityKind = normalizeEntityKind(cell?.entityKind || cell?.occupantKind || cell?.monsterKind || cell?.playerKind);
       const inset = Math.max(2, Math.round(Math.min(bounds.width, bounds.height) * 0.14));
+      const entityFrameName = resolveAnimationFrameName(cell?.entityAnimation);
+      const entitySpriteSource = typeof getEntitySpriteSheetSource === 'function'
+        ? getEntitySpriteSheetSource(entityKind)
+        : null;
 
       plan.push({
         type: 'entity-sprite',
-        frameName: 'default',
-        source: getEntityAssetUrl(entityKind),
+        frameName: entityFrameName,
+        source: entitySpriteSource,
         x: bounds.x + inset,
         y: bounds.y + inset,
         width: bounds.width - inset * 2,

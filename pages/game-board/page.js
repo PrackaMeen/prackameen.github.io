@@ -1,7 +1,13 @@
 import { createDefaultRoomApiClient } from "../../session/RoomApiClient.js";
 import { createGameBoardCanvas } from "../../renderer/game-board-canvas.js";
-
-let gameWasmLoadPromise = null;
+import { createGameBoardOverlayCanvas } from "../../renderer/game-board-overlay-canvas.js";
+import { createBoardInteractionController } from "../../renderer/board-interaction-controller.js";
+import { createBoardViewportController } from "../../renderer/board-viewport-controller.js";
+import { createBoardHudController } from "../../renderer/board-hud-controller.js";
+import { createBoardRuntimeController } from "../../renderer/board-runtime-controller.js";
+import { createBoardPageBootstrap } from "../../renderer/board-page-bootstrap.js";
+import { createBoardActionController } from "../../renderer/board-action-controller.js";
+import { getBoardCell, isTargetEngaged, isTileRevealed } from "../../renderer/board-state-helpers.js";
 
 export async function mountPage(context) {
   context.setTitle("Game");
@@ -11,6 +17,8 @@ export async function mountPage(context) {
     getEntityAssetUrl,
     getHiddenTileAssetUrl,
     getTileAssetUrl,
+    getEntitySpriteSheetSource,
+    getTileSpriteSheetSource,
     getTileWalls,
     normalizeEntityKind,
     normalizeTileKind
@@ -20,16 +28,19 @@ export async function mountPage(context) {
   const mapEl = document.getElementById("gameBoardMap");
   const stageEl = document.getElementById("gameBoardStage");
   const canvasEl = document.getElementById("gameBoardCanvas");
+  const overlayCanvasEl = document.getElementById("gameBoardOverlayCanvas");
   const actionBarEl = document.querySelector(".game-board-action-bar");
-  const arrowLayerEl = document.getElementById("gameBoardArrowLayer");
   const roomApi = createDefaultRoomApiClient();
-  const session = window.__GAME_SESSION__ || createEmptySession();
+  const session = window.__GAME_SESSION__ || null;
   const gameWasmScriptUrl = `/assets/game-wasm/wwwroot/js/game-runtime.js?v=${encodeURIComponent(context.appBuildId || context.appVersion || "latest")}`;
   const setNavMessage = typeof context.setNavMessage === "function" ? context.setNavMessage : () => {};
+  let boardHud = null;
+  let boardRuntime = null;
+  let boardAction = null;
   const state = {
     session,
-    activePlayerId: session.currentPlayerId ?? session.activePlayerId ?? session.players?.[0]?.id ?? null,
-    activePlayerName: session.currentPlayerName ?? session.players?.[0]?.name ?? "Player A",
+    activePlayerId: session?.currentPlayerId ?? session?.activePlayerId ?? session?.players?.[0]?.id ?? null,
+    activePlayerName: session?.currentPlayerName ?? session?.players?.[0]?.name ?? "Player A",
     selectedSource: null,
     pendingTarget: null,
     pendingPlacement: null,
@@ -55,367 +66,122 @@ export async function mountPage(context) {
     canvasEl,
     boardEl,
     getSession: () => state.session,
-    getTileAssetUrl,
-    getEntityAssetUrl,
+    getTileSpriteSheetSource,
+    getEntitySpriteSheetSource,
     normalizeTileKind,
     normalizeEntityKind,
     isTileRevealed
   });
-
-  const layoutResizeObserver = typeof ResizeObserver !== "undefined" && stageEl
-    ? new ResizeObserver(() => {
-        fitBoardToStage(state.boardWidth, state.boardHeight);
-        centerCameraOnActivePlayer(state.session);
-      })
-    : null;
-
-  if (layoutResizeObserver && stageEl) {
-    layoutResizeObserver.observe(stageEl);
-  }
-
-  void ensureGameWasmHydrated().catch(() => undefined);
-
-  const handleBoardClick = (event) => {
-    if (state.pendingPlacement) {
-      return;
-    }
-
-    const cell = event.target.closest?.(".game-board-cell");
-    const point = cell && boardEl?.contains(cell)
-      ? getBoardPointFromCell(cell)
-      : getBoardPointFromPointer(event);
-
-    if (!point) {
-      return;
-    }
-
-    const { x, y } = point;
-
-    const entityKind = cell?.dataset.entityKind || "";
-    const entityId = cell?.dataset.entityId || null;
-
-    if (entityKind === "player" && isActivePlayerCell(entityId, x, y)) {
-      if (state.selectedSource && state.selectedSource.x === x && state.selectedSource.y === y && !state.pendingTarget) {
-        clearSelection();
-        return;
-      }
-
-      state.selectedSource = {
-        x,
-        y,
-        entityId,
-        name: cell?.dataset.entityName || state.activePlayerName,
-        colorHex: cell?.dataset.entityColorHex || null
-      };
-      state.pendingTarget = null;
-      state.selectionPreviewTone = { tone: "green", color: "#14532d", message: "" };
-      state.feedback = "";
+  const gameBoardOverlayCanvas = createGameBoardOverlayCanvas({
+    canvasEl: overlayCanvasEl,
+    boardEl,
+    getSession: () => state.session,
+    getOverlayState: () => ({
+      selectedSource: state.selectedSource,
+      pendingTarget: state.pendingTarget,
+      pendingPlacement: state.pendingPlacement,
+      selectionPreviewTone: state.selectionPreviewTone,
+      boardOriginX: state.boardOriginX,
+      boardOriginY: state.boardOriginY
+    }),
+    getHiddenTileAssetUrl,
+    isTileRevealed
+  });
+  const boardInteraction = createBoardInteractionController({
+    state,
+    canvasEl,
+    getBoardCell,
+    getActivePlayerName: () => state.activePlayerName,
+    isTileRevealed,
+    getTileWalls,
+    normalizeTileKind,
+    isTargetEngaged,
+    onBoardStateChanged: () => {
       renderBoard(state.session);
-      syncHud();
-      return;
+      boardHud?.syncHud();
+    },
+    onSelectionChanged: () => {
+      gameBoardOverlayCanvas.render(state.session);
     }
-
-    if (!state.selectedSource) {
-      return;
+  });
+  const boardViewport = createBoardViewportController({
+    state,
+    boardEl,
+    mapEl,
+    stageEl,
+    canvasEl,
+    onZoomChanged: () => {
+      gameBoardOverlayCanvas.render(state.session);
+    },
+    onViewportChanged: () => {
+      gameBoardOverlayCanvas.render(state.session);
+    },
+    onBoardStateChanged: () => {
+      boardHud?.syncHud();
     }
+  });
+  boardRuntime = createBoardRuntimeController({
+    state,
+    gameWasmScriptUrl,
+    applyTileDefinitionsFromRuntime,
+    renderBoard,
+    syncHud: () => boardHud?.syncHud()
+  });
 
-    state.selectionPreviewTone = classifyTargetPreview(state.session, state.selectedSource, { x, y });
-    state.pendingTarget = { x, y };
-    state.feedback = state.selectionPreviewTone.message;
-    renderBoard(state.session);
-    syncHud();
-  };
+  void boardRuntime.ensureGameWasmHydrated().catch(() => undefined);
 
-  const handlePerformAction = async () => {
-    if (state.isSubmitting) {
-      return;
-    }
+  const handleBoardClick = (event) => boardInteraction.handleBoardClick(event);
 
-    const placement = state.pendingPlacement || state.session?.pendingPlacement || null;
-    const hasQueuedSelection = state.selectedSource && state.pendingTarget;
-    if (!placement && !hasQueuedSelection) {
-      return;
-    }
+  boardHud = createBoardHudController({
+    state,
+    actionBarEl,
+    setNavMessage,
+    isTileRevealed,
+    getTileAssetUrl,
+    onPerformAction: () => void boardAction?.handlePerformAction(),
+    onCancelSelection: () => void boardAction?.handleCancelSelection(),
+    onRotatePlacement: (delta) => void boardAction?.handleRotatePlacement(delta)
+  });
 
-    state.isSubmitting = true;
-    state.feedback = placement ? "Committing tile placement..." : "Validating action...";
-    syncHud();
+  boardAction = createBoardActionController({
+    state,
+    boardRuntime,
+    boardHud,
+    boardInteraction,
+    renderBoard,
+    isTileRevealed
+  });
 
-    try {
-      const wasm = await ensureGameWasmRuntime().catch(() => null);
-      if (!wasm) {
-        throw new Error("GameWasm bridge is unavailable.");
-      }
+  const handleMapTouchStart = boardViewport.handleMapTouchStart;
+  const handleMapTouchMove = boardViewport.handleMapTouchMove;
+  const handleMapTouchEnd = boardViewport.handleMapTouchEnd;
+  const handleMapTouchCancel = boardViewport.handleMapTouchCancel;
 
-      const request = placement
-        ? {
-            actionName: "commit_placement",
-            sourceX: placement.sourceX,
-            sourceY: placement.sourceY,
-            targetX: placement.targetX,
-            targetY: placement.targetY
-          }
-        : {
-            actionName: isTileRevealed(state.session, state.pendingTarget.x, state.pendingTarget.y)
-              ? "move"
-              : "discover",
-            sourceX: state.selectedSource.x,
-            sourceY: state.selectedSource.y,
-            targetX: state.pendingTarget.x,
-            targetY: state.pendingTarget.y
-          };
-
-      const payload = await wasm.applyAction(request);
-
-      if (!payload?.success) {
-        throw new Error(payload?.message || "Action failed.");
-      }
-
-      if (payload?.snapshot) {
-        state.session = payload.snapshot;
-        window.__GAME_SESSION__ = payload.snapshot;
-        state.activePlayerId = payload.snapshot.currentPlayerId ?? payload.snapshot.activePlayerId ?? state.activePlayerId;
-        state.activePlayerName = payload.snapshot.currentPlayerName ?? payload.snapshot.activePlayerName ?? state.activePlayerName;
-      }
-      clearSelection();
-      state.feedback = payload?.message || "Move resolved by WASM runtime.";
-      renderBoard(state.session);
-      syncHud();
-    } catch (error) {
-      state.feedback = error instanceof Error ? error.message : "Action failed.";
-      syncHud();
-    } finally {
-      state.isSubmitting = false;
-      syncHud();
-    }
-  };
-
-  const handleCancelSelection = () => {
-    if (!state.selectedSource && !state.pendingTarget && !state.pendingPlacement) {
-      return;
-    }
-
-    if (state.pendingPlacement) {
-      void cancelPendingPlacement();
-      return;
-    }
-
-    clearSelection();
-    state.feedback = "";
-    renderBoard(state.session);
-    syncHud();
-  };
-
-  const handleMapTouchStart = (event) => {
-    if (!boardEl || !event.target || !boardEl.contains(event.target)) {
-      return;
-    }
-
-    for (const touch of Array.from(event.changedTouches || [])) {
-      const point = getTouchPoint(touch);
-      state.activeTouchPoints.set(touch.identifier, point);
-    }
-
-    if (state.activeTouchPoints.size !== 2) {
-      return;
-    }
-
-    const points = Array.from(state.activeTouchPoints.values());
-    if (points.length !== 2) {
-      return;
-    }
-
-    state.gestureStartMidpoint = getPointerMidpoint(points[0], points[1]);
-    state.pinchStartDistance = getPointerDistance(points[0], points[1]);
-    state.pinchStartScale = state.zoomScale;
-    state.gestureStartPanX = state.panX;
-    state.gestureStartPanY = state.panY;
-    state.feedback = "";
-    syncHud();
-  };
-
-  const handleMapTouchMove = (event) => {
-    if (!boardEl || !boardEl.contains(event.target)) {
-      return;
-    }
-
-    for (const touch of Array.from(event.changedTouches || [])) {
-      state.activeTouchPoints.set(touch.identifier, getTouchPoint(touch));
-    }
-
-    if (state.activeTouchPoints.size !== 2 || state.pinchStartDistance === null) {
-      return;
-    }
-
-    const points = Array.from(state.activeTouchPoints.values());
-    if (points.length !== 2) {
-      return;
-    }
-
-    const currentMidpoint = getPointerMidpoint(points[0], points[1]);
-    const currentDistance = getPointerDistance(points[0], points[1]);
-    if (currentDistance <= 0) {
-      return;
-    }
-
-    const nextScale = clampScale(state.pinchStartScale * (currentDistance / state.pinchStartDistance));
-    const nextPanX = state.gestureStartPanX + (currentMidpoint.clientX - state.gestureStartMidpoint.clientX);
-    const nextPanY = state.gestureStartPanY + (currentMidpoint.clientY - state.gestureStartMidpoint.clientY);
-
-    if (nextScale !== state.zoomScale) {
-      state.zoomScale = nextScale;
-    }
-
-    if (nextPanX !== state.panX || nextPanY !== state.panY) {
-      state.panX = nextPanX;
-      state.panY = nextPanY;
-    }
-
-    syncZoom();
-
-    if (event.cancelable) {
-      event.preventDefault();
-    }
-  };
-
-  const handleMapTouchEnd = (event) => {
-    for (const touch of Array.from(event.changedTouches || [])) {
-      state.activeTouchPoints.delete(touch.identifier);
-    }
-
-    if (state.activeTouchPoints.size < 2) {
-      state.pinchStartDistance = null;
-      state.pinchStartScale = state.zoomScale;
-      state.gestureStartMidpoint = null;
-    }
-  };
-
-  const handleMapTouchCancel = (event) => {
-    handleMapTouchEnd(event);
-  };
-
-  renderBoard(session);
-  syncZoom();
-  syncHud();
-
-  boardEl?.addEventListener("click", handleBoardClick);
-  boardEl?.addEventListener("touchstart", handleMapTouchStart, { passive: false });
-  boardEl?.addEventListener("touchmove", handleMapTouchMove, { passive: false });
-  boardEl?.addEventListener("touchend", handleMapTouchEnd, { passive: false });
-  boardEl?.addEventListener("touchcancel", handleMapTouchCancel, { passive: false });
+  const boardBootstrap = createBoardPageBootstrap({
+    canvasEl,
+    stageEl,
+    boardViewport,
+    boardHud,
+    gameBoardCanvas,
+    gameBoardOverlayCanvas,
+    state,
+    renderBoard,
+    onBoardClick: handleBoardClick,
+    onTouchStart: handleMapTouchStart,
+    onTouchMove: handleMapTouchMove,
+    onTouchEnd: handleMapTouchEnd,
+    onTouchCancel: handleMapTouchCancel,
+    setNavMessage
+  });
 
   return {
     dispose() {
-      boardEl?.removeEventListener("click", handleBoardClick);
-      boardEl?.removeEventListener("touchstart", handleMapTouchStart);
-      boardEl?.removeEventListener("touchmove", handleMapTouchMove);
-      boardEl?.removeEventListener("touchend", handleMapTouchEnd);
-      boardEl?.removeEventListener("touchcancel", handleMapTouchCancel);
-      layoutResizeObserver?.disconnect();
-      gameBoardCanvas.dispose();
-      setNavMessage("");
+      boardBootstrap.dispose();
     }
   };
 
-  function createEmptySession() {
-    return {
-      boardWidth: 0,
-      boardHeight: 0,
-      boardOriginX: 0,
-      boardOriginY: 0,
-      board: [],
-      pendingPlacement: null,
-      players: []
-    };
-  }
-
-  async function ensureGameWasmRuntime() {
-    if (window.GameWasm?.ready) {
-      return window.GameWasm.ready.then(() => window.GameWasm);
-    }
-
-    if (!gameWasmLoadPromise) {
-      gameWasmLoadPromise = new Promise((resolve, reject) => {
-        const existingScript = document.querySelector(`script[data-game-wasm-runtime="true"]`);
-        if (existingScript && window.GameWasm) {
-          resolve(window.GameWasm);
-          return;
-        }
-
-        const script = document.createElement("script");
-        script.type = "module";
-        script.src = gameWasmScriptUrl;
-        script.dataset.gameWasmRuntime = "true";
-        script.addEventListener("load", () => {
-          if (!window.GameWasm?.ready) {
-            reject(new Error("GameWasm bridge did not initialize."));
-            return;
-          }
-
-          window.GameWasm.ready.then(() => resolve(window.GameWasm)).catch(reject);
-        }, { once: true });
-        script.addEventListener("error", () => reject(new Error("Failed to load GameWasm bridge.")), { once: true });
-        document.head.appendChild(script);
-      });
-    }
-
-    return gameWasmLoadPromise;
-  }
-
-  async function ensureGameWasmHydrated() {
-    try {
-      const wasm = await ensureGameWasmRuntime();
-      const bootstrapSession = state.session || window.__GAME_SESSION__ || null;
-      const participants = Array.isArray(bootstrapSession?.players)
-        ? bootstrapSession.players.map((player) => ({
-            name: player.name || "Player",
-            type: player.type || "player",
-            colorHex: player.colorHex || null,
-            isBot: player.type === "bot",
-            role: player.role || "player"
-          }))
-        : [];
-      const monsterCount = Array.isArray(bootstrapSession?.board)
-        ? bootstrapSession.board.filter((cell) => cell?.entityKind === "monster").length
-        : 9;
-        const hasParticipants = participants.length > 0;
-      const requestedBoardSize = Number.isInteger(bootstrapSession?.boardWidth) && bootstrapSession.boardWidth > 0
-        ? bootstrapSession.boardWidth
-        : undefined;
-      const [runtimeState, runtimeTileDefinitions] = await Promise.all([
-          typeof wasm.startGame === "function" && hasParticipants
-          ? wasm.startGame({
-              ...(requestedBoardSize ? { boardSize: requestedBoardSize } : {}),
-              monsterCount,
-              participants
-            })
-          : wasm.getState(),
-        typeof wasm.getTileDefinitions === "function" ? wasm.getTileDefinitions() : Promise.resolve(null)
-      ]);
-      const runtimeSnapshot = runtimeState?.snapshot || runtimeState;
-
-      if (runtimeTileDefinitions) {
-        applyTileDefinitionsFromRuntime(runtimeTileDefinitions);
-      }
-
-      if (runtimeSnapshot?.board) {
-        state.isRuntimeReady = true;
-        state.session = runtimeSnapshot;
-        window.__GAME_SESSION__ = runtimeSnapshot;
-        state.activePlayerId = runtimeSnapshot.currentPlayerId ?? runtimeSnapshot.activePlayerId ?? state.activePlayerId;
-        state.activePlayerName = runtimeSnapshot.currentPlayerName ?? runtimeSnapshot.activePlayerName ?? state.activePlayerName;
-        renderBoard(state.session);
-        syncHud();
-      }
-    } catch {
-      state.isRuntimeReady = false;
-      state.feedback = "Game runtime is still loading.";
-      syncHud();
-    }
-  }
-
   function renderBoard(currentSession) {
-    if (!boardEl || !arrowLayerEl) {
+    if (!boardEl) {
       return;
     }
 
@@ -443,16 +209,15 @@ export async function mountPage(context) {
 
     if (width <= 0 || height <= 0) {
       boardEl.innerHTML = "";
-      arrowLayerEl.innerHTML = "";
       gameBoardCanvas.render(currentSession);
+      gameBoardOverlayCanvas.render(currentSession);
       return;
     }
 
     boardEl.style.gridTemplateColumns = `repeat(${width}, var(--game-cell-size))`;
     boardEl.style.gridTemplateRows = `repeat(${height}, var(--game-cell-size))`;
-    fitBoardToStage(width, height);
+    boardViewport.fitBoardToStage(width, height);
     boardEl.innerHTML = "";
-    arrowLayerEl.innerHTML = "";
 
     cells.forEach((cell) => {
       const tileKind = normalizeTileKind(cell.tileKind || cell.kind || cell.terrainKind);
@@ -486,23 +251,27 @@ export async function mountPage(context) {
       tile.style.gridColumnStart = String(Number(cell.x) - originX + 1);
       tile.style.gridRowStart = String(Number(cell.y) - originY + 1);
 
-      if (isActivePlayerCell(entityId, Number(cell.x), Number(cell.y))) {
+      if (boardInteraction.isActivePlayerCell(entityId, state.activePlayerId)) {
         tile.classList.add("game-board-cell--active-player");
       }
 
-      if (isSelectedSource(Number(cell.x), Number(cell.y))) {
+      if (boardInteraction.isSelectedSource(Number(cell.x), Number(cell.y))) {
         tile.classList.add("game-board-cell--selected-player");
-        applySelectionAccent(tile);
+        boardInteraction.applySelectionAccent(tile);
       }
 
-      if (isPendingTarget(Number(cell.x), Number(cell.y))) {
+      if (boardInteraction.isPendingTarget(Number(cell.x), Number(cell.y))) {
         tile.classList.add("game-board-cell--selected-target");
-        applySelectionAccent(tile);
+        boardInteraction.applySelectionAccent(tile);
+
+        if (state.selectionPreviewTone?.tone === "green" && !isTileRevealed(currentSession, Number(cell.x), Number(cell.y))) {
+          tile.classList.add("game-board-cell--temporary-preview");
+        }
       }
 
       if (state.pendingPlacement && state.pendingPlacement.targetX === Number(cell.x) && state.pendingPlacement.targetY === Number(cell.y)) {
         tile.classList.add("game-board-cell--placement-target");
-        applySelectionAccent(tile);
+        boardInteraction.applySelectionAccent(tile);
       }
 
       const terrainLayer = document.createElement("span");
@@ -527,595 +296,9 @@ export async function mountPage(context) {
       boardEl.appendChild(tile);
     });
 
-    renderTemporaryTargetPreview(currentSession);
-
     gameBoardCanvas.render(currentSession);
-    centerCameraOnActivePlayer(currentSession);
-    renderArrowOverlay(width, height);
+    gameBoardOverlayCanvas.render(currentSession);
+    boardViewport.centerCameraOnActivePlayer(currentSession);
   }
 
-  function syncZoom() {
-    if (!mapEl) {
-      return;
-    }
-
-    mapEl.style.setProperty("--game-board-zoom", String(state.zoomScale));
-    mapEl.style.setProperty("--game-board-pan-x", `${state.panX}px`);
-    mapEl.style.setProperty("--game-board-pan-y", `${state.panY}px`);
-  }
-
-  function fitBoardToStage(width, height) {
-    if (!boardEl || !stageEl || !Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
-      return;
-    }
-
-    const stageStyle = window.getComputedStyle(stageEl);
-    const paddingLeft = Number.parseFloat(stageStyle.paddingLeft || "0") || 0;
-    const paddingRight = Number.parseFloat(stageStyle.paddingRight || "0") || 0;
-    const paddingTop = Number.parseFloat(stageStyle.paddingTop || "0") || 0;
-    const paddingBottom = Number.parseFloat(stageStyle.paddingBottom || "0") || 0;
-    const availableWidth = Math.max(0, stageEl.clientWidth - paddingLeft - paddingRight);
-    const availableHeight = Math.max(0, stageEl.clientHeight - paddingTop - paddingBottom);
-    const fitWidth = availableWidth / width;
-    const fitHeight = availableHeight / height;
-    const nextCellSize = Math.max(8, Math.floor(Math.min(fitWidth, fitHeight)));
-
-    boardEl.style.setProperty("--game-cell-size", `${nextCellSize}px`);
-  }
-
-  function centerCameraOnActivePlayer(currentSession) {
-    if (!boardEl || !stageEl || !mapEl) {
-      return;
-    }
-
-    const targetCell = getCameraTargetCell(currentSession);
-    if (!targetCell) {
-      return;
-    }
-
-    const cellSize = getBoardCellSize();
-    if (cellSize <= 0) {
-      return;
-    }
-
-    const stageStyle = window.getComputedStyle(stageEl);
-    const paddingLeft = Number.parseFloat(stageStyle.paddingLeft || "0") || 0;
-    const paddingRight = Number.parseFloat(stageStyle.paddingRight || "0") || 0;
-    const paddingTop = Number.parseFloat(stageStyle.paddingTop || "0") || 0;
-    const paddingBottom = Number.parseFloat(stageStyle.paddingBottom || "0") || 0;
-    const contentWidth = Math.max(0, stageEl.clientWidth - paddingLeft - paddingRight);
-    const contentHeight = Math.max(0, stageEl.clientHeight - paddingTop - paddingBottom);
-    const boardPixelWidth = state.boardWidth * cellSize;
-    const boardPixelHeight = state.boardHeight * cellSize;
-    const centeredLeft = paddingLeft + Math.max(0, (contentWidth - boardPixelWidth) / 2);
-    const centeredTop = paddingTop;
-    const targetX = (targetCell.x - state.boardOriginX + 0.5) * cellSize;
-    const targetY = (targetCell.y - state.boardOriginY + 0.5) * cellSize;
-
-    state.panX = (paddingLeft + (contentWidth / 2)) - centeredLeft - (targetX * state.zoomScale);
-    state.panY = (paddingTop + (contentHeight / 2)) - centeredTop - (targetY * state.zoomScale);
-    syncZoom();
-  }
-
-  function getBoardCellSize() {
-    const rawValue = boardEl?.style.getPropertyValue("--game-cell-size") || "";
-    const parsed = Number.parseFloat(rawValue);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  function getCameraTargetCell(currentSession) {
-    const cells = Array.isArray(currentSession?.board) ? currentSession.board : [];
-    if (state.activePlayerId !== null && state.activePlayerId !== undefined) {
-      const activeCell = cells.find((cell) => String(cell?.entityId ?? cell?.occupantId ?? "") === String(state.activePlayerId));
-      if (activeCell && Number.isInteger(activeCell.x) && Number.isInteger(activeCell.y)) {
-        return { x: activeCell.x, y: activeCell.y };
-      }
-    }
-
-    const fallbackCell = cells.find((cell) => cell?.entityKind === "player" && Number.isInteger(cell.x) && Number.isInteger(cell.y));
-    if (fallbackCell) {
-      return { x: fallbackCell.x, y: fallbackCell.y };
-    }
-
-    return null;
-  }
-
-  function renderArrowOverlay(width, height) {
-    if (!arrowLayerEl) {
-      return;
-    }
-
-    arrowLayerEl.innerHTML = "";
-    if (!state.selectedSource || !state.pendingTarget) {
-      return;
-    }
-
-    arrowLayerEl.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    arrowLayerEl.setAttribute("preserveAspectRatio", "none");
-
-    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-    marker.setAttribute("id", "game-board-arrow-head");
-    marker.setAttribute("markerWidth", "2");
-    marker.setAttribute("markerHeight", "2");
-    marker.setAttribute("refX", "1.4");
-    marker.setAttribute("refY", "1");
-    marker.setAttribute("orient", "auto-start-reverse");
-    marker.setAttribute("markerUnits", "strokeWidth");
-
-    const markerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    markerPath.setAttribute("d", "M 0 0 L 2 1 L 0 2 z");
-    markerPath.setAttribute("fill", getSelectionPreviewColor());
-    marker.appendChild(markerPath);
-    defs.appendChild(marker);
-    arrowLayerEl.appendChild(defs);
-
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", (state.selectedSource.x - state.boardOriginX + 0.5).toString());
-    line.setAttribute("y1", (state.selectedSource.y - state.boardOriginY + 0.5).toString());
-    line.setAttribute("x2", (state.pendingTarget.x - state.boardOriginX + 0.5).toString());
-    line.setAttribute("y2", (state.pendingTarget.y - state.boardOriginY + 0.5).toString());
-    line.setAttribute("stroke", getSelectionPreviewColor());
-    line.setAttribute("stroke-width", "0.14");
-    line.setAttribute("stroke-linecap", "round");
-    line.setAttribute("stroke-linejoin", "round");
-    line.setAttribute("stroke-dasharray", "0.28 0.18");
-    line.setAttribute("marker-end", "url(#game-board-arrow-head)");
-    line.style.filter = "drop-shadow(0 0.08rem 0.12rem rgba(18, 53, 75, 0.22))";
-    arrowLayerEl.appendChild(line);
-  }
-
-  function syncHud() {
-    const statusMessage = state.feedback
-      || (!state.selectedSource
-        ? state.pendingPlacement
-          ? (state.pendingPlacement.canCommit
-            ? `Tile aligned. Use the action bar to rotate or place & move.`
-            : `Rotate the revealed tile using the action bar until it connects.`)
-          : `Click ${state.activePlayerName} to select it.`
-        : !state.pendingTarget
-          ? `Selected ${state.activePlayerName}. Click a tile to preview movement.`
-          : `Queued ${isTileRevealed(state.session, state.pendingTarget.x, state.pendingTarget.y) ? "move" : "tile placement"} to (${state.pendingTarget.x}, ${state.pendingTarget.y}). Backend validates on action.`);
-
-    setNavMessage(statusMessage);
-
-    if (actionBarEl) {
-      const placement = state.pendingPlacement || state.session?.pendingPlacement || null;
-      renderActionBar(actionBarEl, placement);
-    }
-  }
-
-  function renderActionBar(container, placement) {
-    const nodes = [];
-
-    if (placement) {
-      nodes.push(createPlacementPreview(placement));
-    }
-
-    const buttonConfig = placement
-      ? [
-          {
-            label: "Rotate Left",
-            className: "game-board-action-btn game-board-action-btn--ghost",
-            disabled: state.isSubmitting,
-            onClick: () => void handleRotatePlacement(-1)
-          },
-          {
-            label: state.isSubmitting ? "Placing..." : "Place & Move",
-            className: "game-board-action-btn",
-            disabled: state.isSubmitting || placement.canCommit === false,
-            onClick: () => void handlePerformAction()
-          },
-          {
-            label: "Rotate Right",
-            className: "game-board-action-btn game-board-action-btn--ghost",
-            disabled: state.isSubmitting,
-            onClick: () => void handleRotatePlacement(1)
-          }
-        ]
-      : [
-          {
-            label: "Cancel",
-            className: "game-board-action-btn game-board-action-btn--ghost",
-            disabled: !state.selectedSource && !state.pendingTarget,
-            onClick: handleCancelSelection
-          },
-          {
-            label: state.isSubmitting
-              ? "Sending..."
-              : isTileRevealed(state.session, state.pendingTarget?.x, state.pendingTarget?.y)
-                ? "Confirm Move"
-                : "Place Tile",
-            className: "game-board-action-btn",
-            disabled: state.isSubmitting
-              || (!state.selectedSource || !state.pendingTarget || state.selectionPreviewTone?.tone === "red"),
-            onClick: () => void handlePerformAction()
-          }
-        ];
-
-    nodes.push(...buttonConfig.map(createActionButton));
-    container.replaceChildren(...nodes);
-  }
-
-  function createActionButton(config) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = config.className;
-    button.disabled = config.disabled;
-    button.textContent = config.label;
-    button.addEventListener("click", config.onClick);
-    return button;
-  }
-
-  function createPlacementPreview(placement) {
-    const card = document.createElement("div");
-    card.className = "game-board-placement-preview";
-
-    const tile = document.createElement("div");
-    tile.className = "game-board-placement-preview__tile";
-    tile.style.backgroundImage = `url(${getTileAssetUrl(placement.tileKind, placement.tileOrientation)})`;
-    tile.setAttribute("aria-hidden", "true");
-
-    const details = document.createElement("div");
-    details.className = "game-board-placement-preview__details";
-
-    const title = document.createElement("div");
-    title.className = "game-board-placement-preview__title";
-    title.textContent = `${placement.tileKind} · ${placement.tileOrientation}`;
-
-    const subtitle = document.createElement("div");
-    subtitle.className = "game-board-placement-preview__subtitle";
-    subtitle.textContent = placement.canCommit
-      ? "Tile ready to commit"
-      : "Rotate the tile until it connects";
-
-    details.appendChild(title);
-    details.appendChild(subtitle);
-    card.appendChild(tile);
-    card.appendChild(details);
-    return card;
-  }
-
-  function clearSelection() {
-    state.selectedSource = null;
-    state.pendingTarget = null;
-    state.selectionPreviewTone = null;
-  }
-
-  function isActivePlayerCell(entityId) {
-    if (entityId === null || entityId === undefined || state.activePlayerId === null || state.activePlayerId === undefined) {
-      return false;
-    }
-
-    return String(entityId) === String(state.activePlayerId);
-  }
-
-  function isSelectedSource(x, y) {
-    return Boolean(state.selectedSource && state.selectedSource.x === x && state.selectedSource.y === y);
-  }
-
-  function isPendingTarget(x, y) {
-    return Boolean(state.pendingTarget && state.pendingTarget.x === x && state.pendingTarget.y === y);
-  }
-
-  function applySelectionAccent(tile) {
-    const color = getSelectionPreviewColor();
-    tile.style.setProperty("--selection-accent", color);
-  }
-
-  function getSelectionPreviewColor() {
-    if (state.selectionPreviewTone && typeof state.selectionPreviewTone === "object") {
-      return state.selectionPreviewTone.color || state.selectedSource?.colorHex || "#14532d";
-    }
-
-    return state.selectedSource?.colorHex || "#14532d";
-  }
-
-  function getSelectionPreviewMessage() {
-    return state.selectionPreviewTone?.message || "";
-  }
-
-  function classifyTargetPreview(currentSession, source, target) {
-    const fromCell = getBoardCell(currentSession, source?.x, source?.y);
-    const toCell = getBoardCell(currentSession, target?.x, target?.y);
-
-    if (!fromCell) {
-      return { tone: "red", color: "#b91c1c", message: "Movement is not possible." };
-    }
-
-    if (!areOrthogonallyAdjacent(source, target)) {
-      return { tone: "red", color: "#b91c1c", message: "Movement is not possible." };
-    }
-
-    if (!toCell) {
-      return { tone: "red", color: "#b91c1c", message: "Movement is not possible." };
-    }
-
-    if (!isTileRevealed(currentSession, target?.x, target?.y)) {
-      if (!canExitTowardsTarget(fromCell, source, target)) {
-        return { tone: "red", color: "#b91c1c", message: "Movement is blocked by walls." };
-      }
-
-      return { tone: "green", color: "#14532d", message: "Hidden tile preview." };
-    }
-
-    if (!canTraverseBetweenCells(fromCell, toCell)) {
-      return { tone: "red", color: "#b91c1c", message: "Movement is blocked by walls." };
-    }
-
-    if (isTargetEngaged(currentSession, toCell)) {
-      return { tone: "blue", color: "#1d4ed8", message: "This tile will trigger an attack." };
-    }
-
-    return { tone: "green", color: "#14532d", message: "Movement is available." };
-  }
-
-  function getBoardCell(currentSession, x, y) {
-    const cells = Array.isArray(currentSession?.board) ? currentSession.board : [];
-    return cells.find((cell) => Number(cell?.x) === Number(x) && Number(cell?.y) === Number(y)) || null;
-  }
-
-  function getBoardPointFromCell(cell) {
-    const x = Number.parseInt(cell?.dataset.x || "", 10);
-    const y = Number.parseInt(cell?.dataset.y || "", 10);
-
-    if (!Number.isInteger(x) || !Number.isInteger(y)) {
-      return null;
-    }
-
-    return { x, y };
-  }
-
-  function getBoardPointFromPointer(event) {
-    if (!boardEl || !event || !Number.isInteger(state.boardWidth) || !Number.isInteger(state.boardHeight) || state.boardWidth <= 0 || state.boardHeight <= 0) {
-      return null;
-    }
-
-    const boardRect = boardEl.getBoundingClientRect();
-    if (!Number.isFinite(boardRect.width) || !Number.isFinite(boardRect.height) || boardRect.width <= 0 || boardRect.height <= 0) {
-      return null;
-    }
-
-    const columnSize = boardRect.width / state.boardWidth;
-    const rowSize = boardRect.height / state.boardHeight;
-    if (columnSize <= 0 || rowSize <= 0) {
-      return null;
-    }
-
-    const offsetX = event.clientX - boardRect.left;
-    const offsetY = event.clientY - boardRect.top;
-    const x = state.boardOriginX + Math.floor(offsetX / columnSize);
-    const y = state.boardOriginY + Math.floor(offsetY / rowSize);
-
-    if (x < state.boardOriginX || y < state.boardOriginY || x >= state.boardOriginX + state.boardWidth || y >= state.boardOriginY + state.boardHeight) {
-      return null;
-    }
-
-    return { x, y };
-  }
-
-  function renderTemporaryTargetPreview(currentSession) {
-    if (!state.pendingTarget || !boardEl || state.selectionPreviewTone?.tone !== "green") {
-      return;
-    }
-
-    if (isTileRevealed(currentSession, state.pendingTarget.x, state.pendingTarget.y)) {
-      return;
-    }
-
-    const tile = document.createElement("div");
-    tile.className = "game-board-cell game-board-cell--selected-target game-board-cell--temporary-preview";
-    tile.setAttribute("role", "gridcell");
-    tile.dataset.x = String(state.pendingTarget.x);
-    tile.dataset.y = String(state.pendingTarget.y);
-    tile.style.gridColumnStart = String(state.pendingTarget.x - state.boardOriginX + 1);
-    tile.style.gridRowStart = String(state.pendingTarget.y - state.boardOriginY + 1);
-    tile.style.pointerEvents = "none";
-    applySelectionAccent(tile);
-    tile.style.zIndex = "0";
-
-    const terrainLayer = document.createElement("span");
-    terrainLayer.className = "game-board-cell__layer game-board-cell__layer--terrain game-board-cell__layer--temporary-preview";
-    terrainLayer.style.backgroundImage = `url(${getHiddenTileAssetUrl()})`;
-    tile.appendChild(terrainLayer);
-
-    boardEl.appendChild(tile);
-  }
-
-  async function handleRotatePlacement(delta) {
-    if (!state.pendingPlacement || state.isSubmitting) {
-      return;
-    }
-
-    state.isSubmitting = true;
-    state.feedback = delta < 0 ? "Rotating tile left..." : "Rotating tile right...";
-    syncHud();
-
-    try {
-      const wasm = await ensureGameWasmRuntime().catch(() => null);
-      if (!wasm) {
-        throw new Error("GameWasm bridge is unavailable.");
-      }
-
-      const payload = await wasm.applyAction({
-        actionName: "rotate_placement",
-        rotationDelta: delta
-      });
-
-      if (!payload?.success) {
-        throw new Error(payload?.message || "Rotation failed.");
-      }
-
-      if (payload?.snapshot) {
-        state.session = payload.snapshot;
-        window.__GAME_SESSION__ = payload.snapshot;
-        state.activePlayerId = payload.snapshot.currentPlayerId ?? payload.snapshot.activePlayerId ?? state.activePlayerId;
-        state.activePlayerName = payload.snapshot.currentPlayerName ?? payload.snapshot.activePlayerName ?? state.activePlayerName;
-      }
-
-      clearSelection();
-      state.feedback = payload?.message || "Tile rotated.";
-      renderBoard(state.session);
-      syncHud();
-    } catch (error) {
-      state.feedback = error instanceof Error ? error.message : "Rotation failed.";
-      syncHud();
-    } finally {
-      state.isSubmitting = false;
-      syncHud();
-    }
-  }
-
-  async function cancelPendingPlacement() {
-    if (!state.pendingPlacement || state.isSubmitting) {
-      return;
-    }
-
-    state.isSubmitting = true;
-    state.feedback = "Canceling tile placement...";
-    syncHud();
-
-    try {
-      const wasm = await ensureGameWasmRuntime().catch(() => null);
-      if (!wasm) {
-        throw new Error("GameWasm bridge is unavailable.");
-      }
-
-      const payload = await wasm.applyAction({
-        actionName: "cancel_placement"
-      });
-
-      if (!payload?.success) {
-        throw new Error(payload?.message || "Cancel failed.");
-      }
-
-      if (payload?.snapshot) {
-        state.session = payload.snapshot;
-        window.__GAME_SESSION__ = payload.snapshot;
-        state.activePlayerId = payload.snapshot.currentPlayerId ?? payload.snapshot.activePlayerId ?? state.activePlayerId;
-        state.activePlayerName = payload.snapshot.currentPlayerName ?? payload.snapshot.activePlayerName ?? state.activePlayerName;
-      }
-
-      clearSelection();
-      state.feedback = payload?.message || "Tile placement canceled.";
-      renderBoard(state.session);
-      syncHud();
-    } catch (error) {
-      state.feedback = error instanceof Error ? error.message : "Cancel failed.";
-      syncHud();
-    } finally {
-      state.isSubmitting = false;
-      syncHud();
-    }
-  }
-
-  function areOrthogonallyAdjacent(source, target) {
-    if (!Number.isInteger(source?.x) || !Number.isInteger(source?.y) || !Number.isInteger(target?.x) || !Number.isInteger(target?.y)) {
-      return false;
-    }
-
-    const dx = Math.abs(source.x - target.x);
-    const dy = Math.abs(source.y - target.y);
-    return dx + dy === 1;
-  }
-
-  function canTraverseBetweenCells(fromCell, toCell) {
-    const fromWalls = getTileWalls(
-      normalizeTileKind(fromCell.tileKind || fromCell.kind || fromCell.terrainKind),
-      Number.isInteger(fromCell.tileOrientation) ? fromCell.tileOrientation : Number.isInteger(fromCell.orientation) ? fromCell.orientation : 0
-    );
-    const toWalls = getTileWalls(
-      normalizeTileKind(toCell.tileKind || toCell.kind || toCell.terrainKind),
-      Number.isInteger(toCell.tileOrientation) ? toCell.tileOrientation : Number.isInteger(toCell.orientation) ? toCell.orientation : 0
-    );
-
-    if (fromCell.x === toCell.x) {
-      if (fromCell.y < toCell.y) {
-        return !fromWalls.south && !toWalls.north;
-      }
-
-      return !fromWalls.north && !toWalls.south;
-    }
-
-    if (fromCell.y === toCell.y) {
-      if (fromCell.x < toCell.x) {
-        return !fromWalls.east && !toWalls.west;
-      }
-
-      return !fromWalls.west && !toWalls.east;
-    }
-
-    return false;
-  }
-
-  function canExitTowardsTarget(fromCell, source, target) {
-    if (!fromCell || !areOrthogonallyAdjacent(source, target)) {
-      return false;
-    }
-
-    const fromWalls = getTileWalls(
-      normalizeTileKind(fromCell.tileKind || fromCell.kind || fromCell.terrainKind),
-      Number.isInteger(fromCell.tileOrientation) ? fromCell.tileOrientation : Number.isInteger(fromCell.orientation) ? fromCell.orientation : 0
-    );
-
-    if (target.x > source.x) {
-      return !fromWalls.east;
-    }
-
-    if (target.x < source.x) {
-      return !fromWalls.west;
-    }
-
-    if (target.y > source.y) {
-      return !fromWalls.south;
-    }
-
-    return !fromWalls.north;
-  }
-
-  function isTargetEngaged(currentSession, targetCell) {
-    if (!targetCell) {
-      return false;
-    }
-
-    const entityKind = String(targetCell.entityKind || targetCell.occupantKind || targetCell.monsterKind || targetCell.playerKind || "").toLowerCase();
-    if (!entityKind) {
-      return false;
-    }
-
-    return true;
-  }
-
-  function isDiscoveryTracked(currentSession) {
-    return Array.isArray(currentSession?.revealedTiles)
-      && currentSession.revealedTiles.length > 0
-      && currentSession.revealedTiles.length < state.boardWidth * state.boardHeight;
-  }
-
-  function isTileRevealed(currentSession, x, y) {
-    const revealedTiles = Array.isArray(currentSession?.revealedTiles) ? currentSession.revealedTiles : [];
-    return revealedTiles.some((tile) => Number(tile?.x) === Number(x) && Number(tile?.y) === Number(y));
-  }
-
-  function getPointerDistance(firstPoint, secondPoint) {
-    return Math.hypot(firstPoint.clientX - secondPoint.clientX, firstPoint.clientY - secondPoint.clientY);
-  }
-
-  function getPointerMidpoint(firstPoint, secondPoint) {
-    return {
-      clientX: (firstPoint.clientX + secondPoint.clientX) / 2,
-      clientY: (firstPoint.clientY + secondPoint.clientY) / 2
-    };
-  }
-
-  function getTouchPoint(touch) {
-    return {
-      clientX: touch.clientX,
-      clientY: touch.clientY
-    };
-  }
-
-  function clampScale(scale) {
-    return Math.min(2.75, Math.max(0.7, scale));
-  }
 }

@@ -21,12 +21,11 @@ test('wires tile and entity sprite draws through the shared frame drawer', async
     drawSpriteFrame: async (...args) => {
       calls.push(args);
     },
-    createSpriteSheetSource: (sourceUrl) => ({ sourceUrl })
   });
 
-  await spriteDrawers.drawTileSprite('./assets/game/tiles/Road0_0.png', 10, 20, 30, 40, 'idle');
-  await spriteDrawers.drawEntitySprite('./assets/game/entities/player.png', 10, 20, 30, 40, 'idle');
+  await spriteDrawers.drawTileSprite({ imageUrl: './assets/game/tiles/Road0_0.png' }, 10, 20, 30, 40, 'idle');
+  await spriteDrawers.drawEntitySprite({ imageUrl: './assets/game/entities/player.png' }, 10, 20, 30, 40, 'idle');
 
-  assert.deepEqual(calls[0], [{ id: 'context' }, { sourceUrl: './assets/game/tiles/Road0_0.png' }, 'idle', 10, 20, 30, 40]);
-  assert.deepEqual(calls[1], [{ id: 'context' }, { sourceUrl: './assets/game/entities/player.png' }, 'idle', 14, 24, 22, 32]);
+  assert.deepEqual(calls[0], [{ id: 'context' }, { imageUrl: './assets/game/tiles/Road0_0.png' }, 'idle', 10, 20, 30, 40]);
+  assert.deepEqual(calls[1], [{ id: 'context' }, { imageUrl: './assets/game/entities/player.png' }, 'idle', 14, 24, 22, 32]);
 });

@@ -161,18 +161,18 @@ body[data-page="game-board"] {
   inset: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
+  pointer-events: auto;
+  touch-action: none;
   z-index: 0;
 }
 
-.game-board-arrow-layer {
+.game-board-overlay-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  overflow: visible;
-  z-index: 1;
+  z-index: 3;
 }
 
 .game-board {
@@ -189,6 +189,7 @@ body[data-page="game-board"] {
   background: transparent;
   border: 0;
   box-shadow: none;
+  pointer-events: none;
   touch-action: none;
   overscroll-behavior: contain;
 }
@@ -201,7 +202,7 @@ body[data-page="game-board"] {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  cursor: pointer;
+  pointer-events: none;
 }
 
 .game-board-cell__layer {
@@ -224,45 +225,12 @@ body[data-page="game-board"] {
   filter: drop-shadow(0 3px 7px rgba(20, 50, 71, 0.24));
 }
 
-.game-board-cell--active-player {
-  box-shadow: inset 0 0 0 2px rgba(18, 53, 75, 0.28);
-}
-
 .game-board-cell--hidden-space {
   background: rgba(255, 251, 245, 0.95);
 }
 
 .game-board-cell--hidden-space .game-board-cell__layer--terrain {
   background-image: none;
-}
-
-.game-board-cell--selected-player {
-  box-shadow: inset 0 0 0 2px var(--selection-accent, var(--entity-color, rgba(18, 53, 75, 0.92)));
-}
-
-.game-board-cell--selected-target {
-  box-shadow: inset 0 0 0 2px var(--selection-accent, rgba(17, 24, 39, 0.9));
-}
-
-.game-board-cell--selected-target .game-board-cell__layer--terrain {
-  filter: saturate(1.06) brightness(1.04);
-}
-
-.game-board-cell--placement-target {
-  box-shadow: inset 0 0 0 2px rgba(20, 83, 45, 0.88), 0 0 0 0.16rem rgba(255, 255, 255, 0.72);
-}
-
-.game-board-cell--placement-target .game-board-cell__layer--terrain {
-  filter: saturate(1.12) brightness(1.06);
-}
-
-.game-board-cell--temporary-preview {
-  pointer-events: none;
-  z-index: 0;
-}
-
-.game-board-cell--temporary-preview .game-board-cell__layer--terrain {
-  filter: saturate(1.02) brightness(1.01);
 }
 
 .game-board-cell__layer--player {

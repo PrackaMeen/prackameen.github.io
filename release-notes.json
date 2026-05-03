@@ -1,6 +1,114 @@
 {
   "items": [
     {
+      "version": "1.1.36",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board action and state logic now live outside the page",
+      "businessSummary": "The game board page is now thinner because the remaining action orchestration and shared board-state helpers moved into dedicated modules. That keeps the canvas-first board easier to maintain while preserving the same player interactions.",
+      "highlights": [
+        "Moved move, rotate, and cancel behavior into a dedicated action controller.",
+        "Moved shared board-state helpers into a reusable module.",
+        "Kept the browser behavior and board rendering flow intact."
+      ]
+    },
+    {
+      "version": "1.1.35",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Canvas transition plan now matches the controller split",
+      "businessSummary": "The transition plan was updated to describe the current board architecture instead of the older phased rollout language. That keeps the documentation aligned with the shipped canvas-first board and the remaining page-owned action logic.",
+      "highlights": [
+        "Updated the board architecture notes to reflect the runtime, HUD, viewport, and bootstrap controllers.",
+        "Reframed the remaining work around action orchestration and board-state helpers.",
+        "Kept the PWA version aligned with the documentation change."
+      ]
+    },
+    {
+      "version": "1.1.34",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board mount and disposal now live in a bootstrap helper",
+      "businessSummary": "The game board page is thinner again because the mount lifecycle, resize observer, and event wiring moved into a dedicated bootstrap helper. That keeps the board startup path easier to maintain while preserving the same player experience.",
+      "highlights": [
+        "Moved board listener registration and disposal into a bootstrap helper.",
+        "Kept the runtime, HUD, viewport, and interaction controllers intact.",
+        "Preserved the existing browser behavior and automated coverage."
+      ]
+    },
+    {
+      "version": "1.1.33",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board runtime bootstrap now lives in a controller",
+      "businessSummary": "The game board page is slimmer again because the WASM loading and hydration flow moved into a dedicated runtime controller. That keeps the startup logic easier to maintain while preserving the same board behavior for players.",
+      "highlights": [
+        "Moved WASM runtime loading and hydration out of the page module.",
+        "Kept the board startup state and action flow unchanged for users.",
+        "Preserved the existing browser coverage for board interactions."
+      ]
+    },
+    {
+      "version": "1.1.32",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board HUD wiring now lives in a controller",
+      "businessSummary": "The game board page is slimmer again because the status text and action-bar rendering moved into a dedicated HUD controller. That keeps the canvas-first board easier to maintain while preserving the same player interactions.",
+      "highlights": [
+        "Moved the game-board status text and action bar into a controller module.",
+        "Kept move, placement, and rotation actions wired to the same runtime flow.",
+        "Preserved the existing browser coverage for board interaction behavior."
+      ]
+    },
+    {
+      "version": "1.1.31",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game board page now delegates the remaining board logic",
+      "businessSummary": "The game board page is slimmer again because the last leftover selection and viewport helpers now live in the dedicated controllers. That keeps the canvas-first board easier to maintain without changing how players move, place, or preview tiles.",
+      "highlights": [
+        "Removed the last duplicated board helpers from the page module.",
+        "Kept selection, viewport, and active-player logic behind controller APIs.",
+        "Preserved the existing browser behavior and Playwright coverage."
+      ]
+    },
+    {
+      "version": "1.1.30",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Board selection and camera logic now live in controllers",
+      "businessSummary": "The board page is now slimmer because selection handling and viewport math moved into dedicated controllers. That makes the canvas-first board easier to maintain without changing the player experience.",
+      "highlights": [
+        "Extracted the board interaction logic into a reusable controller.",
+        "Extracted zoom, pan, and camera math into a viewport controller.",
+        "Kept the browser behavior and Playwright coverage intact."
+      ]
+    },
+    {
+      "version": "1.1.29",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Canvas transition plan now matches the shipped board",
+      "businessSummary": "The transition plan now describes the canvas-first board implementation that is actually in the app, so the documented rollout and remaining work no longer point to removed future-file placeholders.",
+      "highlights": [
+        "Rewrote the transition plan to reflect the current board architecture.",
+        "Removed stale feature-flag and future-module references from the plan.",
+        "Kept the app version aligned with the documentation update."
+      ]
+    },
+    {
+      "version": "1.1.28",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Sprite sheets now keep loading after versioned asset URLs",
+      "businessSummary": "The game board now rewrites sprite metadata URLs correctly even when assets include cache-busting query strings. That keeps board art and tile animations loading reliably after each deploy.",
+      "highlights": [
+        "Preserved sprite metadata loading for versioned PNG URLs.",
+        "Verified the browser path with Playwright request interception.",
+        "Bumped the PWA version so the fix ships in the app shell."
+      ]
+    },
+    {
       "version": "1.1.27",
       "commit": "ae19bb8",
       "date": "2026-05-02",
