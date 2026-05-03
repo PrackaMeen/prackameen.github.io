@@ -47,7 +47,7 @@ export async function mountPage(context) {
     isSubmitting: false,
     isRuntimeReady: false,
     feedback: "",
-    zoomScale: 1,
+    zoomScale: 1.5,
     panX: 0,
     panY: 0,
     pinchStartDistance: null,
@@ -60,6 +60,7 @@ export async function mountPage(context) {
     boardHeight: 0,
     boardOriginX: 0,
     boardOriginY: 0,
+    lockedBoardCellSize: null,
     hasInitialCameraCenterApplied: false
   };
   const gameBoardCanvas = createGameBoardCanvas({
@@ -68,6 +69,12 @@ export async function mountPage(context) {
     getSession: () => state.session,
     getActivePlayerId: () => state.activePlayerId,
     getSelectedSource: () => state.selectedSource,
+    getCellSize: () => boardViewport.getBoardCellSize(),
+    getViewportTransform: () => ({
+      scale: state.zoomScale,
+      panX: state.panX,
+      panY: state.panY
+    }),
     getTileSpriteSheetSource,
     getEntitySpriteSheetSource,
     normalizeTileKind,
@@ -78,13 +85,17 @@ export async function mountPage(context) {
     canvasEl: overlayCanvasEl,
     mapEl,
     getSession: () => state.session,
+    getCellSize: () => boardViewport.getBoardCellSize(),
     getOverlayState: () => ({
       selectedSource: state.selectedSource,
       pendingTarget: state.pendingTarget,
       pendingPlacement: state.pendingPlacement,
       selectionPreviewTone: state.selectionPreviewTone,
       boardOriginX: state.boardOriginX,
-      boardOriginY: state.boardOriginY
+      boardOriginY: state.boardOriginY,
+      viewportScale: state.zoomScale,
+      viewportPanX: state.panX,
+      viewportPanY: state.panY
     }),
     getHiddenTileAssetUrl,
     isTileRevealed
@@ -217,10 +228,8 @@ export async function mountPage(context) {
       return;
     }
 
-    if (!state.hasInitialCameraCenterApplied) {
-      boardViewport.fitBoardToStage(width, height);
-    } else {
-      boardViewport.resizeBoardSurface(width, height);
+    if (!Number.isFinite(state.lockedBoardCellSize) || state.lockedBoardCellSize <= 0) {
+      boardViewport.lockBoardCellSize(width, height);
     }
     gameBoardCanvas.render(currentSession);
     gameBoardOverlayCanvas.render(currentSession);

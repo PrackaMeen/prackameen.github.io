@@ -125,6 +125,34 @@ test('shifts cells into view when the board origin moves left', () => {
   });
 });
 
+test('keeps cell size fixed when a board grows', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 5,
+      boardHeight: 1,
+      board: [
+        { x: 0, y: 0, tileKind: 'road1', tileOrientation: 0 },
+        { x: 1, y: 0, tileKind: 'road1', tileOrientation: 0 }
+      ]
+    },
+    boardWidth: 5,
+    boardHeight: 1,
+    cellSize: 64,
+    canvasWidth: 320,
+    canvasHeight: 64,
+    isTileRevealed: () => true,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}` }),
+    getEntitySpriteSheetSource: () => null
+  });
+
+  assert.equal(plan[0].x, 0);
+  assert.equal(plan[0].width, 64);
+  assert.equal(plan[1].x, 64);
+  assert.equal(plan[1].width, 64);
+});
+
 test('shows the active player on hidden cells at game start', () => {
   const plan = buildGameBoardDrawPlan({
     session: {

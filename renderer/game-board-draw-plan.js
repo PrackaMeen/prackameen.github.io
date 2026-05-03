@@ -7,8 +7,10 @@ export function buildGameBoardDrawPlan({
   boardHeight,
   boardOriginX = 0,
   boardOriginY = 0,
+  cellSize = null,
   canvasWidth,
   canvasHeight,
+  viewportTransform = null,
   currentTimeMs = 0,
   activePlayerId = null,
   selectedSource = null,
@@ -25,16 +27,17 @@ export function buildGameBoardDrawPlan({
   for (const cell of cells) {
     const x = Number.isInteger(cell?.x) ? cell.x : 0;
     const y = Number.isInteger(cell?.y) ? cell.y : 0;
-    const bounds = getCellBounds({
+    const bounds = transformBounds(getCellBounds({
       column: x,
       row: y,
       boardOriginX,
       boardOriginY,
       boardWidth,
       boardHeight,
+      cellSize,
       canvasWidth,
       canvasHeight
-    });
+    }), viewportTransform);
 
     const hasEntity = Boolean(cell?.entityKind || cell?.occupantKind || cell?.monsterKind || cell?.playerKind);
     const entityId = cell?.entityId ?? cell?.occupantId ?? cell?.playerId ?? null;
@@ -118,12 +121,12 @@ export function buildGameBoardDrawPlan({
     }
   }
 
-  const gridLines = getGridLinePositions({ boardWidth, boardHeight, canvasWidth, canvasHeight });
+  const gridLines = getGridLinePositions({ boardWidth, boardHeight, canvasWidth, canvasHeight, cellSize });
   for (const y of gridLines.horizontal) {
-    plan.push({ type: 'grid-line-horizontal', y });
+    plan.push({ type: 'grid-line-horizontal', y: transformPoint({ x: 0, y }, viewportTransform).y });
   }
   for (const x of gridLines.vertical) {
-    plan.push({ type: 'grid-line-vertical', x });
+    plan.push({ type: 'grid-line-vertical', x: transformPoint({ x, y: 0 }, viewportTransform).x });
   }
 
   return plan;
@@ -150,4 +153,28 @@ function resolveEntityOrientation({ cell, entityId, getEntityOrientation }) {
             : 0;
 
   return ((cellOrientation % 4) + 4) % 4;
+}
+
+function transformBounds(bounds, viewportTransform) {
+  const topLeft = transformPoint({ x: bounds.x, y: bounds.y }, viewportTransform);
+  const bottomRight = transformPoint({ x: bounds.x + bounds.width, y: bounds.y + bounds.height }, viewportTransform);
+
+  return {
+    ...bounds,
+    x: topLeft.x,
+    y: topLeft.y,
+    width: bottomRight.x - topLeft.x,
+    height: bottomRight.y - topLeft.y
+  };
+}
+
+function transformPoint(point, viewportTransform) {
+  const scale = Number.isFinite(viewportTransform?.scale) ? viewportTransform.scale : 1;
+  const panX = Number.isFinite(viewportTransform?.panX) ? viewportTransform.panX : 0;
+  const panY = Number.isFinite(viewportTransform?.panY) ? viewportTransform.panY : 0;
+
+  return {
+    x: (Number(point?.x) || 0) * scale + panX,
+    y: (Number(point?.y) || 0) * scale + panY
+  };
 }

@@ -14,17 +14,7 @@ export function createBoardPageBootstrap({
   onTouchCancel,
   setNavMessage
 }) {
-  const layoutResizeObserver = typeof ResizeObserver !== "undefined" && stageEl
-    ? new ResizeObserver(() => {
-        boardViewport.fitBoardToStage(state.boardWidth, state.boardHeight);
-        boardViewport.resizeBoardSurface(state.boardWidth, state.boardHeight);
-      })
-    : null;
   let suppressNextClick = false;
-
-  if (layoutResizeObserver && stageEl) {
-    layoutResizeObserver.observe(stageEl);
-  }
 
   renderBoard(state.session);
   boardViewport.syncZoom();
@@ -43,7 +33,6 @@ export function createBoardPageBootstrap({
       canvasEl?.removeEventListener("touchmove", onTouchMove);
       canvasEl?.removeEventListener("touchend", handleTouchEnd);
       canvasEl?.removeEventListener("touchcancel", handleTouchCancel);
-      layoutResizeObserver?.disconnect();
       gameBoardCanvas.dispose();
       gameBoardOverlayCanvas.dispose();
       setNavMessage("");

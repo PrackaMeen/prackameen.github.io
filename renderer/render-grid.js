@@ -5,9 +5,9 @@ export function getCanvasSize(rect) {
   };
 }
 
-export function getCellBounds({ column, row, boardOriginX = 0, boardOriginY = 0, boardWidth, boardHeight, canvasWidth, canvasHeight }) {
-  const cellWidth = canvasWidth / boardWidth;
-  const cellHeight = canvasHeight / boardHeight;
+export function getCellBounds({ column, row, boardOriginX = 0, boardOriginY = 0, boardWidth, boardHeight, canvasWidth, canvasHeight, cellSize = null }) {
+  const cellWidth = Number.isFinite(cellSize) && cellSize > 0 ? cellSize : canvasWidth / boardWidth;
+  const cellHeight = Number.isFinite(cellSize) && cellSize > 0 ? cellSize : canvasHeight / boardHeight;
 
   return {
     x: (column - boardOriginX) * cellWidth,
@@ -17,9 +17,9 @@ export function getCellBounds({ column, row, boardOriginX = 0, boardOriginY = 0,
   };
 }
 
-export function getGridLinePositions({ boardWidth, boardHeight, canvasWidth, canvasHeight }) {
-  const cellWidth = canvasWidth / boardWidth;
-  const cellHeight = canvasHeight / boardHeight;
+export function getGridLinePositions({ boardWidth, boardHeight, canvasWidth, canvasHeight, cellSize = null }) {
+  const cellWidth = Number.isFinite(cellSize) && cellSize > 0 ? cellSize : canvasWidth / boardWidth;
+  const cellHeight = Number.isFinite(cellSize) && cellSize > 0 ? cellSize : canvasHeight / boardHeight;
 
   return {
     horizontal: Array.from({ length: boardHeight + 1 }, (_, row) => Math.round(row * cellHeight) + 0.5),

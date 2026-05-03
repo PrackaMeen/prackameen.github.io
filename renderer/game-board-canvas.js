@@ -11,6 +11,8 @@ export function createGameBoardCanvas({
   getSession,
   getActivePlayerId,
   getSelectedSource,
+  getCellSize,
+  getViewportTransform,
   getTileSpriteSheetSource,
   getEntitySpriteSheetSource,
   normalizeTileKind,
@@ -31,6 +33,7 @@ export function createGameBoardCanvas({
   let renderToken = 0;
   let animationTimerId = null;
   let animationSession = null;
+  let canvasSizeLocked = false;
 
   if (resizeObserver && mapEl) {
     resizeObserver.observe(mapEl);
@@ -66,7 +69,10 @@ export function createGameBoardCanvas({
       return;
     }
 
-    const canvasSize = syncCanvasElementSize(canvasEl, mapEl.getBoundingClientRect());
+    const canvasSize = canvasSizeLocked
+      ? { width: canvasEl.width, height: canvasEl.height }
+      : syncCanvasElementSize(canvasEl, mapEl.getBoundingClientRect());
+    canvasSizeLocked = true;
     const width = canvasSize.width;
     const height = canvasSize.height;
 
@@ -80,6 +86,8 @@ export function createGameBoardCanvas({
       boardHeight,
       boardOriginX: Number.isInteger(session?.boardOriginX) ? session.boardOriginX : 0,
       boardOriginY: Number.isInteger(session?.boardOriginY) ? session.boardOriginY : 0,
+      cellSize: typeof getCellSize === 'function' ? getCellSize() : null,
+      viewportTransform: typeof getViewportTransform === 'function' ? getViewportTransform() : null,
       canvasWidth: width,
       canvasHeight: height,
       currentTimeMs: Date.now(),

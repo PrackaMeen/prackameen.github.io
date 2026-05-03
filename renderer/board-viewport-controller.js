@@ -19,8 +19,7 @@ export function createBoardViewportController({
     handleMapTouchEnd,
     handleMapTouchCancel,
     syncZoom,
-    fitBoardToStage,
-    resizeBoardSurface,
+    lockBoardCellSize,
     centerCameraOnActivePlayer,
     isCameraCenteredOnActivePlayer,
     getBoardCellSize,
@@ -228,8 +227,8 @@ export function createBoardViewportController({
     mapEl.style.setProperty("--game-board-pan-y", `${state.panY}px`);
   }
 
-  function fitBoardToStage(width, height) {
-    if (!mapEl || !stageEl || !Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
+  function lockBoardCellSize(width, height) {
+    if (!stageEl || !Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
       return;
     }
 
@@ -243,20 +242,8 @@ export function createBoardViewportController({
     const fitWidth = availableWidth / width;
     const fitHeight = availableHeight / height;
     const nextCellSize = Math.max(8, Math.floor(Math.min(fitWidth, fitHeight)));
-    const boardPixelWidth = width * nextCellSize;
-    const boardPixelHeight = height * nextCellSize;
-
+    state.lockedBoardCellSize = nextCellSize;
     mapEl.style.setProperty("--game-cell-size", `${nextCellSize}px`);
-    resizeBoardSurface(width, height, nextCellSize);
-  }
-
-  function resizeBoardSurface(width, height, cellSize = getBoardCellSize()) {
-    if (!mapEl || !Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0 || !(cellSize > 0)) {
-      return;
-    }
-
-    mapEl.style.width = `${width * cellSize}px`;
-    mapEl.style.height = `${height * cellSize}px`;
   }
 
   function centerCameraOnActivePlayer(currentSession) {
@@ -281,6 +268,10 @@ export function createBoardViewportController({
   }
 
   function getBoardCellSize() {
+    if (Number.isFinite(state.lockedBoardCellSize) && state.lockedBoardCellSize > 0) {
+      return state.lockedBoardCellSize;
+    }
+
     const rawValue = mapEl?.style.getPropertyValue("--game-cell-size") || "";
     const parsed = Number.parseFloat(rawValue);
     if (Number.isFinite(parsed) && parsed > 0) {

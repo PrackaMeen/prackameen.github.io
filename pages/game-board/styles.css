@@ -146,22 +146,21 @@ body[data-page="game-board"] {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
   overflow: hidden;
   margin-top: 0;
   padding: 0.35rem 0 max(0.5rem, env(safe-area-inset-bottom));
   box-sizing: border-box;
+  background: #ffffff;
 }
 
 .game-board-map {
   position: relative;
-  width: 0;
-  height: 0;
+  width: 100%;
+  height: 100%;
   isolation: isolate;
-  transform: translate(var(--game-board-pan-x, 0px), var(--game-board-pan-y, 0px)) scale(var(--game-board-zoom, 1));
-  transform-origin: top left;
-  will-change: transform;
+  background: #ffffff;
 }
 
 .game-board-canvas {
@@ -190,10 +189,6 @@ body[data-page="game-board"] {
 
   .game-board-stage {
     padding: 0.25rem 0 max(0.75rem, env(safe-area-inset-bottom));
-  }
-
-  .game-board-map {
-    max-width: 100%;
   }
 
   .game-board-action-bar {

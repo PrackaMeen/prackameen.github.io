@@ -1,4 +1,4 @@
-const APP_VERSION = "1.1.70";
+const APP_VERSION = "1.1.76";
 const APP_COMMIT_SHORT = "ae19bb8";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;

@@ -7,6 +7,7 @@ export function createGameBoardOverlayCanvas({
   mapEl,
   getSession,
   getOverlayState,
+  getCellSize,
   getHiddenTileAssetUrl,
   isTileRevealed
 }) {
@@ -21,6 +22,7 @@ export function createGameBoardOverlayCanvas({
   let hiddenTileSource = null;
   let hiddenTileLoadPromise = null;
   let renderToken = 0;
+  let canvasSizeLocked = false;
 
   if (resizeObserver && mapEl) {
     resizeObserver.observe(mapEl);
@@ -55,7 +57,10 @@ export function createGameBoardOverlayCanvas({
       return;
     }
 
-    const canvasSize = syncCanvasElementSize(canvasEl, mapEl.getBoundingClientRect());
+    const canvasSize = canvasSizeLocked
+      ? { width: canvasEl.width, height: canvasEl.height }
+      : syncCanvasElementSize(canvasEl, mapEl.getBoundingClientRect());
+    canvasSizeLocked = true;
     const width = canvasSize.width;
     const height = canvasSize.height;
 
@@ -68,6 +73,9 @@ export function createGameBoardOverlayCanvas({
     const selectedSource = overlayState?.selectedSource ?? null;
     const pendingTarget = overlayState?.pendingTarget ?? null;
     const previewTone = overlayState?.selectionPreviewTone ?? null;
+    const viewportScale = Number.isFinite(overlayState?.viewportScale) ? overlayState.viewportScale : 1;
+    const viewportPanX = Number.isFinite(overlayState?.viewportPanX) ? overlayState.viewportPanX : 0;
+    const viewportPanY = Number.isFinite(overlayState?.viewportPanY) ? overlayState.viewportPanY : 0;
 
     if (!selectedSource || !pendingTarget) {
       return;
@@ -78,20 +86,28 @@ export function createGameBoardOverlayCanvas({
       boardHeight,
       canvasWidth: width,
       canvasHeight: height,
+      cellSize: typeof getCellSize === 'function' ? getCellSize() : null,
       boardOriginX: Number.isInteger(overlayState?.boardOriginX) ? overlayState.boardOriginX : 0,
       boardOriginY: Number.isInteger(overlayState?.boardOriginY) ? overlayState.boardOriginY : 0,
       x: selectedSource.x,
-      y: selectedSource.y
+      y: selectedSource.y,
+      viewportScale,
+      viewportPanX,
+      viewportPanY
     });
     const targetBounds = getCellBoundsAtPoint({
       boardWidth,
       boardHeight,
       canvasWidth: width,
       canvasHeight: height,
+      cellSize: typeof getCellSize === 'function' ? getCellSize() : null,
       boardOriginX: Number.isInteger(overlayState?.boardOriginX) ? overlayState.boardOriginX : 0,
       boardOriginY: Number.isInteger(overlayState?.boardOriginY) ? overlayState.boardOriginY : 0,
       x: pendingTarget.x,
-      y: pendingTarget.y
+      y: pendingTarget.y,
+      viewportScale,
+      viewportPanX,
+      viewportPanY
     });
 
     if (!sourceBounds || !targetBounds) {
@@ -218,7 +234,7 @@ export function createGameBoardOverlayCanvas({
     return Boolean(cell && (cell.revealed === true || cell.isRevealed === true));
   }
 
-  function getCellBoundsAtPoint({ boardWidth, boardHeight, canvasWidth, canvasHeight, boardOriginX, boardOriginY, x, y }) {
+  function getCellBoundsAtPoint({ boardWidth, boardHeight, canvasWidth, canvasHeight, cellSize, boardOriginX, boardOriginY, x, y, viewportScale, viewportPanX, viewportPanY }) {
     const column = Number(x) - boardOriginX;
     const row = Number(y) - boardOriginY;
 
@@ -226,6 +242,17 @@ export function createGameBoardOverlayCanvas({
       return null;
     }
 
-    return getCellBounds({ column, row, boardWidth, boardHeight, canvasWidth, canvasHeight });
+    const baseBounds = getCellBounds({ column, row, boardWidth, boardHeight, canvasWidth, canvasHeight, cellSize });
+    const scale = Number.isFinite(viewportScale) ? viewportScale : 1;
+    const panX = Number.isFinite(viewportPanX) ? viewportPanX : 0;
+    const panY = Number.isFinite(viewportPanY) ? viewportPanY : 0;
+
+    return {
+      ...baseBounds,
+      x: baseBounds.x * scale + panX,
+      y: baseBounds.y * scale + panY,
+      width: baseBounds.width * scale,
+      height: baseBounds.height * scale
+    };
   }
 }

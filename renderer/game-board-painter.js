@@ -12,7 +12,7 @@ export function paintGameBoardDrawPlan({
   }
 
   clearCanvas();
-  context.fillStyle = 'rgba(10, 28, 42, 0.12)';
+  context.fillStyle = '#ffffff';
   context.fillRect(0, 0, width, height);
 
   const drawRequests = [];

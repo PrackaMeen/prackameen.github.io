@@ -1,6 +1,78 @@
 {
   "items": [
     {
+      "version": "1.1.76",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Overlay geometry now matches the board canvas",
+      "businessSummary": "The placement arrow and hidden-tile preview now use the same locked cell size as the main board, keeping the player, arrow, and discovery tile visually aligned on stretched emulator screens.",
+      "highlights": [
+        "Unified overlay cell sizing with the main board canvas.",
+        "Prevented hidden-tile previews from stretching differently in the emulator.",
+        "Kept the board hit-testing and draw scale on one coordinate system."
+      ]
+    },
+    {
+      "version": "1.1.75",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board starts zoomed in on the active player",
+      "businessSummary": "The game now opens with a larger canvas zoom while keeping the camera centered on the active player, so sprites are easier to read without changing the fixed board viewport.",
+      "highlights": [
+        "Raised the initial canvas zoom level.",
+        "Kept the camera centered on the active player from the first render.",
+        "Bumped the app version so the new default view ships immediately."
+      ]
+    },
+    {
+      "version": "1.1.74",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Pointer hit-testing now matches the rendered board",
+      "businessSummary": "Click and touch selection now invert the same fixed cell size and viewport pan used by the canvas renderer, so the selected player position matches the actual sprite placement after zoom and movement.",
+      "highlights": [
+        "Updated pointer mapping to account for viewport pan and scale.",
+        "Kept selection and render coordinates on the same board cell system.",
+        "Bumped the app version so the alignment fix ships immediately."
+      ]
+    },
+    {
+      "version": "1.1.73",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board viewport now fills the full in-between space",
+      "businessSummary": "The game board canvas now occupies the whole area between the navigation and action bars, and pan/zoom are applied inside the canvas render instead of shrinking the parent map container.",
+      "highlights": [
+        "Removed the parent map transform and board-surface resize coupling.",
+        "Kept the canvas locked to the viewport area between the bars.",
+        "Moved pan and zoom fully into draw-time rendering coordinates."
+      ]
+    },
+    {
+      "version": "1.1.72",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board canvas now stays fixed for the session",
+      "businessSummary": "The canvas backing store is now sized once at startup and reused for the rest of the game, so discovery and board growth no longer resize the visible drawing surface.",
+      "highlights": [
+        "Locked the canvas backing dimensions on first render.",
+        "Kept later board growth inside the existing canvas surface.",
+        "Bumped the app version so the fixed-canvas behavior ships immediately."
+      ]
+    },
+    {
+      "version": "1.1.71",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Canvas size now stays fixed during play",
+      "businessSummary": "The game board now keeps one static viewport size for the whole session and preserves the initial cell scale when new tiles are discovered, instead of refitting the canvas to the growing board.",
+      "highlights": [
+        "Locked the board viewport after the initial fit.",
+        "Kept cell size stable as the logical board grows.",
+        "Bumped the app version so the static-canvas behavior ships immediately."
+      ]
+    },
+    {
       "version": "1.1.70",
       "commit": "pending",
       "date": "2026-05-03",

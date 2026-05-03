@@ -30,6 +30,12 @@ export function createBoardInteractionController({
       return;
     }
 
+    const viewportTransform = {
+      scale: Number.isFinite(state.zoomScale) ? state.zoomScale : 1,
+      panX: Number.isFinite(state.panX) ? state.panX : 0,
+      panY: Number.isFinite(state.panY) ? state.panY : 0
+    };
+
     const point = canvasEl
       ? getBoardPointFromPointer({
           boardRect: canvasEl.getBoundingClientRect(),
@@ -37,6 +43,8 @@ export function createBoardInteractionController({
           boardHeight: state.boardHeight,
           boardOriginX: state.boardOriginX,
           boardOriginY: state.boardOriginY,
+          cellSize: state.lockedBoardCellSize,
+          viewportTransform,
           clientX: event.clientX,
           clientY: event.clientY
         })

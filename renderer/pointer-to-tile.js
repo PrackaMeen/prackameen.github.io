@@ -9,7 +9,17 @@ export function getBoardPointFromCell(cell) {
   return { x, y };
 }
 
-export function getBoardPointFromPointer({ boardRect, boardWidth, boardHeight, boardOriginX = 0, boardOriginY = 0, clientX, clientY }) {
+export function getBoardPointFromPointer({
+  boardRect,
+  boardWidth,
+  boardHeight,
+  boardOriginX = 0,
+  boardOriginY = 0,
+  cellSize = null,
+  viewportTransform = null,
+  clientX,
+  clientY
+}) {
   if (!Number.isInteger(boardWidth) || !Number.isInteger(boardHeight) || boardWidth <= 0 || boardHeight <= 0) {
     return null;
   }
@@ -18,14 +28,18 @@ export function getBoardPointFromPointer({ boardRect, boardWidth, boardHeight, b
     return null;
   }
 
-  const columnSize = boardRect.width / boardWidth;
-  const rowSize = boardRect.height / boardHeight;
+  const scale = Number.isFinite(viewportTransform?.scale) && viewportTransform.scale > 0 ? viewportTransform.scale : 1;
+  const panX = Number.isFinite(viewportTransform?.panX) ? viewportTransform.panX : 0;
+  const panY = Number.isFinite(viewportTransform?.panY) ? viewportTransform.panY : 0;
+  const lockedCellSize = Number.isFinite(cellSize) && cellSize > 0 ? cellSize : null;
+  const columnSize = lockedCellSize ? lockedCellSize * scale : boardRect.width / boardWidth;
+  const rowSize = lockedCellSize ? lockedCellSize * scale : boardRect.height / boardHeight;
   if (columnSize <= 0 || rowSize <= 0) {
     return null;
   }
 
-  const offsetX = clientX - boardRect.left;
-  const offsetY = clientY - boardRect.top;
+  const offsetX = clientX - boardRect.left - panX;
+  const offsetY = clientY - boardRect.top - panY;
   const x = boardOriginX + Math.floor(offsetX / columnSize);
   const y = boardOriginY + Math.floor(offsetY / rowSize);
 
