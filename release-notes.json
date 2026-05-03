@@ -1,6 +1,42 @@
 {
   "items": [
     {
+      "version": "1.1.68",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Left-expanding boards now stay aligned",
+      "businessSummary": "When the board grows to the left, the renderer now subtracts the board origin before placing cells on the canvas, so the new tiles appear in the correct position instead of leaving a gray strip on the right side.",
+      "highlights": [
+        "Made board cell layout origin-aware in the renderer.",
+        "Kept left-expanding boards aligned to the canvas.",
+        "Bumped the app version so cached shell files pick up the layout fix."
+      ]
+    },
+    {
+      "version": "1.1.67",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board now grows when moving to an edge",
+      "businessSummary": "Successful moves now extend the board in the movement direction before the next turn, so walking left from the edge keeps the player visible and lets the UI select the newly revealed tile instead of making the character disappear.",
+      "highlights": [
+        "Extended board growth to successful move actions, not just placement commits.",
+        "Kept the player visible when stepping onto edge tiles.",
+        "Bumped the app version so the updated runtime contract is fetched immediately."
+      ]
+    },
+    {
+      "version": "1.1.66",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "WASM now owns player facing state",
+      "businessSummary": "The runtime now stores player facing on the character snapshot and returns it with the board state, so the UI can render movement direction directly from WASM instead of keeping a separate orientation cache.",
+      "highlights": [
+        "Added facing to the shared character model and runtime snapshots.",
+        "Updated move and placement commits to write facing in WASM.",
+        "Removed the UI-local orientation cache from the game board shell."
+      ]
+    },
+    {
       "version": "1.1.65",
       "commit": "pending",
       "date": "2026-05-03",

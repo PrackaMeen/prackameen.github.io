@@ -11,7 +11,6 @@ export function createGameBoardCanvas({
   getSession,
   getActivePlayerId,
   getSelectedSource,
-  getEntityOrientation,
   getTileSpriteSheetSource,
   getEntitySpriteSheetSource,
   normalizeTileKind,
@@ -79,6 +78,8 @@ export function createGameBoardCanvas({
       session,
       boardWidth,
       boardHeight,
+      boardOriginX: Number.isInteger(session?.boardOriginX) ? session.boardOriginX : 0,
+      boardOriginY: Number.isInteger(session?.boardOriginY) ? session.boardOriginY : 0,
       canvasWidth: width,
       canvasHeight: height,
       currentTimeMs: Date.now(),
@@ -88,8 +89,7 @@ export function createGameBoardCanvas({
       normalizeTileKind,
       normalizeEntityKind,
       getTileSpriteSheetSource,
-      getEntitySpriteSheetSource,
-      getEntityOrientation
+      getEntitySpriteSheetSource
     });
 
     await paintGameBoardDrawPlan({

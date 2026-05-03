@@ -63,7 +63,6 @@ export function createBoardActionController({
         window.__GAME_SESSION__ = payload.snapshot;
         state.activePlayerId = payload.snapshot.currentPlayerId ?? payload.snapshot.activePlayerId ?? state.activePlayerId;
         state.activePlayerName = payload.snapshot.currentPlayerName ?? payload.snapshot.activePlayerName ?? state.activePlayerName;
-        updateActivePlayerOrientation(request);
       }
 
       boardInteraction.clearSelection();
@@ -110,7 +109,6 @@ export function createBoardActionController({
         window.__GAME_SESSION__ = payload.snapshot;
         state.activePlayerId = payload.snapshot.currentPlayerId ?? payload.snapshot.activePlayerId ?? state.activePlayerId;
         state.activePlayerName = payload.snapshot.currentPlayerName ?? payload.snapshot.activePlayerName ?? state.activePlayerName;
-        updateActivePlayerOrientation(request);
       }
 
       boardInteraction.clearSelection();
@@ -167,32 +165,6 @@ export function createBoardActionController({
       state.isSubmitting = false;
       boardHud.syncHud();
     }
-  }
-
-  function updateActivePlayerOrientation(request) {
-    if (!state.entityOrientations || state.activePlayerId === null || state.activePlayerId === undefined) {
-      return;
-    }
-
-    if (request.actionName !== "move" && request.actionName !== "commit_placement") {
-      return;
-    }
-
-    if (!Number.isInteger(request.sourceX) || !Number.isInteger(request.sourceY) || !Number.isInteger(request.targetX) || !Number.isInteger(request.targetY)) {
-      return;
-    }
-
-    const dx = request.targetX - request.sourceX;
-    const dy = request.targetY - request.sourceY;
-    let orientation = 0;
-
-    if (Math.abs(dx) >= Math.abs(dy)) {
-      orientation = dx >= 0 ? 3 : 1;
-    } else {
-      orientation = dy >= 0 ? 0 : 2;
-    }
-
-    state.entityOrientations.set(String(state.activePlayerId), orientation);
   }
 
   function handleCancelSelection() {

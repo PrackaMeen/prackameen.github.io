@@ -5,6 +5,8 @@ export function buildGameBoardDrawPlan({
   session,
   boardWidth,
   boardHeight,
+  boardOriginX = 0,
+  boardOriginY = 0,
   canvasWidth,
   canvasHeight,
   currentTimeMs = 0,
@@ -26,6 +28,8 @@ export function buildGameBoardDrawPlan({
     const bounds = getCellBounds({
       column: x,
       row: y,
+      boardOriginX,
+      boardOriginY,
       boardWidth,
       boardHeight,
       canvasWidth,

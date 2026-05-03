@@ -5,13 +5,13 @@ export function getCanvasSize(rect) {
   };
 }
 
-export function getCellBounds({ column, row, boardWidth, boardHeight, canvasWidth, canvasHeight }) {
+export function getCellBounds({ column, row, boardOriginX = 0, boardOriginY = 0, boardWidth, boardHeight, canvasWidth, canvasHeight }) {
   const cellWidth = canvasWidth / boardWidth;
   const cellHeight = canvasHeight / boardHeight;
 
   return {
-    x: column * cellWidth,
-    y: row * cellHeight,
+    x: (column - boardOriginX) * cellWidth,
+    y: (row - boardOriginY) * cellHeight,
     width: cellWidth,
     height: cellHeight
   };

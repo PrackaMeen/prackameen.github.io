@@ -70,6 +70,61 @@ test('orders hidden fills before revealed sprites and grid lines last', () => {
   assert.equal(plan.at(-1).type, 'grid-line-vertical');
 });
 
+test('shifts cells into view when the board origin moves left', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 5,
+      boardHeight: 1,
+      boardOriginX: -1,
+      boardOriginY: 0,
+      board: [
+        { x: -1, y: 0, tileKind: 'road1', tileOrientation: 0 },
+        { x: 0, y: 0, tileKind: 'road1', tileOrientation: 0 }
+      ]
+    },
+    boardWidth: 5,
+    boardHeight: 1,
+    boardOriginX: -1,
+    boardOriginY: 0,
+    canvasWidth: 500,
+    canvasHeight: 100,
+    isTileRevealed: () => true,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}` }),
+    getEntitySpriteSheetSource: () => null
+  });
+
+  assert.deepEqual(plan[0], {
+    type: 'tile-sprite',
+    frameName: 'default',
+    animated: false,
+    source: { imageUrl: 'road1:0' },
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+    column: -1,
+    row: 0,
+    tileKind: 'road1',
+    tileOrientation: 0
+  });
+  assert.deepEqual(plan[1], {
+    type: 'tile-sprite',
+    frameName: 'default',
+    animated: false,
+    source: { imageUrl: 'road1:0' },
+    x: 100,
+    y: 0,
+    width: 100,
+    height: 100,
+    column: 0,
+    row: 0,
+    tileKind: 'road1',
+    tileOrientation: 0
+  });
+});
+
 test('shows the active player on hidden cells at game start', () => {
   const plan = buildGameBoardDrawPlan({
     session: {
