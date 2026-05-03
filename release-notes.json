@@ -1,6 +1,17 @@
 {
   "items": [
     {
+      "version": "1.1.109",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "New Assets",
+      "businessSummary": "New animated tiles for Road4 and Chamber4 were added to the asset catalog and included in the PWA build, so they are now available for discovery and placement in the game.",
+      "highlights": [
+        "Road4",
+        "Chamber4"
+      ]
+    },
+    {
       "version": "1.1.108",
       "commit": "pending",
       "date": "2026-05-03",
