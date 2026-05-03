@@ -252,6 +252,7 @@ export function createBoardViewportController({
   }
 
   function centerCameraOnActivePlayer(currentSession) {
+    lockBoardCellSize(state.boardWidth, state.boardHeight);
     const centeredCamera = getCenteredCameraPan(currentSession);
     if (!centeredCamera) {
       return;

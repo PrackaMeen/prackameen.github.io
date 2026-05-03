@@ -12,7 +12,6 @@ export function classifyTargetPreview({
   target,
   isTileRevealed,
   getBoardCell,
-  canExitTowardsTarget,
   canTraverseBetweenCells,
   isTargetEngaged
 }) {
@@ -32,7 +31,7 @@ export function classifyTargetPreview({
   }
 
   if (!isTileRevealed(currentSession, target?.x, target?.y)) {
-    if (!canExitTowardsTarget(fromCell, source, target)) {
+    if (!canTraverseBetweenCells(fromCell, toCell)) {
       return { tone: 'red', color: '#b91c1c', message: 'Movement is blocked by walls.' };
     }
 

@@ -1,11 +1,11 @@
-const APP_VERSION = "1.1.100";
-const APP_COMMIT_SHORT = "3be40fe";
+const APP_VERSION = "1.1.101";
+const APP_COMMIT_SHORT = "1447285";
 const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=1.1.100",
-  "./app.js?v=1.1.100",
+  "./styles.css?v=1.1.101",
+  "./app.js?v=1.1.101",
   "./player-preferences.js",
   "./pages/menu/index.html",
   "./pages/menu/styles.css",

@@ -234,9 +234,7 @@ export async function mountPage(context) {
       return;
     }
 
-    if (!Number.isFinite(state.lockedBoardCellSize) || state.lockedBoardCellSize <= 0) {
-      boardViewport.lockBoardCellSize(width, height);
-    }
+    boardViewport.lockBoardCellSize(width, height);
 
     if (!state.hasInitialCameraCenterApplied) {
       state.hasInitialCameraCenterApplied = true;
