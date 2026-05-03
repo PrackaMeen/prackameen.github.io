@@ -66,7 +66,9 @@ export function createBoardActionController({
       }
 
       boardInteraction.clearSelection();
-      state.feedback = payload?.message || "Move resolved by WASM runtime.";
+      state.feedback = request.actionName === "discover"
+        ? "Tile placed. Rotate it to continue."
+        : payload?.message || "Move resolved by WASM runtime.";
       renderBoard(state.session);
       boardHud.syncHud();
     } catch (error) {

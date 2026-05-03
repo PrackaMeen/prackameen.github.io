@@ -1,6 +1,162 @@
 {
   "items": [
     {
+      "version": "1.1.49",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Revealed Road4 row now renders in the preview shot",
+      "businessSummary": "The screenshot test now marks the first two row tiles as revealed so the Road4 sprites appear in the image while the hidden preview remains under discovery. That finally matches the visual state you described.",
+      "highlights": [
+        "Revealed the two row tiles in the test session.",
+        "Kept the hidden discover target in place for the glitch capture.",
+        "Left production behavior unchanged and synced the PWA version."
+      ]
+    },
+    {
+      "version": "1.1.48",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Row-cropped discover preview screenshot",
+      "businessSummary": "The screenshot test now crops tightly around the horizontal discover row so the Road4 tiles and hidden preview occupy the frame. That makes the visual glitch much easier to inspect without changing the app itself.",
+      "highlights": [
+        "Focused the screenshot on the board row instead of the full stage.",
+        "Kept the test-only board scaling in place for readability.",
+        "Maintained the versioned release-note trail for the repro update."
+      ]
+    },
+    {
+      "version": "1.1.47",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board cells enlarged for the preview screenshot",
+      "businessSummary": "The screenshot test now scales the board cells up so the Road4 tiles and hidden preview are readable in the captured image. That makes the visual evidence much easier to inspect while keeping production UI unchanged.",
+      "highlights": [
+        "Applied a test-only cell-size override for the screenshot capture.",
+        "Kept the board-stage image focused on the horizontal discover preview.",
+        "Preserved the versioned release-note trail for the updated repro."
+      ]
+    },
+    {
+      "version": "1.1.46",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Horizontal Road4 discover preview captured",
+      "businessSummary": "The regression screenshot now captures the exact hidden-tile discover state on a horizontal Road4 row before commit. That gives us a cleaner, more faithful image of the rendering glitch you wanted to preserve.",
+      "highlights": [
+        "Captured the discover state before commit.",
+        "Used a horizontal Road4 board so the row matches the reported bug.",
+        "Kept the app version history aligned with the screenshot change."
+      ]
+    },
+    {
+      "version": "1.1.45",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Tile preview now appears in the screenshot",
+      "businessSummary": "The regression image now captures the placement preview card after the tile is queued, so the actual tile is visible instead of only the board arrow overlay. This makes the visual proof easier to trust and review.",
+      "highlights": [
+        "Captured the screenshot after pressing Place Tile.",
+        "Included the action bar so the preview tile card is visible.",
+        "Kept the PWA version metadata and release notes aligned."
+      ]
+    },
+    {
+      "version": "1.1.44",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Focused three-tile preview screenshot",
+      "businessSummary": "We now capture a pre-commit hidden-tile preview image that isolates the three-cell row involved in the rendering issue. That gives us a clean visual reference for reviewing the bug without extra board noise.",
+      "highlights": [
+        "Captured the hidden-tile preview before commit.",
+        "Cropped the screenshot to the board row so the affected tiles are easy to inspect.",
+        "Kept the version history in sync with the current app state."
+      ]
+    },
+    {
+      "version": "1.1.43",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Three-tile placement preview screenshot added",
+      "businessSummary": "We now capture a minimal three-tile board state that shows the placement preview before commit. That makes the visual regression easier to understand and gives us a cleaner reference image for verifying the tile rendering behavior.",
+      "highlights": [
+        "Added a focused screenshot repro for the three-tile preview state.",
+        "Captured the board element directly so the image shows the row without extra page chrome.",
+        "Kept the versioned PWA release history aligned with the shipped app version."
+      ]
+    },
+    {
+      "version": "1.1.42",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board growth repro now captures the problematic render state",
+      "businessSummary": "We now have a browser test that reproduces the board-growth issue and captures the exact rendered state after the second append. That gives us a reliable screenshot reference for verifying the fix and prevents the bug from being lost in future changes.",
+      "highlights": [
+        "Added a screenshot-producing Playwright repro for the board-growth sequence.",
+        "Kept the prior board-growth regression tests in place.",
+        "Preserved the app version and release-note history for the shipped PWA."
+      ]
+    },
+    {
+      "version": "1.1.41",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Movement no longer grows the board with extra tiles",
+      "businessSummary": "The board now stays at its intended size after moving a player, which prevents stray extra tiles from appearing during a right, up, down, right movement sequence. That keeps the visible board stable and makes reproduction of the rendering bug straightforward.",
+      "highlights": [
+        "Removed the move-time tile expansion that was creating extra visible cells.",
+        "Added regression coverage to ensure moves do not auto-expand the board.",
+        "Kept the hidden-tile placement flow and committed board state intact."
+      ]
+    },
+    {
+      "version": "1.1.40",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Hidden-tile placement now keeps consecutive placements stable",
+      "businessSummary": "The hidden-tile flow now has regression coverage for two placements in a row, so the board can be checked after a discover, move, and second placement sequence without the UI drifting into duplicated preview states.",
+      "highlights": [
+        "Added a regression path for two consecutive hidden-tile placements.",
+        "Removed the speculative preview-card alignment tweak.",
+        "Kept the hidden-tile placement rules unchanged while strengthening validation."
+      ]
+    },
+    {
+      "version": "1.1.39",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Placement preview art now nudges into the right alignment",
+      "businessSummary": "The placement preview card now shifts the tile art slightly to the right so the visible preview lines up better with the tile frame. That keeps the pending-placement presentation cleaner without changing gameplay rules.",
+      "highlights": [
+        "Adjusted the placement preview artwork alignment in the action bar.",
+        "Kept the board rules and hidden-tile flow unchanged.",
+        "Preserved the existing regression coverage for hidden placement."
+      ]
+    },
+    {
+      "version": "1.1.38",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Hidden-tile placement now has full regression coverage",
+      "businessSummary": "The hidden-tile placement path is now protected by a browser regression test that proves discover, rotation, and commit all work in sequence. That helps keep the pending-placement flow stable for players.",
+      "highlights": [
+        "Expanded the Playwright coverage to verify the full hidden-tile placement flow.",
+        "Locked in the expected rotate-and-commit behavior after discovery.",
+        "Kept the underlying game behavior unchanged while strengthening validation."
+      ]
+    },
+    {
+      "version": "1.1.37",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Hidden-tile placement now shows the rotate-to-continue message",
+      "businessSummary": "After a hidden tile is placed, the game board now shows the expected guidance telling the player to rotate it before continuing. That keeps the pending-placement flow clear and matches the browser behavior we want to preserve.",
+      "highlights": [
+        "Adjusted the post-discover message to the user-facing placement guidance.",
+        "Locked the behavior in Playwright as a regression test.",
+        "Kept the hidden-tile placement flow unchanged apart from the copy."
+      ]
+    },
+    {
       "version": "1.1.36",
       "commit": "pending",
       "date": "2026-05-03",
