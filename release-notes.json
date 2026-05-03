@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.1.54",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road0 animation now survives runtime tile hydration",
+      "businessSummary": "The board keeps the 4-frame Road0 sprite animation even when the WASM runtime provides the rest of the tile definitions. That prevents the animated art from collapsing back to the first frame after startup.",
+      "highlights": [
+        "Preserved the Road0 animation metadata during runtime tile-definition hydration.",
+        "Added a regression test for the runtime sprite-sheet source contract.",
+        "Bumped the PWA version so the fix can be tested immediately."
+      ]
+    },
+    {
       "version": "1.1.53",
       "commit": "pending",
       "date": "2026-05-03",
