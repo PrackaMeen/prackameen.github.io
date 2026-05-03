@@ -1,6 +1,102 @@
 {
   "items": [
     {
+      "version": "1.1.98",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Asset walls now come only from the WASM runtime",
+      "businessSummary": "The PWA asset layer no longer keeps its own wall tables for roads and chambers. It now reads wall metadata from the runtime-hydrated .NET tile definitions, so the browser matches the shipped game logic instead of duplicating it.",
+      "highlights": [
+        "Removed the hardcoded JS wall helpers from game-assets.js.",
+        "Kept the runtime tile-definition hydration path as the only wall source.",
+        "Trimmed the asset sync test to sprite and animation coverage."
+      ]
+    },
+    {
+      "version": "1.1.97",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "WASM now supplies wall data to the asset layer",
+      "businessSummary": "The PWA asset layer now prefers wall metadata from the runtime-hydrated WASM tile catalog, so game-assets.js can avoid maintaining a separate wall table once the runtime is available.",
+      "highlights": [
+        "Kept the local wall helper only as a pre-hydration fallback.",
+        "Let runtime tile definitions supply the canonical wall data.",
+        "Preserved the JSON tile catalog as sprite and animation only."
+      ]
+    },
+    {
+      "version": "1.1.96",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Corner walls now match the actual tile drawings",
+      "businessSummary": "The corner wall helper in the PWA now matches the updated shared topology and the real tile drawings, so the fallback movement checks stay consistent with how Road2 and chamber corners are visually arranged.",
+      "highlights": [
+        "Aligned the JS corner wall helper with GameBoardTopology.",
+        "Added a regression check for the corrected corner orientation.",
+        "Kept wall data out of the JSON tile catalog while preserving sprite sync."
+      ]
+    },
+    {
+      "version": "1.1.95",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Wall data now comes from shared topology",
+      "businessSummary": "The tile catalog no longer carries wall metadata in JSON or the PWA fallback table. Wall checks now resolve from shared GameBoardTopology only, which removes duplicated source-of-truth data and keeps movement rules consistent.",
+      "highlights": [
+        "Removed wall metadata from tile-definitions.json and the PWA fallback catalog.",
+        "Kept sprite and animation definitions in the tile catalog.",
+        "Validated wall behavior against the shared topology instead of duplicated asset data."
+      ]
+    },
+    {
+      "version": "1.1.94",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road2 walls now match the tile definitions",
+      "businessSummary": "The shared Road2 corner topology now matches tile-definitions.json, so orientation 1 no longer behaves like an open crossing and movement checks stop allowing illegal wall crossings.",
+      "highlights": [
+        "Aligned Road2 orientation 1 with the JSON wall layout.",
+        "Kept all four orientations available instead of skipping rotations.",
+        "Added a regression test for the Road2 wall metadata."
+      ]
+    },
+    {
+      "version": "1.1.93",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Discover rotations now respect allowed orientations",
+      "businessSummary": "Pending tile placements now rotate only through orientations the runtime marks as valid, so restricted discover results can no longer be stepped into or committed accidentally.",
+      "highlights": [
+        "Made placement rotation cycle through the runtime-allowed orientation list.",
+        "Blocked commits when the current orientation is not allowed.",
+        "Added regression tests for restricted rotation and commit validation."
+      ]
+    },
+    {
+      "version": "1.1.92",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Pinch zoom midpoint anchoring was finalized",
+      "businessSummary": "Two-finger zooming now keeps the board anchored to the midpoint between the touches, and the shipped PWA version was bumped so the corrected gesture math is delivered consistently.",
+      "highlights": [
+        "Kept the pinch zoom anchor centered between two touches.",
+        "Validated the gesture with a controller regression test.",
+        "Bumped the shipped PWA version after the final cleanup pass."
+      ]
+    },
+    {
+      "version": "1.1.91",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Pinch zoom now follows the two-finger midpoint",
+      "businessSummary": "Two-finger zooming now anchors the board under the midpoint between your fingers instead of drifting toward the canvas center, which makes pinch gestures feel natural and predictable.",
+      "highlights": [
+        "Anchored pinch zoom to the midpoint of the active touches.",
+        "Kept the board point under the fingers stable while scaling.",
+        "Added a regression test for two-finger midpoint zooming."
+      ]
+    },
+    {
       "version": "1.1.90",
       "commit": "pending",
       "date": "2026-05-03",

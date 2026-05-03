@@ -68,11 +68,13 @@ export function createBoardViewportController({
       startPanY: state.panY,
       pinchStartDistance: getPointerDistance(points[0], points[1]),
       pinchStartScale: state.zoomScale,
-      pinchStartMidpoint: getPointerMidpoint(points[0], points[1])
+      pinchStartMidpoint: getPointerMidpoint(points[0], points[1]),
+      pinchStartBoardPoint: getBoardPointAtClientPoint(getPointerMidpoint(points[0], points[1]), state.zoomScale, state.panX, state.panY)
     };
     state.gestureStartMidpoint = getPointerMidpoint(points[0], points[1]);
     state.pinchStartDistance = getPointerDistance(points[0], points[1]);
     state.pinchStartScale = state.zoomScale;
+    state.pinchStartBoardPoint = getBoardPointAtClientPoint(getPointerMidpoint(points[0], points[1]), state.zoomScale, state.panX, state.panY);
     state.gestureStartPanX = state.panX;
     state.gestureStartPanY = state.panY;
     state.feedback = "";
@@ -115,15 +117,17 @@ export function createBoardViewportController({
             startPanY: state.panY,
             pinchStartDistance: state.pinchStartDistance ?? currentDistance,
             pinchStartScale: state.zoomScale,
-            pinchStartMidpoint: state.gestureStartMidpoint ?? currentMidpoint
+            pinchStartMidpoint: state.gestureStartMidpoint ?? currentMidpoint,
+            pinchStartBoardPoint: state.pinchStartBoardPoint ?? getBoardPointAtClientPoint(currentMidpoint, state.zoomScale, state.panX, state.panY)
           };
 
       const pinchStartDistance = touchGesture.pinchStartDistance || currentDistance;
       const pinchStartScale = touchGesture.pinchStartScale ?? state.zoomScale;
       const pinchStartMidpoint = touchGesture.pinchStartMidpoint || currentMidpoint;
+        const pinchStartBoardPoint = touchGesture.pinchStartBoardPoint || getBoardPointAtClientPoint(pinchStartMidpoint, pinchStartScale, touchGesture.startPanX, touchGesture.startPanY);
       const nextScale = clampScale(pinchStartScale * (currentDistance / pinchStartDistance));
-      const nextPanX = touchGesture.startPanX + (currentMidpoint.clientX - pinchStartMidpoint.clientX);
-      const nextPanY = touchGesture.startPanY + (currentMidpoint.clientY - pinchStartMidpoint.clientY);
+        const nextPanX = currentMidpoint.clientX - pinchStartBoardPoint.boardX * nextScale;
+        const nextPanY = currentMidpoint.clientY - pinchStartBoardPoint.boardY * nextScale;
 
       if (nextScale !== state.zoomScale) {
         state.zoomScale = nextScale;
@@ -202,6 +206,7 @@ export function createBoardViewportController({
       state.pinchStartDistance = null;
       state.pinchStartScale = state.zoomScale;
       state.gestureStartMidpoint = null;
+      state.pinchStartBoardPoint = null;
     }
 
     if (state.activeTouchPoints.size === 0) {
@@ -334,6 +339,20 @@ export function createBoardViewportController({
     return {
       panX: (paddingLeft + (contentWidth / 2)) - centeredLeft - (targetX * state.zoomScale),
       panY: (paddingTop + (contentHeight / 2)) - centeredTop - (targetY * state.zoomScale)
+    };
+  }
+
+  function getBoardPointAtClientPoint(clientPoint, scale, panX, panY) {
+    const boardRect = mapEl?.getBoundingClientRect?.();
+    const fallbackRect = { left: 0, top: 0 };
+    const rect = Number.isFinite(boardRect?.left) && Number.isFinite(boardRect?.top) ? boardRect : fallbackRect;
+    const nextScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    const nextPanX = Number.isFinite(panX) ? panX : 0;
+    const nextPanY = Number.isFinite(panY) ? panY : 0;
+
+    return {
+      boardX: ((clientPoint?.clientX ?? 0) - rect.left - nextPanX) / nextScale,
+      boardY: ((clientPoint?.clientY ?? 0) - rect.top - nextPanY) / nextScale
     };
   }
 }

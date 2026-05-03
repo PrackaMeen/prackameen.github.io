@@ -104,12 +104,18 @@ test('zooms with a two-finger pinch gesture', () => {
 
     controller.handleMapTouchStart({ target: {}, changedTouches: [{ identifier: 1, clientX: 50, clientY: 50 }] });
     controller.handleMapTouchStart({ target: {}, changedTouches: [{ identifier: 2, clientX: 150, clientY: 50 }] });
+    const anchorBefore = {
+      x: (100 - state.panX) / state.zoomScale,
+      y: (50 - state.panY) / state.zoomScale
+    };
     now += 16;
     controller.handleMapTouchMove({ target: {}, changedTouches: [{ identifier: 2, clientX: 180, clientY: 50 }], cancelable: true, preventDefault() {} });
 
     assert.ok(state.zoomScale > 1);
-    assert.equal(state.panX, 15);
-    assert.equal(state.panY, 0);
+    assert.equal(state.panX, -15);
+    assert.equal(state.panY, -15);
+    assert.equal((115 - state.panX) / state.zoomScale, anchorBefore.x);
+    assert.equal((50 - state.panY) / state.zoomScale, anchorBefore.y);
   } finally {
     Date.now = originalNow;
   }

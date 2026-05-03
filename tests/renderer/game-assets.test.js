@@ -71,16 +71,17 @@ test('keeps Road0 animation when runtime tile definitions are applied', async ()
   try {
     const {
       applyTileDefinitionsFromRuntime,
-      getTileSpriteSheetSource
+      getTileSpriteSheetSource,
+      getTileWalls
     } = await import('../../lib/game-assets.js');
 
     applyTileDefinitionsFromRuntime({
       tileKinds: {
         road0: [
-          { orientation: 0, sprite: './assets/game/tiles/Road0_0.png' },
-          { orientation: 1, sprite: './assets/game/tiles/Road0_1.png' },
-          { orientation: 2, sprite: './assets/game/tiles/Road0_2.png' },
-          { orientation: 3, sprite: './assets/game/tiles/Road0_3.png' }
+          { orientation: 0, sprite: './assets/game/tiles/Road0_0.png', walls: { north: true, east: false, south: false, west: false } },
+          { orientation: 1, sprite: './assets/game/tiles/Road0_1.png', walls: { north: false, east: true, south: false, west: false } },
+          { orientation: 2, sprite: './assets/game/tiles/Road0_2.png', walls: { north: false, east: false, south: true, west: false } },
+          { orientation: 3, sprite: './assets/game/tiles/Road0_3.png', walls: { north: false, east: false, south: false, west: true } }
         ]
       }
     });
@@ -96,6 +97,13 @@ test('keeps Road0 animation when runtime tile definitions are applied', async ()
         defaultFrameName: 'frame-0'
       }
     });
+
+    assert.deepEqual(getTileWalls('road0', 0), {
+      north: true,
+      east: false,
+      south: false,
+      west: false
+    });
   } finally {
     globalThis.window = originalWindow;
   }
@@ -107,8 +115,7 @@ test('keeps the client fallback tile definitions in sync with tile-definitions.j
 
   try {
     const {
-      getTileSpriteSheetSource,
-      getTileWalls
+      getTileSpriteSheetSource
     } = await import(new URL('../../lib/game-assets.js?sync-check=' + Date.now(), import.meta.url));
 
     const jsonText = await readFile(new URL('../../assets/game/tile-definitions.json', import.meta.url), 'utf8');
@@ -135,10 +142,9 @@ test('keeps the client fallback tile definitions in sync with tile-definitions.j
           defaultFrameName: expectedAnimation?.defaultFrameName || 'frame-0',
           animation: expectedAnimation
         });
-
-        assert.deepEqual(getTileWalls(tileKind, orientation), variant.walls);
       }
     }
+
   } finally {
     globalThis.window = originalWindow;
   }
