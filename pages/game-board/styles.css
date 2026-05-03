@@ -83,7 +83,14 @@ body[data-page="game-board"] {
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+  overflow: hidden;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.game-board-placement-preview__tile > canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .game-board-placement-preview__details {

@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.1.83",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road0 placement preview now uses the animated frame",
+      "businessSummary": "The discover/placement preview now renders Road0 from the same sprite-sheet frame as the board tile, so the preview image matches what the player already sees on the map.",
+      "highlights": [
+        "Rendered the placement preview card from the sprite sheet instead of a static tile URL.",
+        "Resolved the preview frame using the same animation frame selection as the board canvas.",
+        "Kept the preview aligned with the animated Road0 tile state."
+      ]
+    },
+    {
       "version": "1.1.82",
       "commit": "pending",
       "date": "2026-05-03",

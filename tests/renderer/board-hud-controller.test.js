@@ -91,3 +91,126 @@ test('shows a recenter button when the camera is off-center', () => {
     globalThis.window = originalWindow;
   }
 });
+
+test('renders the placement preview from the tile sprite sheet frame', async () => {
+  const originalDocument = globalThis.document;
+  const originalWindow = globalThis.window;
+  const previewDraws = [];
+  const actionBarEl = {
+    replaceChildren(...nodes) {
+      this.nodes = nodes;
+    }
+  };
+
+  function createElement(tagName) {
+    if (tagName === 'button' || tagName === 'div') {
+      return {
+        type: '',
+        className: '',
+        disabled: false,
+        textContent: '',
+        listeners: {},
+        style: {},
+        children: [],
+        addEventListener(type, handler) {
+          this.listeners[type] = handler;
+        },
+        click() {
+          this.listeners.click?.();
+        },
+        setAttribute() {},
+        appendChild(child) {
+          this.children.push(child);
+        },
+        replaceChildren(...nodes) {
+          this.children = nodes;
+        }
+      };
+    }
+
+    if (tagName === 'canvas') {
+      return {
+        width: 0,
+        height: 0,
+        style: {},
+        setAttribute() {},
+        getContext() {
+          return {
+            drawImage() {
+              previewDraws.push(arguments);
+            }
+          };
+        }
+      };
+    }
+
+    return {
+      style: {},
+      setAttribute() {},
+      appendChild() {},
+      replaceChildren() {}
+    };
+  }
+
+  globalThis.document = { createElement };
+  globalThis.window = originalWindow ?? {};
+
+  try {
+    const state = {
+      feedback: '',
+      selectedSource: null,
+      pendingTarget: null,
+      pendingPlacement: {
+        tileKind: 'road0',
+        tileOrientation: 0,
+        canCommit: true
+      },
+      selectionPreviewTone: null,
+      isSubmitting: false,
+      activePlayerName: 'Player A',
+      session: { pendingPlacement: null }
+    };
+
+    const hud = createBoardHudController({
+      state,
+      actionBarEl,
+      setNavMessage() {},
+      isTileRevealed() {
+        return false;
+      },
+      getTileAssetUrl() {
+        return './tile.png';
+      },
+      getTileSpriteSheetSource() {
+        return {
+          imageUrl: './assets/game/tiles/Road0/Road0_0.png',
+          animation: {
+            frameNames: ['frame-0', 'frame-1', 'frame-2', 'frame-3'],
+            elapsedMs: 250,
+            frameDurationMs: 120,
+            loop: true
+          }
+        };
+      },
+      drawTileSpriteFrame: async (_context, _source, frameName) => {
+        previewDraws.push(frameName);
+      },
+      isCameraCentered() {
+        return true;
+      },
+      onCenterCamera() {},
+      onPerformAction() {},
+      onCancelSelection() {},
+      onRotatePlacement() {}
+    });
+
+    hud.syncHud();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.deepEqual(previewDraws, ['frame-2']);
+  } finally {
+    globalThis.document = originalDocument;
+    globalThis.window = originalWindow;
+  }
+});

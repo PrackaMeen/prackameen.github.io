@@ -1,15 +1,22 @@
+import { resolveAnimationFrameName } from './animation-frame.js';
+import { drawSpriteFrame } from './sprite-sheet.js';
+
 export function createBoardHudController({
   state,
   actionBarEl,
   setNavMessage,
   isTileRevealed,
   getTileAssetUrl,
+  getTileSpriteSheetSource,
+  drawTileSpriteFrame = drawSpriteFrame,
   isCameraCentered,
   onCenterCamera,
   onPerformAction,
   onCancelSelection,
   onRotatePlacement
 }) {
+  let placementPreviewRenderToken = 0;
+
   return {
     syncHud
   };
@@ -111,8 +118,13 @@ export function createBoardHudController({
 
     const tile = document.createElement("div");
     tile.className = "game-board-placement-preview__tile";
-    tile.style.backgroundImage = `url(${getTileAssetUrl(placement.tileKind, placement.tileOrientation)})`;
     tile.setAttribute("aria-hidden", "true");
+
+    const spriteSheetSource = typeof getTileSpriteSheetSource === "function"
+      ? getTileSpriteSheetSource(placement.tileKind, placement.tileOrientation)
+      : null;
+    const previewToken = ++placementPreviewRenderToken;
+    void renderPlacementPreviewTile(tile, placement, spriteSheetSource, previewToken);
 
     const details = document.createElement("div");
     details.className = "game-board-placement-preview__details";
@@ -132,5 +144,45 @@ export function createBoardHudController({
     card.appendChild(tile);
     card.appendChild(details);
     return card;
+  }
+
+  async function renderPlacementPreviewTile(tile, placement, spriteSheetSource, previewToken) {
+    if (!tile || previewToken !== placementPreviewRenderToken) {
+      return;
+    }
+
+    const frameName = spriteSheetSource?.animation
+      ? resolveAnimationFrameName(spriteSheetSource.animation, Date.now())
+      : spriteSheetSource?.defaultFrameName || 'default';
+
+    if (!spriteSheetSource || typeof tile.appendChild !== 'function' || typeof document?.createElement !== 'function') {
+      tile.style.backgroundImage = `url(${getTileAssetUrl(placement.tileKind, placement.tileOrientation)})`;
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    canvas.setAttribute('aria-hidden', 'true');
+
+    const context = canvas.getContext?.('2d');
+    if (!context) {
+      tile.style.backgroundImage = `url(${getTileAssetUrl(placement.tileKind, placement.tileOrientation)})`;
+      return;
+    }
+
+    try {
+      await drawTileSpriteFrame(context, spriteSheetSource, frameName, 0, 0, canvas.width, canvas.height);
+      if (previewToken !== placementPreviewRenderToken) {
+        return;
+      }
+
+      tile.replaceChildren(canvas);
+    } catch {
+      tile.style.backgroundImage = `url(${getTileAssetUrl(placement.tileKind, placement.tileOrientation)})`;
+    }
   }
 }

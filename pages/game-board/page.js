@@ -155,6 +155,7 @@ export async function mountPage(context) {
     setNavMessage,
     isTileRevealed,
     getTileAssetUrl,
+    getTileSpriteSheetSource,
     isCameraCentered: () => boardViewport.isCameraCenteredOnActivePlayer(state.session),
     onCenterCamera: () => boardViewport.centerCameraOnActivePlayer(state.session),
     onPerformAction: () => void boardAction?.handlePerformAction(),
