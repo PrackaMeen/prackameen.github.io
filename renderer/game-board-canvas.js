@@ -55,6 +55,7 @@ export function createGameBoardCanvas({
       return Promise.resolve();
     }
 
+    animationSession = session;
     const token = renderToken + 1;
     renderToken = token;
     return renderLoop.schedule(() => drawSession(session, token));

@@ -270,6 +270,6 @@ test('uses tile definition animation when a frame is not provided on the cell', 
   });
 
   assert.equal(plan[0].type, 'tile-sprite');
-  assert.equal(plan[0].frameName, 'frame-1');
+  assert.equal(plan[0].frameName, 'frame-2');
   assert.equal(plan[0].animated, true);
 });

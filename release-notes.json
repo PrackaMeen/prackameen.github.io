@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.1.85",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Animated frames now advance on the live render clock",
+      "businessSummary": "Road0 and other animated sprites now use the current render timestamp directly instead of blending it with metadata elapsed time, which restores the expected four-frame cycle and removes the alternating frame pairs.",
+      "highlights": [
+        "Fixed the animation frame resolver to avoid double-counting elapsed time.",
+        "Restored the full four-frame Road0 cycle on the board and in the placement preview.",
+        "Kept the moved character redraw behavior intact."
+      ]
+    },
+    {
+      "version": "1.1.84",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Animated boards keep the latest moved state",
+      "businessSummary": "The board canvas now swaps to the newest session immediately when a move or placement is requested, so a running Road0 animation cannot redraw the old character position after the move completes.",
+      "highlights": [
+        "Updated the active animation session as soon as a new render is requested.",
+        "Prevented stale animation ticks from overwriting the newest moved character state.",
+        "Kept the Road0 placement preview on the same sprite-sheet frame path as the board tile."
+      ]
+    },
+    {
       "version": "1.1.83",
       "commit": "pending",
       "date": "2026-05-03",

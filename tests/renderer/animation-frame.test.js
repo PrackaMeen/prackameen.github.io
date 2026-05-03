@@ -19,6 +19,17 @@ test('advances through named animation frames by elapsed time', () => {
   assert.equal(frameName, 'frame-c');
 });
 
+test('prefers the provided elapsed time over metadata elapsed time', () => {
+  const frameName = resolveAnimationFrameName({
+    frameNames: ['frame-a', 'frame-b', 'frame-c', 'frame-d'],
+    frameDurationMs: 100,
+    loop: true,
+    elapsedMs: 250
+  }, 120);
+
+  assert.equal(frameName, 'frame-b');
+});
+
 test('falls back to the first valid frame when metadata is sparse', () => {
   const frameName = resolveAnimationFrameName({
     frameNames: ['frame-a', '', null, 'frame-b'],

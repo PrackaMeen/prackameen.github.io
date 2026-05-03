@@ -95,6 +95,8 @@ test('shows a recenter button when the camera is off-center', () => {
 test('renders the placement preview from the tile sprite sheet frame', async () => {
   const originalDocument = globalThis.document;
   const originalWindow = globalThis.window;
+  const originalDateNow = Date.now;
+  Date.now = () => 250;
   const previewDraws = [];
   const actionBarEl = {
     replaceChildren(...nodes) {
@@ -186,7 +188,7 @@ test('renders the placement preview from the tile sprite sheet frame', async () 
           imageUrl: './assets/game/tiles/Road0/Road0_0.png',
           animation: {
             frameNames: ['frame-0', 'frame-1', 'frame-2', 'frame-3'],
-            elapsedMs: 250,
+            elapsedMs: 0,
             frameDurationMs: 120,
             loop: true
           }
@@ -212,5 +214,6 @@ test('renders the placement preview from the tile sprite sheet frame', async () 
   } finally {
     globalThis.document = originalDocument;
     globalThis.window = originalWindow;
+    Date.now = originalDateNow;
   }
 });

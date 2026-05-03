@@ -15,12 +15,18 @@ export function resolveAnimationFrameName(animation, elapsedMs = 0) {
     loop: animation?.loop ?? true
   });
 
+  const resolvedElapsedMs = Number.isFinite(Number(elapsedMs)) && Number(elapsedMs) > 0
+    ? Number(elapsedMs)
+    : Number.isFinite(Number(animation?.elapsedMs))
+      ? Number(animation.elapsedMs)
+      : 0;
+
   const nextState = advanceAnimationState(
     {
       ...state,
-      elapsedMs: Number.isFinite(Number(animation?.elapsedMs)) ? Number(animation.elapsedMs) : Number.isFinite(Number(elapsedMs)) ? Number(elapsedMs) : 0
+      elapsedMs: resolvedElapsedMs
     },
-    Number.isFinite(Number(elapsedMs)) ? Number(elapsedMs) : 0
+    0
   );
 
   return frameNames[nextState.frameIndex] ?? frameNames[0] ?? animation?.frameName ?? 'default';
