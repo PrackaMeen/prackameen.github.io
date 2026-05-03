@@ -172,6 +172,12 @@ test('overlay preview resolves the discovered tile sprite from the pending place
 
   await overlay.render();
 
+  console.log('discovered tile sprite validation', {
+    tileKind: 'road2',
+    tileOrientation: 2,
+    spriteSheetSource: drawCalls[0].spriteSheetSource
+  });
+
   assert.equal(drawCalls.length, 1);
   assert.deepEqual(drawCalls[0].spriteSheetSource, {
     imageUrl: 'tile:road2:2',
@@ -234,6 +240,14 @@ test('overlay preview colors every tile kind and orientation according to the wa
         context._strokeStyle = null;
 
         await overlay.render(session);
+
+        console.log('discovery validation', {
+          tileKind,
+          tileOrientation: orientation,
+          target,
+          tone: previewTone.tone,
+          color: previewTone.color
+        });
 
         assert.equal(previewTone.tone, isOpenTowards(tileKind, orientation, target) ? 'green' : 'red');
         assert.equal(context.strokeStyle, previewTone.color);

@@ -113,6 +113,8 @@ export function createBoardInteractionController({
     state.feedback = state.selectionPreviewTone.message;
     onSelectionChanged?.();
     onBoardStateChanged?.();
+
+    console.log({ state, normalizeTileKind, getTileWalls, areOrthogonallyAdjacent, canExitTowardsTargetHelper, canTraverseBetweenCellsHelper });
   }
 
   function clearSelection() {

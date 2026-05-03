@@ -31,7 +31,7 @@ export function classifyTargetPreview({
   }
 
   if (!isTileRevealed(currentSession, target?.x, target?.y)) {
-    if (!canTraverseBetweenCells(fromCell, toCell)) {
+    if (!canTraverseBetweenCells(fromCell, {...toCell, tileKind: 'road4' },)) {
       return { tone: 'red', color: '#b91c1c', message: 'Movement is blocked by walls.' };
     }
 

@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.1.108",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "UI was preventing placement of Hidden tile improperly",
+      "businessSummary": "During Hidden tile placement, the UI was blocking the Place Tile button and preventing the commit action from reaching the runtime, which made it impossible to place a tile on a revealed cell. The fix removes the UI block and lets the runtime validate the placement as intended.",
+      "highlights": [
+        "If tile is not revealed we are considering tile to be road4 - which has no walls",
+        "Validation of placement of Hidden tile should not consider unrevealed tile as blocked by walls.",
+        "Any tile should be placeable as there is no tile with 4 walls, there is always at least 1 exit."
+      ]
+    },
+    {
       "version": "1.1.98",
       "commit": "pending",
       "date": "2026-05-03",
