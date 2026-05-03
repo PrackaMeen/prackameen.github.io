@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.1.80",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Queued redraws no longer get dropped",
+      "businessSummary": "If a move completes while an animated board frame is already rendering, the board now schedules one more redraw instead of dropping the update, so the player no longer snaps back to Road0 until the next click.",
+      "highlights": [
+        "Queued a follow-up frame when a render request arrives mid-render.",
+        "Kept the active player sprite on the newly moved tile immediately after action resolution.",
+        "Preserved the animated-road redraw loop without losing the latest session state."
+      ]
+    },
+    {
+      "version": "1.1.79",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Moved players now resync after camera follow",
+      "businessSummary": "After a successful move or place-and-move action, the board now renders again after the camera recenters so the player's visible position, selection state, and animated-road camera stay in sync.",
+      "highlights": [
+        "Kept the camera follow behavior from the previous fix.",
+        "Restored the final board render so session-derived state is refreshed after actions.",
+        "Prevents the player from briefly snapping back to the old road tile visually."
+      ]
+    },
+    {
       "version": "1.1.78",
       "commit": "pending",
       "date": "2026-05-03",

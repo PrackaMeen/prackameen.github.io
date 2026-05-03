@@ -72,9 +72,8 @@ export function createBoardActionController({
         : payload?.message || "Move resolved by WASM runtime.";
       if (boardViewport?.centerCameraOnActivePlayer) {
         boardViewport.centerCameraOnActivePlayer(state.session);
-      } else {
-        renderBoard(state.session);
       }
+      renderBoard(state.session);
       boardHud.syncHud();
     } catch (error) {
       state.feedback = error instanceof Error ? error.message : "Action failed.";

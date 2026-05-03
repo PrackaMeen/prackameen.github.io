@@ -33,6 +33,41 @@ test('coalesces multiple render requests into a single frame', async () => {
   assert.deepEqual(calls, ['request', 'second']);
 });
 
+test('reschedules a render request that arrives while a frame is running', async () => {
+  const calls = [];
+  const frameCallbacks = [];
+  const loop = createOnDemandRenderLoop({
+    requestFrame(callback) {
+      calls.push('request');
+      frameCallbacks.push(callback);
+      return frameCallbacks.length;
+    },
+    cancelFrame() {
+      calls.push('cancel');
+    }
+  });
+
+  let secondResolved = false;
+  const firstPromise = loop.schedule(async () => {
+    calls.push('first');
+    loop.schedule(async () => {
+      calls.push('second');
+      secondResolved = true;
+    });
+  });
+
+  await frameCallbacks[0]();
+  await firstPromise;
+
+  assert.deepEqual(calls, ['request', 'first', 'request']);
+  assert.equal(secondResolved, false);
+
+  await frameCallbacks[1]();
+
+  assert.equal(secondResolved, true);
+  assert.deepEqual(calls, ['request', 'first', 'request', 'second']);
+});
+
 test('cancel rejects the pending frame', async () => {
   const loop = createOnDemandRenderLoop({
     requestFrame(callback) {

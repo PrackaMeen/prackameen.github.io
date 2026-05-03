@@ -33,9 +33,14 @@ export function createOnDemandRenderLoop({ requestFrame = defaultRequestFrame, c
       } catch (error) {
         pendingReject?.(error);
       } finally {
+        const nextTask = pendingTask;
         pendingPromise = null;
         pendingResolve = null;
         pendingReject = null;
+
+        if (nextTask) {
+          schedule(nextTask);
+        }
       }
     });
 
