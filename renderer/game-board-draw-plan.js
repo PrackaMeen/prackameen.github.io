@@ -22,6 +22,7 @@ export function buildGameBoardDrawPlan({
   getEntityOrientation
 }) {
   const cells = Array.isArray(session?.board) ? session.board : [];
+  const pendingPlacement = session?.pendingPlacement ?? null;
   const plan = [];
 
   for (const cell of cells) {
@@ -63,12 +64,23 @@ export function buildGameBoardDrawPlan({
         continue;
       }
     } else {
-      const tileKind = normalizeTileKind(cell?.tileKind || cell?.kind || cell?.terrainKind);
-      const tileOrientation = Number.isInteger(cell?.tileOrientation)
-        ? cell.tileOrientation
-        : Number.isInteger(cell?.orientation)
-          ? cell.orientation
-          : 0;
+      const isPendingPlacementTarget = Boolean(
+        pendingPlacement
+        && Number(pendingPlacement.targetX) === x
+        && Number(pendingPlacement.targetY) === y
+      );
+      const tileKind = normalizeTileKind(
+        isPendingPlacementTarget
+          ? pendingPlacement.tileKind
+          : cell?.tileKind || cell?.kind || cell?.terrainKind
+      );
+      const tileOrientation = Number.isInteger(isPendingPlacementTarget ? pendingPlacement.tileOrientation : undefined)
+        ? pendingPlacement.tileOrientation
+        : Number.isInteger(cell?.tileOrientation)
+          ? cell.tileOrientation
+          : Number.isInteger(cell?.orientation)
+            ? cell.orientation
+            : 0;
       const tileSpriteSource = typeof getTileSpriteSheetSource === 'function'
         ? getTileSpriteSheetSource(tileKind, tileOrientation)
         : null;

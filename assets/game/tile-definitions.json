@@ -339,9 +339,9 @@
                 "orientation": 0,
                 "sprite": "./assets/game/tiles/Chamber2/Chamber2_0.png",
                 "walls": {
-                    "north": false,
+                    "north": true,
                     "east": true,
-                    "south": true,
+                    "south": false,
                     "west": false
                 }
             },
@@ -349,9 +349,9 @@
                 "orientation": 1,
                 "sprite": "./assets/game/tiles/Chamber2/Chamber2_1.png",
                 "walls": {
-                    "north": true,
+                    "north": false,
                     "east": true,
-                    "south": false,
+                    "south": true,
                     "west": false
                 }
             },
@@ -360,18 +360,18 @@
                 "sprite": "./assets/game/tiles/Chamber2/Chamber2_2.png",
                 "walls": {
                     "north": false,
-                    "east": true,
+                    "east": false,
                     "south": true,
-                    "west": false
+                    "west": true
                 }
             },
             {
                 "orientation": 3,
                 "sprite": "./assets/game/tiles/Chamber2/Chamber2_3.png",
                 "walls": {
-                    "north": false,
+                    "north": true,
                     "east": false,
-                    "south": true,
+                    "south": false,
                     "west": true
                 }
             }
@@ -381,10 +381,10 @@
                 "orientation": 0,
                 "sprite": "./assets/game/tiles/Chamber3/Chamber3_0.png",
                 "walls": {
-                    "north": false,
+                    "north": true,
                     "east": false,
                     "south": false,
-                    "west": true
+                    "west": false
                 }
             },
             {
@@ -392,18 +392,18 @@
                 "sprite": "./assets/game/tiles/Chamber3/Chamber3_1.png",
                 "walls": {
                     "north": false,
-                    "east": false,
+                    "east": true,
                     "south": false,
-                    "west": true
+                    "west": false
                 }
             },
             {
                 "orientation": 2,
                 "sprite": "./assets/game/tiles/Chamber3/Chamber3_2.png",
                 "walls": {
-                    "north": true,
+                    "north": false,
                     "east": false,
-                    "south": false,
+                    "south": true,
                     "west": false
                 }
             },
@@ -412,9 +412,9 @@
                 "sprite": "./assets/game/tiles/Chamber3/Chamber3_3.png",
                 "walls": {
                     "north": false,
-                    "east": true,
+                    "east": false,
                     "south": false,
-                    "west": false
+                    "west": true
                 }
             }
         ],

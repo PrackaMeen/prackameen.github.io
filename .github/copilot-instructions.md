@@ -15,6 +15,7 @@
 
 ## GameWasm And Cached Assets
 - If changes touch `src/GameLogic` or the GameWasm build artifacts, republish GameWasm to `assets/game-wasm` and bump the app version because the shipped runtime changed.
+- Even when only GameLogic changes, rebuild GameWasm and regenerate the PWA versioned files so `app.js`, `sw.js`, `index.html`, `manifest.webmanifest`, and the GameWasm host stay in sync with the shipped runtime.
 - Version shared modules that are likely to be cached, especially `lib/game-assets.js` and the shell stylesheet reference in `index.html`.
 - The game board should treat the runtime snapshot from `window.GameWasm` as the source of truth; if bootstrap session data is empty, fall back to `GameWasm.getState()` instead of starting from an empty participant list.
 - Optional action coordinates use the `int.MinValue` sentinel in `Shared.ActionRequest` and `window.GameWasm.applyAction()`; do not change those checks to `>= 0`.

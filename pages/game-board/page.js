@@ -98,6 +98,7 @@ export async function mountPage(context) {
       viewportPanY: state.panY
     }),
     getHiddenTileAssetUrl,
+    getTileSpriteSheetSource,
     isTileRevealed
   });
   const boardInteraction = createBoardInteractionController({

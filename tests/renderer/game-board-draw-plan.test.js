@@ -273,3 +273,51 @@ test('uses tile definition animation when a frame is not provided on the cell', 
   assert.equal(plan[0].frameName, 'frame-2');
   assert.equal(plan[0].animated, true);
 });
+
+test('renders the pending discovered tile instead of the underlying map tile', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 2,
+      boardHeight: 1,
+      board: [
+        { x: 0, y: 0, tileKind: 'road2', tileOrientation: 2 },
+        { x: 1, y: 0, tileKind: 'road1', tileOrientation: 0 }
+      ],
+      pendingPlacement: {
+        sourceX: 0,
+        sourceY: 0,
+        targetX: 1,
+        targetY: 0,
+        tileKind: 'chamber1',
+        tileOrientation: 0,
+        currentOrientation: 0
+      }
+    },
+    boardWidth: 2,
+    boardHeight: 1,
+    canvasWidth: 200,
+    canvasHeight: 100,
+    isTileRevealed: (_session, x) => x === 1,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}` }),
+    getEntitySpriteSheetSource: () => null
+  });
+
+  const targetEntry = plan.find((entry) => entry.type === 'tile-sprite' && entry.column === 1 && entry.row === 0);
+
+  assert.deepEqual(targetEntry, {
+    type: 'tile-sprite',
+    frameName: 'default',
+    animated: false,
+    source: { imageUrl: 'chamber1:0' },
+    x: 100,
+    y: 0,
+    width: 100,
+    height: 100,
+    column: 1,
+    row: 0,
+    tileKind: 'chamber1',
+    tileOrientation: 0
+  });
+});

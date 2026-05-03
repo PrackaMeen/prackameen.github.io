@@ -78,10 +78,14 @@ export function createBoardRuntimeController({
       const requestedBoardSize = Number.isInteger(bootstrapSession?.boardWidth) && bootstrapSession.boardWidth > 0
         ? bootstrapSession.boardWidth
         : undefined;
+      const seed = typeof bootstrapSession?.seed === 'string' && bootstrapSession.seed.trim().length > 0
+        ? bootstrapSession.seed.trim()
+        : null;
       const [runtimeState, runtimeTileDefinitions] = await Promise.all([
         typeof wasm.startGame === 'function' && hasParticipants
           ? wasm.startGame({
               ...(requestedBoardSize ? { boardSize: requestedBoardSize } : {}),
+              ...(seed ? { seed } : {}),
               monsterCount,
               participants
             })
@@ -100,6 +104,9 @@ export function createBoardRuntimeController({
         window.__GAME_SESSION__ = runtimeSnapshot;
         state.activePlayerId = runtimeSnapshot.currentPlayerId ?? runtimeSnapshot.activePlayerId ?? state.activePlayerId;
         state.activePlayerName = runtimeSnapshot.currentPlayerName ?? runtimeSnapshot.activePlayerName ?? state.activePlayerName;
+        if (seed && !runtimeSnapshot.seed) {
+          runtimeSnapshot.seed = seed;
+        }
         renderBoard(state.session);
         syncHud();
       }

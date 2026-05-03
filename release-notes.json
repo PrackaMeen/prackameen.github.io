@@ -1,6 +1,42 @@
 {
   "items": [
     {
+      "version": "1.1.88",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board preview now uses the pending discovered tile",
+      "businessSummary": "The main board canvas now renders the pending discovered tile on the revealed target cell, so the canvas preview matches the HUD preview before commit.",
+      "highlights": [
+        "Overrode the board draw plan for pending discovery targets.",
+        "Kept the HUD preview and board canvas on the same pending-placement state.",
+        "Added a regression test covering the first discovered tile."
+      ]
+    },
+    {
+      "version": "1.1.87",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Discover preview now follows the selected tile sprite",
+      "businessSummary": "The discover preview now renders from the runtime-selected tile sprite sheet, so the preview art matches the actual tile that gets committed after placement.",
+      "highlights": [
+        "Aligned the overlay preview with the runtime-selected tile asset.",
+        "Kept the discovered tile kind and orientation consistent through placement.",
+        "Bumped the app version to force a fresh shell and asset cache."
+      ]
+    },
+    {
+      "version": "1.1.86",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Discover tile selection is now seeded",
+      "businessSummary": "Hidden-tile discovery now uses a seeded random choice from GameLogic, so the same match seed reproduces the same reveal sequence while still keeping each game varied.",
+      "highlights": [
+        "Added seed support to game start requests.",
+        "Moved discover-time tile selection into the runtime so it is reproducible.",
+        "Kept the no-seed fallback on a time-based runtime seed."
+      ]
+    },
+    {
       "version": "1.1.85",
       "commit": "pending",
       "date": "2026-05-03",

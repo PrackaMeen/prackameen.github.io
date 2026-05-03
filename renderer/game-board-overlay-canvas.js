@@ -1,6 +1,8 @@
+import { resolveAnimationFrameName } from './animation-frame.js';
 import { getCellBounds } from './render-grid.js';
 import { syncCanvasElementSize } from './canvas-size.js';
 import { createOnDemandRenderLoop } from './render-loop.js';
+import { drawSpriteFrame } from './sprite-sheet.js';
 
 export function createGameBoardOverlayCanvas({
   canvasEl,
@@ -9,6 +11,8 @@ export function createGameBoardOverlayCanvas({
   getOverlayState,
   getCellSize,
   getHiddenTileAssetUrl,
+  getTileSpriteSheetSource,
+  drawTileSpriteFrame = drawSpriteFrame,
   isTileRevealed
 }) {
   const context = canvasEl?.getContext?.("2d") ?? null;
@@ -118,7 +122,7 @@ export function createGameBoardOverlayCanvas({
     drawSelectionArrow(sourceBounds, targetBounds, overlayColor);
 
     if (previewTone?.tone === "green" && !isTileRevealedTarget(session, pendingTarget.x, pendingTarget.y)) {
-      await drawHiddenTilePreview(targetBounds, token);
+      await drawHiddenTilePreview(targetBounds, overlayState?.pendingPlacement ?? null, token);
       if (token !== renderToken) {
         return;
       }
@@ -185,7 +189,20 @@ export function createGameBoardOverlayCanvas({
     context.restore();
   }
 
-  async function drawHiddenTilePreview(bounds, token) {
+  async function drawHiddenTilePreview(bounds, placement, token) {
+    const spriteSheetSource = placement && typeof getTileSpriteSheetSource === "function"
+      ? getTileSpriteSheetSource(placement.tileKind, placement.tileOrientation)
+      : null;
+
+    if (spriteSheetSource) {
+      const frameName = spriteSheetSource.animation
+        ? resolveAnimationFrameName(spriteSheetSource.animation, Date.now())
+        : spriteSheetSource.defaultFrameName || 'default';
+
+      await drawSpriteTileFrame(bounds, spriteSheetSource, frameName);
+      return;
+    }
+
     const image = await ensureHiddenTileImage();
     if (token !== renderToken) {
       return;
@@ -222,6 +239,22 @@ export function createGameBoardOverlayCanvas({
     }
 
     return hiddenTileLoadPromise ?? Promise.resolve(hiddenTileImage);
+  }
+
+  async function drawSpriteTileFrame(bounds, spriteSheetSource, frameName) {
+    if (typeof drawTileSpriteFrame !== 'function') {
+      return;
+    }
+
+    context.save();
+    try {
+      await drawTileSpriteFrame(context, spriteSheetSource, frameName, bounds.x, bounds.y, bounds.width, bounds.height);
+      if (renderToken === 0) {
+        return;
+      }
+    } finally {
+      context.restore();
+    }
   }
 
   function isTileRevealedTarget(currentSession, x, y) {
