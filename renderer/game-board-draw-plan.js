@@ -92,8 +92,8 @@ export function buildGameBoardDrawPlan({
       const entitySpriteSource = typeof getEntitySpriteSheetSource === 'function'
         ? getEntitySpriteSheetSource(entityKind, {
             orientation: entityOrientation,
-          selected: entityKind === 'player' && (isSelectedSource || isActivePlayerCell),
-          variant: 'fallback'
+            selected: entityKind === 'player' && isSelectedSource,
+            variant: 'char'
           })
         : null;
 

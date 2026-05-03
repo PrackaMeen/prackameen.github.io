@@ -187,9 +187,9 @@ export function createBoardActionController({
     let orientation = 0;
 
     if (Math.abs(dx) >= Math.abs(dy)) {
-      orientation = dx >= 0 ? 1 : 3;
+      orientation = dx >= 0 ? 3 : 1;
     } else {
-      orientation = dy >= 0 ? 2 : 0;
+      orientation = dy >= 0 ? 0 : 2;
     }
 
     state.entityOrientations.set(String(state.activePlayerId), orientation);

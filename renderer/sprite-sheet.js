@@ -39,10 +39,11 @@ export async function loadSpriteSheet(source, dependencies = {}) {
   ]);
 
   const resolvedImage = image ?? (isCharacterSpriteSheet(normalizedSource.imageUrl) ? await loader(PLAYER_ENTITY_FALLBACK_IMAGE_URL) : null);
+  const resolvedMetadata = resolvedImage === image ? metadata : null;
 
   const sheet = normalizeSpriteSheet({
     image: resolvedImage,
-    frames: metadata?.frames ?? metadata,
+    frames: resolvedMetadata?.frames ?? resolvedMetadata,
     defaultFrameName: normalizedSource.defaultFrameName
   });
 

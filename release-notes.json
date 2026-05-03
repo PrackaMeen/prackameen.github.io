@@ -1,6 +1,42 @@
 {
   "items": [
     {
+      "version": "1.1.65",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Character preloads no longer request bare asset names",
+      "businessSummary": "The asset preloader now skips the raw Char0 and Char1 base paths, so the browser stops requesting nonexistent URLs like /Char1/Char1?v=... while still keeping the runtime player asset routing intact.",
+      "highlights": [
+        "Removed the raw Char base names from the eager preload list.",
+        "Stopped the browser from requesting nonexistent bare character URLs.",
+        "Bumped the app version so cached shells pick up the preload cleanup."
+      ]
+    },
+    {
+      "version": "1.1.64",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Player selection now faces the right way",
+      "businessSummary": "The active character now uses Char1 by default and Char0 only when selected, with the movement-facing mapping flipped so the sprite points the way the player expects on both desktop and mobile.",
+      "highlights": [
+        "Made the unselected player art visible at game start.",
+        "Swapped between Char1 and Char0 on deselect/select.",
+        "Inverted the movement direction mapping for correct facing."
+      ]
+    },
+    {
+      "version": "1.1.63",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Character fallback now scales correctly",
+      "businessSummary": "When a Char0 or Char1 sheet fails to load, the renderer now drops the Char metadata and uses the full player sprite as the fallback frame. That prevents the fallback from being cropped down to 16x16 and makes the on-screen player appear at the expected size and position.",
+      "highlights": [
+        "Removed the stale Char frame crop from the player fallback path.",
+        "Kept the player visible at the correct scale when the new sheets are missing.",
+        "Bumped the app version so cached shells fetch the corrected loader behavior."
+      ]
+    },
+    {
       "version": "1.1.62",
       "commit": "pending",
       "date": "2026-05-03",

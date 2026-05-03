@@ -51,6 +51,32 @@ test('loads and resolves atlas metadata through injected loaders', async () => {
   assert.deepEqual(resolveSpriteFrame(sheet, 'frame-1'), { sx: 128, sy: 0, sw: 128, sh: 128 });
 });
 
+test('uses the full fallback image frame when a character sprite fails to load', async () => {
+  const sheet = await loadSpriteSheet(
+    {
+      imageUrl: './assets/game/entities/Char0/Char0_0.png',
+      metadataUrl: './assets/game/entities/Char0/Char0_0.json',
+      defaultFrameName: 'default'
+    },
+    {
+      loadImage: async (url) => {
+        if (url === './assets/game/entities/Char0/Char0_0.png') {
+          return null;
+        }
+
+        return { width: 128, height: 128 };
+      },
+      loadMetadata: async () => ({
+        frames: {
+          default: { frame: { x: 0, y: 0, w: 16, h: 16 } }
+        }
+      })
+    }
+  );
+
+  assert.deepEqual(resolveSpriteFrame(sheet, 'default'), { sx: 0, sy: 0, sw: 128, sh: 128 });
+});
+
 test('draws a resolved sprite frame onto the provided context', async () => {
   const calls = [];
   const context = {
