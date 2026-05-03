@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.1.55",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Animations preview page added to the menu",
+      "businessSummary": "The app now has an Animations page that lets you choose an animated sprite-sheet entry and preview it on a canvas using the same frame resolution path as the game board. That gives us a quick visual check that animation assets still render correctly.",
+      "highlights": [
+        "Added a menu route for animation previews.",
+        "Rendered the selected sprite sheet on a dedicated canvas with the live animation frame resolver.",
+        "Populated the dropdown from the current animated tile definitions so the preview stays in sync with the game assets."
+      ]
+    },
+    {
       "version": "1.1.54",
       "commit": "pending",
       "date": "2026-05-03",

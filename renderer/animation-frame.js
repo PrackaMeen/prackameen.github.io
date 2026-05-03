@@ -20,7 +20,7 @@ export function resolveAnimationFrameName(animation, elapsedMs = 0) {
       ...state,
       elapsedMs: Number.isFinite(Number(animation?.elapsedMs)) ? Number(animation.elapsedMs) : Number.isFinite(Number(elapsedMs)) ? Number(elapsedMs) : 0
     },
-    0
+    Number.isFinite(Number(elapsedMs)) ? Number(elapsedMs) : 0
   );
 
   return frameNames[nextState.frameIndex] ?? frameNames[0] ?? animation?.frameName ?? 'default';

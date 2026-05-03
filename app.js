@@ -1,4 +1,4 @@
-const APP_VERSION = "1.1.54";
+const APP_VERSION = "1.1.55";
 const APP_COMMIT_SHORT = "ae19bb8";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
@@ -60,6 +60,10 @@ const PAGES = {
   "tile-set-demo": {
     title: "Tile Set Demo",
     basePath: "./pages/tile-set-demo/"
+  },
+  animations: {
+    title: "Animations",
+    basePath: "./pages/animations/"
   },
   settings: {
     title: "Settings",
@@ -148,6 +152,11 @@ const NAV_TREE = [
         id: "tile-set-demo",
         label: "Tile Set",
         route: "tile-set-demo"
+      },
+      {
+        id: "animations",
+        label: "Animations",
+        route: "animations"
       },
       {
         id: "release-notes",
@@ -243,7 +252,7 @@ function versionedAssetUrl(assetPath) {
   return url.toString();
 }
 
-const GAME_ASSET_ROUTES = new Set(["single-player", "single-player-game", "game-board", "tile-set-demo"]);
+const GAME_ASSET_ROUTES = new Set(["single-player", "single-player-game", "game-board", "tile-set-demo", "animations"]);
 
 async function preloadGameAssets() {
   const module = await import(versionedAssetUrl("./lib/game-assets.js"));
