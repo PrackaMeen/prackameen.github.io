@@ -96,9 +96,12 @@ export function buildGameBoardDrawPlan({
       const entityAnimation = cell?.entityAnimation || null;
       const entityFrameName = resolveAnimationFrameName(entityAnimation, currentTimeMs);
       const entityOrientation = resolveEntityOrientation({ cell, entityId, getEntityOrientation });
+      const previewOrientation = isSelectedSource && Number.isInteger(selectedSource?.previewFacing)
+        ? selectedSource.previewFacing
+        : entityOrientation;
       const entitySpriteSource = typeof getEntitySpriteSheetSource === 'function'
         ? getEntitySpriteSheetSource(entityKind, {
-            orientation: entityOrientation,
+            orientation: previewOrientation,
             selected: entityKind === 'player' && isSelectedSource,
             variant: 'char'
           })
@@ -116,7 +119,7 @@ export function buildGameBoardDrawPlan({
         column: x,
         row: y,
         entityKind,
-        entityOrientation
+        entityOrientation: previewOrientation
       });
     }
   }

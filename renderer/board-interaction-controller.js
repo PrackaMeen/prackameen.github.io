@@ -74,7 +74,8 @@ export function createBoardInteractionController({
         y,
         entityId,
         name: cell.entityName || getActivePlayerName(),
-        colorHex: cell.entityColorHex || null
+        colorHex: cell.entityColorHex || null,
+        previewFacing: null
       };
       state.pendingTarget = null;
       state.selectionPreviewTone = { tone: "green", color: "#14532d", message: "" };
@@ -106,6 +107,9 @@ export function createBoardInteractionController({
       isTargetEngaged
     });
     state.pendingTarget = { x, y };
+    state.selectedSource.previewFacing = state.selectionPreviewTone?.tone === "green"
+      ? resolveFacingFromSelection(state.selectedSource, state.pendingTarget)
+      : null;
     state.feedback = state.selectionPreviewTone.message;
     onSelectionChanged?.();
     onBoardStateChanged?.();
@@ -142,6 +146,21 @@ export function createBoardInteractionController({
   function getSelectionPreviewMessage() {
     return state.selectionPreviewTone?.message || "";
   }
+}
+
+function resolveFacingFromSelection(source, target) {
+  if (!Number.isInteger(source?.x) || !Number.isInteger(source?.y) || !Number.isInteger(target?.x) || !Number.isInteger(target?.y)) {
+    return null;
+  }
+
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0 ? 3 : 1;
+  }
+
+  return dy >= 0 ? 0 : 2;
 }
 
 function isActivePlayerCell(entityId, activePlayerId) {

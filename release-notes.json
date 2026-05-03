@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.1.82",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Committed tile placement keeps the preview facing",
+      "businessSummary": "When a green move preview is committed, the player's facing now persists into the saved session instead of snapping back to the old orientation after the tile is placed.",
+      "highlights": [
+        "Copied the green preview-facing into the committed session snapshot.",
+        "Kept the selected player's sprite aligned after place tile finishes.",
+        "Left blocked previews and non-green paths unchanged."
+      ]
+    },
+    {
+      "version": "1.1.81",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Selected player now faces the green move preview",
+      "businessSummary": "When a move preview is valid, the selected player sprite now turns toward the target tile before the move is committed. Blocked previews keep the current facing unchanged.",
+      "highlights": [
+        "Applied a temporary preview-facing only for green move arrows.",
+        "Kept red or blocked previews from changing the character image.",
+        "Used the runtime-facing direction mapping so preview and committed movement match."
+      ]
+    },
+    {
       "version": "1.1.80",
       "commit": "pending",
       "date": "2026-05-03",

@@ -31,7 +31,7 @@ test('successful place-and-move recenters the camera through the viewport contro
           tileOrientation: 0
         }
       },
-      selectedSource: { x: 1, y: 1 },
+      selectedSource: { x: 1, y: 1, previewFacing: 3 },
       pendingTarget: { x: 1, y: 2 },
       activePlayerId: 'player-1',
       activePlayerName: 'Player One'
@@ -49,7 +49,15 @@ test('successful place-and-move recenters the camera through the viewport contro
               currentPlayerName: 'Player One',
               boardWidth: 4,
               boardHeight: 4,
-              board: [],
+              board: [
+                { x: 1, y: 2, entityKind: 'player', entityId: 'player-1', entityOrientation: 0 }
+              ],
+              characters: [
+                { id: 'player-1', facing: 0 }
+              ],
+              players: [
+                { id: 'player-1', facing: 0 }
+              ],
               pendingPlacement: null
             }
           })
@@ -87,6 +95,9 @@ test('successful place-and-move recenters the camera through the viewport contro
     assert.equal(calls.some(([kind]) => kind === 'render'), true);
     assert.equal(state.isSubmitting, false);
     assert.equal(state.session.pendingPlacement, null);
+    assert.equal(state.session.board[0].entityOrientation, 3);
+    assert.equal(state.session.characters[0].facing, 3);
+    assert.equal(state.session.players[0].facing, 3);
   } finally {
     globalThis.window = originalWindow;
   }

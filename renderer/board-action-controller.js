@@ -59,11 +59,17 @@ export function createBoardActionController({
         throw new Error(payload?.message || "Action failed.");
       }
 
+      const previewFacing = Number.isInteger(state.selectedSource?.previewFacing) ? state.selectedSource.previewFacing : null;
+
       if (payload?.snapshot) {
         state.session = payload.snapshot;
         window.__GAME_SESSION__ = payload.snapshot;
         state.activePlayerId = payload.snapshot.currentPlayerId ?? payload.snapshot.activePlayerId ?? state.activePlayerId;
         state.activePlayerName = payload.snapshot.currentPlayerName ?? payload.snapshot.activePlayerName ?? state.activePlayerName;
+
+        if (previewFacing !== null) {
+          applyPreviewFacingToSession(state.session, previewFacing, state.activePlayerId);
+        }
       }
 
       boardInteraction.clearSelection();
@@ -81,6 +87,44 @@ export function createBoardActionController({
     } finally {
       state.isSubmitting = false;
       boardHud.syncHud();
+    }
+  }
+
+  function applyPreviewFacingToSession(session, previewFacing, activePlayerId) {
+    if (!session || !Number.isInteger(previewFacing)) {
+      return;
+    }
+
+    const activeIdText = activePlayerId === null || activePlayerId === undefined ? null : String(activePlayerId);
+
+    if (Array.isArray(session.characters)) {
+      for (const character of session.characters) {
+        const characterId = character?.id ?? character?.Id ?? null;
+        if (activeIdText !== null && String(characterId) === activeIdText) {
+          character.facing = previewFacing;
+          character.Facing = previewFacing;
+        }
+      }
+    }
+
+    if (Array.isArray(session.players)) {
+      for (const player of session.players) {
+        const playerId = player?.id ?? player?.Id ?? null;
+        if (activeIdText !== null && String(playerId) === activeIdText) {
+          player.facing = previewFacing;
+          player.Facing = previewFacing;
+        }
+      }
+    }
+
+    if (Array.isArray(session.board)) {
+      for (const cell of session.board) {
+        const cellId = cell?.entityId ?? cell?.occupantId ?? cell?.playerId ?? null;
+        if (activeIdText !== null && String(cellId) === activeIdText) {
+          cell.entityOrientation = previewFacing;
+          cell.EntityOrientation = previewFacing;
+        }
+      }
     }
   }
 

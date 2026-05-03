@@ -222,6 +222,31 @@ test('inverts player orientation from movement direction', () => {
   assert.equal(plan.find((entry) => entry.type === 'entity-sprite').entityOrientation, 3);
 });
 
+test('uses the green move preview facing for the selected player sprite', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 1,
+      boardHeight: 1,
+      board: [{ x: 0, y: 0, tileKind: 'road0', tileOrientation: 0, entityKind: 'player', entityId: 1 }]
+    },
+    boardWidth: 1,
+    boardHeight: 1,
+    canvasWidth: 128,
+    canvasHeight: 128,
+    activePlayerId: 1,
+    selectedSource: { x: 0, y: 0, previewFacing: 3 },
+    isTileRevealed: () => true,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: () => ({ imageUrl: 'tile' }),
+    getEntitySpriteSheetSource: (kind, options) => ({ imageUrl: `entity:${kind}:${options?.selected ? 'selected' : 'unselected'}:${options?.orientation ?? 0}` }),
+    getEntityOrientation: () => 0
+  });
+
+  assert.deepEqual(plan.find((entry) => entry.type === 'entity-sprite').source, { imageUrl: 'entity:player:selected:3' });
+  assert.equal(plan.find((entry) => entry.type === 'entity-sprite').entityOrientation, 3);
+});
+
 test('uses tile definition animation when a frame is not provided on the cell', () => {
   const plan = buildGameBoardDrawPlan({
     session: {
