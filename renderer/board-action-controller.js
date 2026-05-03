@@ -1,6 +1,7 @@
 export function createBoardActionController({
   state,
   boardRuntime,
+  boardViewport,
   boardHud,
   boardInteraction,
   renderBoard,
@@ -69,7 +70,11 @@ export function createBoardActionController({
       state.feedback = request.actionName === "discover"
         ? "Tile placed. Rotate it to continue."
         : payload?.message || "Move resolved by WASM runtime.";
-      renderBoard(state.session);
+      if (boardViewport?.centerCameraOnActivePlayer) {
+        boardViewport.centerCameraOnActivePlayer(state.session);
+      } else {
+        renderBoard(state.session);
+      }
       boardHud.syncHud();
     } catch (error) {
       state.feedback = error instanceof Error ? error.message : "Action failed.";

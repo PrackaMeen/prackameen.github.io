@@ -114,6 +114,7 @@ export async function mountPage(context) {
       boardHud?.syncHud();
     },
     onSelectionChanged: () => {
+      gameBoardCanvas.render(state.session);
       gameBoardOverlayCanvas.render(state.session);
     }
   });
@@ -123,10 +124,12 @@ export async function mountPage(context) {
     stageEl,
     canvasEl,
     onZoomChanged: () => {
+      gameBoardCanvas.render(state.session);
       gameBoardOverlayCanvas.render(state.session);
       boardHud?.syncHud();
     },
     onViewportChanged: () => {
+      gameBoardCanvas.render(state.session);
       gameBoardOverlayCanvas.render(state.session);
       boardHud?.syncHud();
     },
@@ -162,6 +165,7 @@ export async function mountPage(context) {
   boardAction = createBoardActionController({
     state,
     boardRuntime,
+    boardViewport,
     boardHud,
     boardInteraction,
     renderBoard,
@@ -231,13 +235,14 @@ export async function mountPage(context) {
     if (!Number.isFinite(state.lockedBoardCellSize) || state.lockedBoardCellSize <= 0) {
       boardViewport.lockBoardCellSize(width, height);
     }
-    gameBoardCanvas.render(currentSession);
-    gameBoardOverlayCanvas.render(currentSession);
 
     if (!state.hasInitialCameraCenterApplied) {
-      boardViewport.centerCameraOnActivePlayer(currentSession);
       state.hasInitialCameraCenterApplied = true;
+      boardViewport.centerCameraOnActivePlayer(currentSession);
     }
+
+    gameBoardCanvas.render(currentSession);
+    gameBoardOverlayCanvas.render(currentSession);
   }
 
 }

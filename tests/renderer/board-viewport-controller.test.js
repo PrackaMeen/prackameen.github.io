@@ -114,3 +114,62 @@ test('zooms with a two-finger pinch gesture', () => {
     Date.now = originalNow;
   }
 });
+
+test('centers the camera and emits a viewport change', () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = {
+    getComputedStyle() {
+      return {
+        paddingLeft: '0',
+        paddingRight: '0',
+        paddingTop: '0',
+        paddingBottom: '0'
+      };
+    }
+  };
+
+  try {
+    let viewportChanged = 0;
+    const { state } = createController();
+    const centeredController = createBoardViewportController({
+      state,
+      mapEl: {
+        style: {
+          setProperty() {},
+          getPropertyValue() { return ''; }
+        },
+        getBoundingClientRect() {
+          return { width: 200, height: 200 };
+        }
+      },
+      stageEl: {
+        clientWidth: 200,
+        clientHeight: 200
+      },
+      canvasEl: {
+        contains() {
+          return true;
+        }
+      },
+      onZoomChanged() {},
+      onViewportChanged() {
+        viewportChanged += 1;
+      },
+      onBoardStateChanged() {}
+    });
+
+    centeredController.centerCameraOnActivePlayer({
+      boardWidth: 4,
+      boardHeight: 4,
+      boardOriginX: 0,
+      boardOriginY: 0,
+      board: [
+        { x: 1, y: 1, entityId: 'player-1', entityKind: 'player' }
+      ]
+    });
+
+    assert.equal(viewportChanged > 0, true);
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});

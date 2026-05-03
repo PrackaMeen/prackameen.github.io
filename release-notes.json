@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.1.78",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Camera updates no longer recurse through board render",
+      "businessSummary": "Selecting a character, centering the camera, and completing a place-and-move action now redraw the canvases directly instead of re-entering the full board render path, which removes the console stack overflow and keeps the view responsive.",
+      "highlights": [
+        "Stopped viewport callbacks from calling the full board render again.",
+        "Redrew the main canvas and overlay directly when the camera changes.",
+        "Applied the initial center before invoking the centering callback to avoid re-entry."
+      ]
+    },
+    {
+      "version": "1.1.77",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Camera follow now redraws immediately",
+      "businessSummary": "Place-and-move actions now recenter the camera on the active player, and center-view redraws the main board immediately instead of waiting for the next click.",
+      "highlights": [
+        "Repainted the main canvas whenever the viewport changes.",
+        "Recentered the camera after a successful move or placement action.",
+        "Kept the overlay and board canvas on the same frame after camera updates."
+      ]
+    },
+    {
       "version": "1.1.76",
       "commit": "pending",
       "date": "2026-05-03",
