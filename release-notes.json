@@ -1,6 +1,90 @@
 {
   "items": [
     {
+      "version": "1.1.62",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Char player definitions added",
+      "businessSummary": "The new Char0 and Char1 player orientations now have metadata files for all four directions, so the renderer can resolve the incoming art contract immediately when those PNGs are delivered.",
+      "highlights": [
+        "Added Char0 and Char1 metadata for orientations 0 through 3.",
+        "Kept the metadata frame size aligned with the existing player sprite.",
+        "Bumped the app version so cached PWA files refresh onto the new definitions."
+      ]
+    },
+    {
+      "version": "1.1.61",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Char player sheets are now the default",
+      "businessSummary": "The player now resolves to the new Char0 and Char1 sheets first, while the older player art is only used if loading the new sheets fails. The version bump forces browsers to fetch the updated routing immediately.",
+      "highlights": [
+        "Made Char0 and Char1 the default player sheet sources.",
+        "Kept the existing player sprite as the fallback on load error.",
+        "Bumped the app version so cached shell files refresh cleanly."
+      ]
+    },
+    {
+      "version": "1.1.60",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Player art now shows immediately again",
+      "businessSummary": "The board now uses the existing player sprite as the default visible fallback instead of waiting on the missing Char sheets, and the version bump forces the browser to reload the updated asset routing.",
+      "highlights": [
+        "Made the visible player art the default entity source again.",
+        "Kept the Char0 and Char1 paths reserved for future artwork delivery.",
+        "Bumped the app version so stale cached shell files are replaced."
+      ]
+    },
+    {
+      "version": "1.1.59",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Player sprite fallback now reloads cleanly",
+      "businessSummary": "The active character now falls back to the existing player art when the new Char0 and Char1 sheets are unavailable, and the app version bump forces browsers to fetch the updated asset paths instead of serving stale cached files.",
+      "highlights": [
+        "Added a cache-busting version bump for the player sprite fallback change.",
+        "Kept the active character visible even if the variant sheets are not present locally.",
+        "Preserved the new Char0 and Char1 asset contract for the next art drop."
+      ]
+    },
+    {
+      "version": "1.1.58",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board camera now stays put after selecting the player",
+      "businessSummary": "Clicking the active character now only highlights it; the camera no longer snaps back unless you use the explicit center button. That keeps manual panning intact while preserving a quick recenter action when needed.",
+      "highlights": [
+        "Removed automatic recentering from board re-renders and resize callbacks.",
+        "Kept the transient Center View button as the only recenter control.",
+        "Preserved player highlight behavior when selecting the active character."
+      ]
+    },
+    {
+      "version": "1.1.57",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board now shows a recenter button when panned away",
+      "businessSummary": "When the board camera is no longer centered on the active player, a transient center button appears in the action bar. Clicking it snaps the camera back to the player's character without disturbing the existing touch and action flows.",
+      "highlights": [
+        "Exposed camera-centered state from the viewport controller.",
+        "Added a transient recenter action to the board HUD.",
+        "Kept quick taps, long-press panning, and pinch zoom working together."
+      ]
+    },
+    {
+      "version": "1.1.56",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board touch gestures now support tap, pan, and pinch",
+      "businessSummary": "The game board now treats a quick one-finger press as a normal action, a long press plus drag as map panning, and two-finger touches as zooming. That makes the board usable on touch devices without losing the existing select-and-act flow.",
+      "highlights": [
+        "Kept quick taps routed into the existing board action logic.",
+        "Added long-press drag panning for the board viewport.",
+        "Preserved two-finger pinch zoom for touch navigation."
+      ]
+    },
+    {
       "version": "1.1.55",
       "commit": "pending",
       "date": "2026-05-03",

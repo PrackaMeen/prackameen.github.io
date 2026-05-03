@@ -128,6 +128,13 @@ body[data-page="game-board"] {
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
+.game-board-action-btn--overflow {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding-inline: 0.95rem;
+  letter-spacing: 0.06em;
+}
+
 .game-board-action-btn:disabled {
   cursor: not-allowed;
   opacity: 0.45;

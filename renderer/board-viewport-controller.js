@@ -9,6 +9,10 @@ export function createBoardViewportController({
   onViewportChanged,
   onBoardStateChanged
 }) {
+  const LONG_PRESS_MS = 320;
+  const TAP_MOVE_TOLERANCE_PX = 12;
+  let touchGesture = null;
+
   return {
     handleMapTouchStart,
     handleMapTouchMove,
@@ -17,6 +21,7 @@ export function createBoardViewportController({
     syncZoom,
     fitBoardToStage,
     centerCameraOnActivePlayer,
+    isCameraCenteredOnActivePlayer,
     getBoardCellSize,
     getCameraTargetCell
   };
@@ -32,6 +37,20 @@ export function createBoardViewportController({
     }
 
     if (state.activeTouchPoints.size !== 2) {
+      if (state.activeTouchPoints.size === 1) {
+        const touch = Array.from(event.changedTouches || [])[0];
+        const point = touch ? getTouchPoint(touch) : Array.from(state.activeTouchPoints.values())[0];
+        touchGesture = {
+          kind: 'press',
+          touchId: touch?.identifier ?? Array.from(state.activeTouchPoints.keys())[0],
+          startTimeMs: Date.now(),
+          startPoint: point,
+          startPanX: state.panX,
+          startPanY: state.panY,
+          isPanActive: false,
+          isTapCancelled: false
+        };
+      }
       return;
     }
 
@@ -40,6 +59,17 @@ export function createBoardViewportController({
       return;
     }
 
+    touchGesture = {
+      kind: 'pinch',
+      touchId: null,
+      startTimeMs: Date.now(),
+      startPoint: null,
+      startPanX: state.panX,
+      startPanY: state.panY,
+      pinchStartDistance: getPointerDistance(points[0], points[1]),
+      pinchStartScale: state.zoomScale,
+      pinchStartMidpoint: getPointerMidpoint(points[0], points[1])
+    };
     state.gestureStartMidpoint = getPointerMidpoint(points[0], points[1]);
     state.pinchStartDistance = getPointerDistance(points[0], points[1]);
     state.pinchStartScale = state.zoomScale;
@@ -58,46 +88,114 @@ export function createBoardViewportController({
       state.activeTouchPoints.set(touch.identifier, getTouchPoint(touch));
     }
 
-    if (state.activeTouchPoints.size !== 2 || state.pinchStartDistance === null) {
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    if (state.activeTouchPoints.size === 2) {
+      const points = Array.from(state.activeTouchPoints.values());
+      if (points.length !== 2) {
+        return;
+      }
+
+      const currentMidpoint = getPointerMidpoint(points[0], points[1]);
+      const currentDistance = getPointerDistance(points[0], points[1]);
+      if (currentDistance <= 0) {
+        return;
+      }
+
+      touchGesture = touchGesture?.kind === 'pinch'
+        ? touchGesture
+        : {
+            kind: 'pinch',
+            touchId: null,
+            startTimeMs: Date.now(),
+            startPoint: null,
+            startPanX: state.panX,
+            startPanY: state.panY,
+            pinchStartDistance: state.pinchStartDistance ?? currentDistance,
+            pinchStartScale: state.zoomScale,
+            pinchStartMidpoint: state.gestureStartMidpoint ?? currentMidpoint
+          };
+
+      const pinchStartDistance = touchGesture.pinchStartDistance || currentDistance;
+      const pinchStartScale = touchGesture.pinchStartScale ?? state.zoomScale;
+      const pinchStartMidpoint = touchGesture.pinchStartMidpoint || currentMidpoint;
+      const nextScale = clampScale(pinchStartScale * (currentDistance / pinchStartDistance));
+      const nextPanX = touchGesture.startPanX + (currentMidpoint.clientX - pinchStartMidpoint.clientX);
+      const nextPanY = touchGesture.startPanY + (currentMidpoint.clientY - pinchStartMidpoint.clientY);
+
+      if (nextScale !== state.zoomScale) {
+        state.zoomScale = nextScale;
+        onZoomChanged?.();
+      }
+
+      if (nextPanX !== state.panX || nextPanY !== state.panY) {
+        state.panX = nextPanX;
+        state.panY = nextPanY;
+        onViewportChanged?.();
+      }
+
+      syncZoom();
       return;
     }
 
-    const points = Array.from(state.activeTouchPoints.values());
-    if (points.length !== 2) {
+    if (state.activeTouchPoints.size !== 1 || !touchGesture || touchGesture.kind !== 'press') {
       return;
     }
 
-    const currentMidpoint = getPointerMidpoint(points[0], points[1]);
-    const currentDistance = getPointerDistance(points[0], points[1]);
-    if (currentDistance <= 0) {
+    const point = Array.from(state.activeTouchPoints.values())[0];
+    if (!point) {
       return;
     }
 
-    const nextScale = clampScale(state.pinchStartScale * (currentDistance / state.pinchStartDistance));
-    const nextPanX = state.gestureStartPanX + (currentMidpoint.clientX - state.gestureStartMidpoint.clientX);
-    const nextPanY = state.gestureStartPanY + (currentMidpoint.clientY - state.gestureStartMidpoint.clientY);
+    const elapsedMs = Date.now() - touchGesture.startTimeMs;
+    const deltaX = point.clientX - touchGesture.startPoint.clientX;
+    const deltaY = point.clientY - touchGesture.startPoint.clientY;
+    const movedDistance = Math.hypot(deltaX, deltaY);
 
-    if (nextScale !== state.zoomScale) {
-      state.zoomScale = nextScale;
-      onZoomChanged?.();
+    if (!touchGesture.isPanActive) {
+      if (movedDistance > TAP_MOVE_TOLERANCE_PX && elapsedMs < LONG_PRESS_MS) {
+        touchGesture.isTapCancelled = true;
+        return;
+      }
+
+      if (elapsedMs < LONG_PRESS_MS) {
+        return;
+      }
+
+      touchGesture.isPanActive = true;
     }
+
+    const nextPanX = touchGesture.startPanX + (point.clientX - touchGesture.startPoint.clientX);
+    const nextPanY = touchGesture.startPanY + (point.clientY - touchGesture.startPoint.clientY);
 
     if (nextPanX !== state.panX || nextPanY !== state.panY) {
       state.panX = nextPanX;
       state.panY = nextPanY;
-      onZoomChanged?.();
+      onViewportChanged?.();
     }
 
     syncZoom();
-
-    if (event.cancelable) {
-      event.preventDefault();
-    }
   }
 
   function handleMapTouchEnd(event) {
+    let tapPoint = null;
+
     for (const touch of Array.from(event.changedTouches || [])) {
       state.activeTouchPoints.delete(touch.identifier);
+    }
+
+    if (touchGesture?.kind === 'press' && state.activeTouchPoints.size === 0) {
+      const elapsedMs = Date.now() - touchGesture.startTimeMs;
+      const point = Array.from(event.changedTouches || []).map(getTouchPoint)[0] || touchGesture.startPoint;
+      const movedDistance = point
+        ? Math.hypot(point.clientX - touchGesture.startPoint.clientX, point.clientY - touchGesture.startPoint.clientY)
+        : Number.POSITIVE_INFINITY;
+
+      if (!touchGesture.isTapCancelled && !touchGesture.isPanActive && elapsedMs < LONG_PRESS_MS && movedDistance <= TAP_MOVE_TOLERANCE_PX) {
+        tapPoint = point;
+      }
     }
 
     if (state.activeTouchPoints.size < 2) {
@@ -105,10 +203,18 @@ export function createBoardViewportController({
       state.pinchStartScale = state.zoomScale;
       state.gestureStartMidpoint = null;
     }
+
+    if (state.activeTouchPoints.size === 0) {
+      touchGesture = null;
+    }
+
+    return tapPoint ? { kind: 'tap', point: tapPoint } : null;
   }
 
   function handleMapTouchCancel(event) {
-    handleMapTouchEnd(event);
+    const result = handleMapTouchEnd(event);
+    touchGesture = null;
+    return result;
   }
 
   function syncZoom() {
@@ -145,37 +251,24 @@ export function createBoardViewportController({
   }
 
   function centerCameraOnActivePlayer(currentSession) {
-    if (!stageEl || !mapEl) {
+    const centeredCamera = getCenteredCameraPan(currentSession);
+    if (!centeredCamera) {
       return;
     }
 
-    const targetCell = getCameraTargetCell(currentSession);
-    if (!targetCell) {
-      return;
-    }
-
-    const cellSize = getBoardCellSize();
-    if (cellSize <= 0) {
-      return;
-    }
-
-    const stageStyle = window.getComputedStyle(stageEl);
-    const paddingLeft = Number.parseFloat(stageStyle.paddingLeft || "0") || 0;
-    const paddingRight = Number.parseFloat(stageStyle.paddingRight || "0") || 0;
-    const paddingTop = Number.parseFloat(stageStyle.paddingTop || "0") || 0;
-    const paddingBottom = Number.parseFloat(stageStyle.paddingBottom || "0") || 0;
-    const contentWidth = Math.max(0, stageEl.clientWidth - paddingLeft - paddingRight);
-    const contentHeight = Math.max(0, stageEl.clientHeight - paddingTop - paddingBottom);
-    const boardPixelWidth = state.boardWidth * cellSize;
-    const boardPixelHeight = state.boardHeight * cellSize;
-    const centeredLeft = paddingLeft + Math.max(0, (contentWidth - boardPixelWidth) / 2);
-    const centeredTop = paddingTop;
-    const targetX = (targetCell.x - state.boardOriginX + 0.5) * cellSize;
-    const targetY = (targetCell.y - state.boardOriginY + 0.5) * cellSize;
-
-    state.panX = (paddingLeft + (contentWidth / 2)) - centeredLeft - (targetX * state.zoomScale);
-    state.panY = (paddingTop + (contentHeight / 2)) - centeredTop - (targetY * state.zoomScale);
+    state.panX = centeredCamera.panX;
+    state.panY = centeredCamera.panY;
     syncZoom();
+    onViewportChanged?.();
+  }
+
+  function isCameraCenteredOnActivePlayer(currentSession) {
+    const centeredCamera = getCenteredCameraPan(currentSession);
+    if (!centeredCamera) {
+      return true;
+    }
+
+    return Math.abs(state.panX - centeredCamera.panX) < 0.5 && Math.abs(state.panY - centeredCamera.panY) < 0.5;
   }
 
   function getBoardCellSize() {
@@ -207,5 +300,40 @@ export function createBoardViewportController({
     }
 
     return null;
+  }
+
+  function getCenteredCameraPan(currentSession) {
+    if (!stageEl || !mapEl) {
+      return null;
+    }
+
+    const targetCell = getCameraTargetCell(currentSession);
+    if (!targetCell) {
+      return null;
+    }
+
+    const cellSize = getBoardCellSize();
+    if (cellSize <= 0) {
+      return null;
+    }
+
+    const stageStyle = window.getComputedStyle(stageEl);
+    const paddingLeft = Number.parseFloat(stageStyle.paddingLeft || "0") || 0;
+    const paddingRight = Number.parseFloat(stageStyle.paddingRight || "0") || 0;
+    const paddingTop = Number.parseFloat(stageStyle.paddingTop || "0") || 0;
+    const paddingBottom = Number.parseFloat(stageStyle.paddingBottom || "0") || 0;
+    const contentWidth = Math.max(0, stageEl.clientWidth - paddingLeft - paddingRight);
+    const contentHeight = Math.max(0, stageEl.clientHeight - paddingTop - paddingBottom);
+    const boardPixelWidth = state.boardWidth * cellSize;
+    const boardPixelHeight = state.boardHeight * cellSize;
+    const centeredLeft = paddingLeft + Math.max(0, (contentWidth - boardPixelWidth) / 2);
+    const centeredTop = paddingTop;
+    const targetX = (targetCell.x - state.boardOriginX + 0.5) * cellSize;
+    const targetY = (targetCell.y - state.boardOriginY + 0.5) * cellSize;
+
+    return {
+      panX: (paddingLeft + (contentWidth / 2)) - centeredLeft - (targetX * state.zoomScale),
+      panY: (paddingTop + (contentHeight / 2)) - centeredTop - (targetY * state.zoomScale)
+    };
   }
 }

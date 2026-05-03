@@ -29,6 +29,20 @@ test('builds sprite-sheet sources for tiles, entities, and hidden tiles', async 
       animation: null
     });
 
+    assert.deepEqual(getEntitySpriteSheetSource('player', { selected: true, orientation: 2 }), {
+      imageUrl: 'v:./assets/game/entities/Char0/Char0_2.png',
+      metadataUrl: 'v:./assets/game/entities/Char0/Char0_2.json',
+      defaultFrameName: 'default',
+      animation: null
+    });
+
+    assert.deepEqual(getEntitySpriteSheetSource('player', { selected: false, orientation: 3 }), {
+      imageUrl: 'v:./assets/game/entities/Char1/Char1_3.png',
+      metadataUrl: 'v:./assets/game/entities/Char1/Char1_3.json',
+      defaultFrameName: 'default',
+      animation: null
+    });
+
     assert.deepEqual(getHiddenTileSpriteSheetSource(), {
       imageUrl: 'v:./assets/game/tiles/Hidden.png',
       metadataUrl: 'v:./assets/game/tiles/Hidden.json',

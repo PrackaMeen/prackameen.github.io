@@ -1,6 +1,7 @@
 import { loadImage } from './image-loader.js';
 
 const spriteSheetCache = new Map();
+const PLAYER_ENTITY_FALLBACK_IMAGE_URL = './assets/game/entities/player.png';
 
 export function createSpriteSheetSource(imageUrl, options = {}) {
   return {
@@ -37,8 +38,10 @@ export async function loadSpriteSheet(source, dependencies = {}) {
     normalizedSource.metadataUrl ? metadataLoader(normalizedSource.metadataUrl) : Promise.resolve(null)
   ]);
 
+  const resolvedImage = image ?? (isCharacterSpriteSheet(normalizedSource.imageUrl) ? await loader(PLAYER_ENTITY_FALLBACK_IMAGE_URL) : null);
+
   const sheet = normalizeSpriteSheet({
-    image,
+    image: resolvedImage,
     frames: metadata?.frames ?? metadata,
     defaultFrameName: normalizedSource.defaultFrameName
   });
@@ -136,4 +139,8 @@ function getFallbackFrame(image) {
     sw: Math.max(1, Number(image?.width) || 1),
     sh: Math.max(1, Number(image?.height) || 1)
   };
+}
+
+function isCharacterSpriteSheet(imageUrl) {
+  return /\/assets\/game\/entities\/Char[01]\/Char[01]_[0-3]\.png$/i.test(String(imageUrl || ''));
 }

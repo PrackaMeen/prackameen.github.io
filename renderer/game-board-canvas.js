@@ -9,6 +9,9 @@ export function createGameBoardCanvas({
   canvasEl,
   mapEl,
   getSession,
+  getActivePlayerId,
+  getSelectedSource,
+  getEntityOrientation,
   getTileSpriteSheetSource,
   getEntitySpriteSheetSource,
   normalizeTileKind,
@@ -79,11 +82,14 @@ export function createGameBoardCanvas({
       canvasWidth: width,
       canvasHeight: height,
       currentTimeMs: Date.now(),
+      activePlayerId: typeof getActivePlayerId === 'function' ? getActivePlayerId() : null,
+      selectedSource: typeof getSelectedSource === 'function' ? getSelectedSource() : null,
       isTileRevealed,
       normalizeTileKind,
       normalizeEntityKind,
       getTileSpriteSheetSource,
-      getEntitySpriteSheetSource
+      getEntitySpriteSheetSource,
+      getEntityOrientation
     });
 
     await paintGameBoardDrawPlan({

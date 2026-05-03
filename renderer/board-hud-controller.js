@@ -4,6 +4,8 @@ export function createBoardHudController({
   setNavMessage,
   isTileRevealed,
   getTileAssetUrl,
+  isCameraCentered,
+  onCenterCamera,
   onPerformAction,
   onCancelSelection,
   onRotatePlacement
@@ -34,6 +36,15 @@ export function createBoardHudController({
 
   function renderActionBar(container, placement) {
     const nodes = [];
+
+    if (typeof isCameraCentered === "function" && !isCameraCentered()) {
+      nodes.push(createActionButton({
+        label: "Center View",
+        className: "game-board-action-btn game-board-action-btn--ghost game-board-action-btn--overflow",
+        disabled: false,
+        onClick: onCenterCamera
+      }));
+    }
 
     if (placement) {
       nodes.push(createPlacementPreview(placement));

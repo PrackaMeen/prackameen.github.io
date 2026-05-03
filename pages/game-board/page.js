@@ -40,6 +40,7 @@ export async function mountPage(context) {
     session,
     activePlayerId: session?.currentPlayerId ?? session?.activePlayerId ?? session?.players?.[0]?.id ?? null,
     activePlayerName: session?.currentPlayerName ?? session?.players?.[0]?.name ?? "Player A",
+    entityOrientations: new Map(),
     selectedSource: null,
     pendingTarget: null,
     pendingPlacement: null,
@@ -59,12 +60,16 @@ export async function mountPage(context) {
     boardWidth: 0,
     boardHeight: 0,
     boardOriginX: 0,
-    boardOriginY: 0
+    boardOriginY: 0,
+    hasInitialCameraCenterApplied: false
   };
   const gameBoardCanvas = createGameBoardCanvas({
     canvasEl,
     mapEl,
     getSession: () => state.session,
+    getActivePlayerId: () => state.activePlayerId,
+    getSelectedSource: () => state.selectedSource,
+    getEntityOrientation: (entityId) => state.entityOrientations.get(String(entityId)) ?? 0,
     getTileSpriteSheetSource,
     getEntitySpriteSheetSource,
     normalizeTileKind,
@@ -110,9 +115,11 @@ export async function mountPage(context) {
     canvasEl,
     onZoomChanged: () => {
       gameBoardOverlayCanvas.render(state.session);
+      boardHud?.syncHud();
     },
     onViewportChanged: () => {
       gameBoardOverlayCanvas.render(state.session);
+      boardHud?.syncHud();
     },
     onBoardStateChanged: () => {
       boardHud?.syncHud();
@@ -136,6 +143,8 @@ export async function mountPage(context) {
     setNavMessage,
     isTileRevealed,
     getTileAssetUrl,
+    isCameraCentered: () => boardViewport.isCameraCenteredOnActivePlayer(state.session),
+    onCenterCamera: () => boardViewport.centerCameraOnActivePlayer(state.session),
     onPerformAction: () => void boardAction?.handlePerformAction(),
     onCancelSelection: () => void boardAction?.handleCancelSelection(),
     onRotatePlacement: (delta) => void boardAction?.handleRotatePlacement(delta)
@@ -197,6 +206,7 @@ export async function mountPage(context) {
     state.boardOriginX = originX;
     state.boardOriginY = originY;
     state.pendingPlacement = currentSession?.pendingPlacement || null;
+    syncEntityOrientations(currentSession);
 
     if (state.pendingPlacement) {
       state.selectedSource = null;
@@ -213,7 +223,26 @@ export async function mountPage(context) {
     boardViewport.fitBoardToStage(width, height);
     gameBoardCanvas.render(currentSession);
     gameBoardOverlayCanvas.render(currentSession);
-    boardViewport.centerCameraOnActivePlayer(currentSession);
+
+    if (!state.hasInitialCameraCenterApplied) {
+      boardViewport.centerCameraOnActivePlayer(currentSession);
+      state.hasInitialCameraCenterApplied = true;
+    }
+  }
+
+  function syncEntityOrientations(currentSession) {
+    const players = Array.isArray(currentSession?.players) ? currentSession.players : [];
+
+    for (const player of players) {
+      if (player?.id === null || player?.id === undefined) {
+        continue;
+      }
+
+      const key = String(player.id);
+      if (!state.entityOrientations.has(key)) {
+        state.entityOrientations.set(key, 0);
+      }
+    }
   }
 
 }
