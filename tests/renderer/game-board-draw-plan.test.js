@@ -22,7 +22,7 @@ test('orders hidden fills before revealed sprites and grid lines last', () => {
     isTileRevealed: (_session, x) => x === 1,
     normalizeTileKind: (value) => value,
     normalizeEntityKind: (value) => value,
-    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}` }),
+    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}`, animation: kind === 'road0' ? { frameNames: ['road0-0', 'road0-1'], elapsedMs: 125, frameDurationMs: 100 } : null }),
     getEntitySpriteSheetSource: (kind) => ({ imageUrl: `entity:${kind}` })
   });
 
@@ -39,7 +39,8 @@ test('orders hidden fills before revealed sprites and grid lines last', () => {
   assert.deepEqual(plan[1], {
     type: 'tile-sprite',
     frameName: 'chamber4-1',
-    source: { imageUrl: 'chamber4:3' },
+    animated: true,
+    source: { imageUrl: 'chamber4:3', animation: null },
     x: 100,
     y: 0,
     width: 100,
@@ -52,6 +53,7 @@ test('orders hidden fills before revealed sprites and grid lines last', () => {
   assert.deepEqual(plan[2], {
     type: 'entity-sprite',
     frameName: 'player-0',
+    animated: true,
     source: { imageUrl: 'entity:player' },
     x: 114,
     y: 14,
@@ -62,4 +64,31 @@ test('orders hidden fills before revealed sprites and grid lines last', () => {
     entityKind: 'player'
   });
   assert.equal(plan.at(-1).type, 'grid-line-vertical');
+});
+
+test('uses tile definition animation when a frame is not provided on the cell', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 1,
+      boardHeight: 1,
+      board: [{ x: 0, y: 0, tileKind: 'road0', tileOrientation: 0 }]
+    },
+    boardWidth: 1,
+    boardHeight: 1,
+    canvasWidth: 128,
+    canvasHeight: 128,
+    currentTimeMs: 250,
+    isTileRevealed: () => true,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: () => ({
+      imageUrl: './assets/game/tiles/Road0/Road0_0.png',
+      animation: { frameNames: ['frame-0', 'frame-1', 'frame-2', 'frame-3'], frameDurationMs: 100, loop: true }
+    }),
+    getEntitySpriteSheetSource: () => ({ imageUrl: 'entity' })
+  });
+
+  assert.equal(plan[0].type, 'tile-sprite');
+  assert.equal(plan[0].frameName, 'frame-2');
+  assert.equal(plan[0].animated, true);
 });

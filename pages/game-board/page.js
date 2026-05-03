@@ -24,7 +24,6 @@ export async function mountPage(context) {
     normalizeTileKind
   } = await import(`../../lib/game-assets.js?v=${encodeURIComponent(context.appBuildId || context.appVersion || "latest")}`);
 
-  const boardEl = document.getElementById("gameBoard");
   const mapEl = document.getElementById("gameBoardMap");
   const stageEl = document.getElementById("gameBoardStage");
   const canvasEl = document.getElementById("gameBoardCanvas");
@@ -64,7 +63,7 @@ export async function mountPage(context) {
   };
   const gameBoardCanvas = createGameBoardCanvas({
     canvasEl,
-    boardEl,
+    mapEl,
     getSession: () => state.session,
     getTileSpriteSheetSource,
     getEntitySpriteSheetSource,
@@ -74,7 +73,7 @@ export async function mountPage(context) {
   });
   const gameBoardOverlayCanvas = createGameBoardOverlayCanvas({
     canvasEl: overlayCanvasEl,
-    boardEl,
+    mapEl,
     getSession: () => state.session,
     getOverlayState: () => ({
       selectedSource: state.selectedSource,
@@ -106,7 +105,6 @@ export async function mountPage(context) {
   });
   const boardViewport = createBoardViewportController({
     state,
-    boardEl,
     mapEl,
     stageEl,
     canvasEl,
@@ -181,11 +179,10 @@ export async function mountPage(context) {
   };
 
   function renderBoard(currentSession) {
-    if (!boardEl) {
+    if (!mapEl) {
       return;
     }
 
-    const cells = Array.isArray(currentSession?.board) ? currentSession.board : [];
     const width = Number.isInteger(currentSession?.boardWidth) && currentSession.boardWidth > 0
       ? currentSession.boardWidth
       : 0;
@@ -208,94 +205,12 @@ export async function mountPage(context) {
     }
 
     if (width <= 0 || height <= 0) {
-      boardEl.innerHTML = "";
       gameBoardCanvas.render(currentSession);
       gameBoardOverlayCanvas.render(currentSession);
       return;
     }
 
-    boardEl.style.gridTemplateColumns = `repeat(${width}, var(--game-cell-size))`;
-    boardEl.style.gridTemplateRows = `repeat(${height}, var(--game-cell-size))`;
     boardViewport.fitBoardToStage(width, height);
-    boardEl.innerHTML = "";
-
-    cells.forEach((cell) => {
-      const tileKind = normalizeTileKind(cell.tileKind || cell.kind || cell.terrainKind);
-      const entityKind = normalizeEntityKind(cell.entityKind || cell.occupantKind || cell.monsterKind || cell.playerKind);
-      const hasEntity = Boolean(cell.entityKind || cell.occupantKind || cell.monsterKind || cell.playerKind);
-      const isRevealed = isTileRevealed(currentSession, Number(cell.x), Number(cell.y));
-      const tileOrientation = Number.isInteger(cell.tileOrientation)
-        ? cell.tileOrientation
-        : Number.isInteger(cell.orientation)
-          ? cell.orientation
-          : 0;
-      const entityId = cell.entityId ?? cell.occupantId ?? cell.playerId ?? null;
-
-      const tile = document.createElement("div");
-      tile.className = "game-board-cell";
-      tile.setAttribute("role", "gridcell");
-      tile.dataset.x = String(Number.isInteger(cell.x) ? cell.x : 0);
-      tile.dataset.y = String(Number.isInteger(cell.y) ? cell.y : 0);
-      tile.dataset.entityKind = hasEntity ? entityKind : "";
-      if (entityId !== null && entityId !== undefined) {
-        tile.dataset.entityId = String(entityId);
-      }
-      if (cell.entityName) {
-        tile.dataset.entityName = cell.entityName;
-      }
-      if (cell.entityColorHex) {
-        tile.dataset.entityColorHex = cell.entityColorHex;
-        tile.style.setProperty("--entity-color", cell.entityColorHex);
-      }
-      tile.dataset.orientation = String(tileOrientation);
-      tile.style.gridColumnStart = String(Number(cell.x) - originX + 1);
-      tile.style.gridRowStart = String(Number(cell.y) - originY + 1);
-
-      if (boardInteraction.isActivePlayerCell(entityId, state.activePlayerId)) {
-        tile.classList.add("game-board-cell--active-player");
-      }
-
-      if (boardInteraction.isSelectedSource(Number(cell.x), Number(cell.y))) {
-        tile.classList.add("game-board-cell--selected-player");
-        boardInteraction.applySelectionAccent(tile);
-      }
-
-      if (boardInteraction.isPendingTarget(Number(cell.x), Number(cell.y))) {
-        tile.classList.add("game-board-cell--selected-target");
-        boardInteraction.applySelectionAccent(tile);
-
-        if (state.selectionPreviewTone?.tone === "green" && !isTileRevealed(currentSession, Number(cell.x), Number(cell.y))) {
-          tile.classList.add("game-board-cell--temporary-preview");
-        }
-      }
-
-      if (state.pendingPlacement && state.pendingPlacement.targetX === Number(cell.x) && state.pendingPlacement.targetY === Number(cell.y)) {
-        tile.classList.add("game-board-cell--placement-target");
-        boardInteraction.applySelectionAccent(tile);
-      }
-
-      const terrainLayer = document.createElement("span");
-      terrainLayer.className = `game-board-cell__layer game-board-cell__layer--terrain game-board-cell__layer--${tileKind}`;
-      if (isRevealed) {
-        terrainLayer.style.backgroundImage = `url(${getTileAssetUrl(tileKind, tileOrientation)})`;
-      } else {
-        tile.classList.add("game-board-cell--hidden-space");
-      }
-      tile.appendChild(terrainLayer);
-
-      if (hasEntity && isRevealed) {
-        const entityLayer = document.createElement("span");
-        entityLayer.className = `game-board-cell__layer game-board-cell__layer--entity game-board-cell__layer--${entityKind}`;
-        entityLayer.style.backgroundImage = `url(${getEntityAssetUrl(entityKind)})`;
-        if (cell.entityColorHex) {
-          entityLayer.style.setProperty("--entity-color", cell.entityColorHex);
-        }
-        tile.appendChild(entityLayer);
-      }
-
-      boardEl.appendChild(tile);
-    });
-
     gameBoardCanvas.render(currentSession);
     gameBoardOverlayCanvas.render(currentSession);
     boardViewport.centerCameraOnActivePlayer(currentSession);

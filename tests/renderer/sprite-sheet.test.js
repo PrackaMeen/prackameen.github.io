@@ -4,8 +4,8 @@ import test from 'node:test';
 import { createSpriteSheetSource, drawSpriteFrame, loadSpriteSheet, normalizeSpriteFrames, resolveSpriteFrame } from '../../renderer/sprite-sheet.js';
 
 test('creates a default sprite-sheet source contract', () => {
-  assert.deepEqual(createSpriteSheetSource('./assets/game/tiles/Road0_0.png'), {
-    imageUrl: './assets/game/tiles/Road0_0.png',
+  assert.deepEqual(createSpriteSheetSource('./assets/game/tiles/Road0/Road0_0.png'), {
+    imageUrl: './assets/game/tiles/Road0/Road0_0.png',
     metadataUrl: null,
     defaultFrameName: 'default'
   });
@@ -33,21 +33,22 @@ test('falls back to the default frame when a named frame is missing', () => {
 test('loads and resolves atlas metadata through injected loaders', async () => {
   const sheet = await loadSpriteSheet(
     {
-      imageUrl: './assets/game/tiles/Road0.png',
-      metadataUrl: './assets/game/tiles/Road0.json',
-      defaultFrameName: 'idle'
+      imageUrl: './assets/game/tiles/Road0/Road0_0.png',
+      metadataUrl: './assets/game/tiles/Road0/Road0_0.json',
+      defaultFrameName: 'frame-0'
     },
     {
-      loadImage: async () => ({ width: 128, height: 128 }),
+      loadImage: async () => ({ width: 512, height: 128 }),
       loadMetadata: async () => ({
         frames: {
-          idle: { frame: { x: 8, y: 12, w: 24, h: 30 } }
+          'frame-0': { frame: { x: 0, y: 0, w: 128, h: 128 } },
+          'frame-1': { frame: { x: 128, y: 0, w: 128, h: 128 } }
         }
       })
     }
   );
 
-  assert.deepEqual(resolveSpriteFrame(sheet, 'idle'), { sx: 8, sy: 12, sw: 24, sh: 30 });
+  assert.deepEqual(resolveSpriteFrame(sheet, 'frame-1'), { sx: 128, sy: 0, sw: 128, sh: 128 });
 });
 
 test('draws a resolved sprite frame onto the provided context', async () => {
@@ -61,24 +62,25 @@ test('draws a resolved sprite frame onto the provided context', async () => {
   await drawSpriteFrame(
     context,
     {
-      imageUrl: './assets/game/tiles/Road0.png',
-      metadataUrl: './assets/game/tiles/Road0.json',
-      defaultFrameName: 'idle'
+      imageUrl: './assets/game/tiles/Road0/Road0_0.png',
+      metadataUrl: './assets/game/tiles/Road0/Road0_0.json',
+      defaultFrameName: 'frame-0'
     },
-    'idle',
+    'frame-1',
     10,
     20,
     30,
     40,
     {
-      loadImage: async () => ({ width: 128, height: 128 }),
+      loadImage: async () => ({ width: 512, height: 128 }),
       loadMetadata: async () => ({
         frames: {
-          idle: { frame: { x: 8, y: 12, w: 24, h: 30 } }
+          'frame-0': { frame: { x: 0, y: 0, w: 128, h: 128 } },
+          'frame-1': { frame: { x: 128, y: 0, w: 128, h: 128 } }
         }
       })
     }
   );
 
-  assert.deepEqual(calls, [[{ width: 128, height: 128 }, 8, 12, 24, 30, 10, 20, 30, 40]]);
+  assert.deepEqual(calls, [[{ width: 512, height: 128 }, 128, 0, 128, 128, 10, 20, 30, 40]]);
 });

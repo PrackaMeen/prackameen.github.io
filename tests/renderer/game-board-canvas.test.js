@@ -39,14 +39,14 @@ test('render returns a promise and syncs the canvas to the board size', async ()
       return type === '2d' ? context : null;
     }
   };
-  const boardEl = {
+  const mapEl = {
     getBoundingClientRect() {
       return { width: 320, height: 240 };
     }
   };
   const renderer = createGameBoardCanvas({
     canvasEl,
-    boardEl,
+    mapEl,
     getSession: () => ({
       boardWidth: 1,
       boardHeight: 1,

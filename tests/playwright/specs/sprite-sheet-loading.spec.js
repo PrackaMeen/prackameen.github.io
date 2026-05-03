@@ -57,6 +57,5 @@ test.describe('Sprite-sheet asset loading', () => {
     await expect(page.locator('#gameBoardCanvas')).toBeVisible();
     await expect.poll(() => requestedUrls.some((url) => new URL(url).pathname.endsWith('.json'))).toBe(true);
     await expect.poll(() => requestedUrls.some((url) => new URL(url).pathname.endsWith('.png'))).toBe(true);
-    await expect(page.locator('.game-board-cell[data-x="1"][data-y="1"]')).toBeVisible();
   });
 });

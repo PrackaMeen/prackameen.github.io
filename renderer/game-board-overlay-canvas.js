@@ -4,7 +4,7 @@ import { createOnDemandRenderLoop } from './render-loop.js';
 
 export function createGameBoardOverlayCanvas({
   canvasEl,
-  boardEl,
+  mapEl,
   getSession,
   getOverlayState,
   getHiddenTileAssetUrl,
@@ -12,7 +12,7 @@ export function createGameBoardOverlayCanvas({
 }) {
   const context = canvasEl?.getContext?.("2d") ?? null;
   const renderLoop = createOnDemandRenderLoop();
-  const resizeObserver = typeof ResizeObserver !== "undefined" && boardEl
+  const resizeObserver = typeof ResizeObserver !== "undefined" && mapEl
     ? new ResizeObserver(() => {
         render(getSession());
       })
@@ -22,8 +22,8 @@ export function createGameBoardOverlayCanvas({
   let hiddenTileLoadPromise = null;
   let renderToken = 0;
 
-  if (resizeObserver && boardEl) {
-    resizeObserver.observe(boardEl);
+  if (resizeObserver && mapEl) {
+    resizeObserver.observe(mapEl);
   }
 
   return {
@@ -37,7 +37,7 @@ export function createGameBoardOverlayCanvas({
   }
 
   function render(session = getSession()) {
-    if (!canvasEl || !context || !boardEl) {
+    if (!canvasEl || !context || !mapEl) {
       return Promise.resolve();
     }
 
@@ -55,7 +55,7 @@ export function createGameBoardOverlayCanvas({
       return;
     }
 
-    const canvasSize = syncCanvasElementSize(canvasEl, boardEl.getBoundingClientRect());
+    const canvasSize = syncCanvasElementSize(canvasEl, mapEl.getBoundingClientRect());
     const width = canvasSize.width;
     const height = canvasSize.height;
 

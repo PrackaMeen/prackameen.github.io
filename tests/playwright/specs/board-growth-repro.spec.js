@@ -20,7 +20,7 @@ test.describe('Board growth repro', () => {
     }));
 
     await page.goto('/#/game-board');
-    await expect(page.locator('.game-board-cell')).toHaveCount(16);
+    await expect.poll(() => page.evaluate(() => window.__GAME_SESSION__.board.length)).toBe(16);
 
     await page.evaluate(() => {
       let moveCount = 0;
@@ -60,11 +60,10 @@ test.describe('Board growth repro', () => {
     await movePlayer(page, canvas, { x: 2, y: 0 }, { x: 2, y: 1 });
     await movePlayer(page, canvas, { x: 2, y: 1 }, { x: 3, y: 1 });
 
-    await expect(page.locator('.game-board-cell[data-x="4"][data-y="1"]')).toBeVisible();
-    await expect(page.locator('.game-board-cell[data-x="2"][data-y="4"]')).toBeVisible();
-
-    const cellCount = await page.locator('.game-board-cell').count();
-    expect(cellCount).toBeGreaterThan(16);
+    const session = await page.evaluate(() => window.__GAME_SESSION__);
+    expect(session.boardWidth).toBe(5);
+    expect(session.boardHeight).toBe(5);
+    expect(session.board.length).toBeGreaterThan(16);
   });
 
   test('shows extra rendered tiles after appending, committing, moving right, and appending again', async ({ page }) => {
@@ -87,7 +86,7 @@ test.describe('Board growth repro', () => {
     }));
 
     await page.goto('/#/game-board');
-    await expect(page.locator('.game-board-cell')).toHaveCount(24);
+    await expect.poll(() => page.evaluate(() => window.__GAME_SESSION__.board.length)).toBe(24);
 
     await page.waitForFunction(() => Boolean(window.GameWasm?.applyAction));
 
@@ -132,7 +131,9 @@ test.describe('Board growth repro', () => {
     await expect(page.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
     await page.getByRole('button', { name: 'Confirm Move' }).click();
 
-    await expect(page.locator('.game-board-cell--active-player[data-x="2"][data-y="1"]')).toHaveCount(1);
+    let session = await page.evaluate(() => window.__GAME_SESSION__);
+    expect(session.players[0].x).toBe(2);
+    expect(session.players[0].y).toBe(1);
 
     await clickCanvasBoardCell(page, canvas, 2, 1, 6, 4);
     await clickCanvasBoardCell(page, canvas, 3, 1, 6, 4);
@@ -150,11 +151,10 @@ test.describe('Board growth repro', () => {
     await expect(page.getByRole('button', { name: 'Place Tile' })).toBeVisible();
     await page.getByRole('button', { name: 'Place Tile' }).click();
 
-    await expect(page.locator('.game-board-cell[data-x="6"][data-y="1"]')).toBeVisible();
-    await expect(page.locator('.game-board-cell[data-x="6"][data-y="2"]')).toBeVisible();
-
-    const cellCount = await page.locator('.game-board-cell').count();
-    expect(cellCount).toBeGreaterThan(24);
+    session = await page.evaluate(() => window.__GAME_SESSION__);
+    expect(session.boardWidth).toBe(7);
+    expect(session.boardHeight).toBe(5);
+    expect(session.board.length).toBeGreaterThan(24);
   });
 
   test('captures the horizontal road4 discover preview before commit', async ({ page }, testInfo) => {
@@ -171,33 +171,16 @@ test.describe('Board growth repro', () => {
 
     await page.goto('/#/game-board');
     await page.waitForFunction(() => Boolean(window.GameWasm?.applyAction));
-    await page.addStyleTag({
-      content: `
-        .game-board {
-          --game-cell-base-size: 7.5rem !important;
-        }
-      `
-    });
 
     const canvas = page.locator('#gameBoardCanvas');
 
     await clickCanvasBoardCell(page, canvas, 1, 1, 3, 3);
     await clickCanvasBoardCell(page, canvas, 2, 1, 3, 3);
 
-    await expect(page.locator('.game-board-cell--temporary-preview[data-x="2"][data-y="1"]')).toHaveCount(1);
     await expect(page.getByText('Hidden tile preview.')).toBeVisible();
 
     const screenshotPath = testInfo.outputPath('three-tile-row-preview.png');
-    const clip = await page.evaluate(() => {
-      const cells = Array.from(document.querySelectorAll('.game-board-cell[data-y="1"]'));
-      const boxes = cells.map((cell) => cell.getBoundingClientRect());
-      const left = Math.min(...boxes.map((box) => box.left)) - 40;
-      const top = Math.min(...boxes.map((box) => box.top)) - 40;
-      const right = Math.max(...boxes.map((box) => box.right)) + 40;
-      const bottom = Math.max(...boxes.map((box) => box.bottom)) + 40;
-
-      return { x: Math.max(0, left), y: Math.max(0, top), width: right - left, height: bottom - top };
-    });
+    const clip = await canvas.boundingBox();
 
     await page.screenshot({ path: screenshotPath, clip });
     await testInfo.attach('three-tile-row-preview', {

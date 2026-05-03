@@ -2,7 +2,6 @@ import { clampScale, getPointerDistance, getPointerMidpoint, getTouchPoint } fro
 
 export function createBoardViewportController({
   state,
-  boardEl,
   mapEl,
   stageEl,
   canvasEl,
@@ -123,7 +122,7 @@ export function createBoardViewportController({
   }
 
   function fitBoardToStage(width, height) {
-    if (!boardEl || !stageEl || !Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
+    if (!mapEl || !stageEl || !Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
       return;
     }
 
@@ -137,12 +136,16 @@ export function createBoardViewportController({
     const fitWidth = availableWidth / width;
     const fitHeight = availableHeight / height;
     const nextCellSize = Math.max(8, Math.floor(Math.min(fitWidth, fitHeight)));
+    const boardPixelWidth = width * nextCellSize;
+    const boardPixelHeight = height * nextCellSize;
 
-    boardEl.style.setProperty("--game-cell-size", `${nextCellSize}px`);
+    mapEl.style.setProperty("--game-cell-size", `${nextCellSize}px`);
+    mapEl.style.width = `${boardPixelWidth}px`;
+    mapEl.style.height = `${boardPixelHeight}px`;
   }
 
   function centerCameraOnActivePlayer(currentSession) {
-    if (!boardEl || !stageEl || !mapEl) {
+    if (!stageEl || !mapEl) {
       return;
     }
 
@@ -176,9 +179,17 @@ export function createBoardViewportController({
   }
 
   function getBoardCellSize() {
-    const rawValue = boardEl?.style.getPropertyValue("--game-cell-size") || "";
+    const rawValue = mapEl?.style.getPropertyValue("--game-cell-size") || "";
     const parsed = Number.parseFloat(rawValue);
-    return Number.isFinite(parsed) ? parsed : 0;
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+
+    const rect = mapEl?.getBoundingClientRect?.();
+    const width = Number.isFinite(rect?.width) && state.boardWidth > 0 ? rect.width / state.boardWidth : 0;
+    const height = Number.isFinite(rect?.height) && state.boardHeight > 0 ? rect.height / state.boardHeight : 0;
+
+    return Math.max(width, height, 0);
   }
 
   function getCameraTargetCell(currentSession) {

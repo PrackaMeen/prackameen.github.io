@@ -18,7 +18,7 @@ export function resolveAnimationFrameName(animation, elapsedMs = 0) {
   const nextState = advanceAnimationState(
     {
       ...state,
-      elapsedMs: Number.isFinite(Number(animation?.elapsedMs)) ? Number(animation.elapsedMs) : 0
+      elapsedMs: Number.isFinite(Number(animation?.elapsedMs)) ? Number(animation.elapsedMs) : Number.isFinite(Number(elapsedMs)) ? Number(elapsedMs) : 0
     },
     0
   );

@@ -9,7 +9,6 @@ test.describe('Move player behavior', () => {
     }));
 
     await page.goto('/#/game-board');
-    await expect(page.locator('.game-board-cell[data-x="1"][data-y="1"]')).toBeVisible();
 
     const canvas = page.locator('#gameBoardCanvas');
     await clickCanvasBoardCell(page, canvas, 1, 1);
@@ -17,7 +16,9 @@ test.describe('Move player behavior', () => {
     await expect(page.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
     await page.getByRole('button', { name: 'Confirm Move' }).click();
 
-    await expect(page.locator('.game-board-cell--active-player[data-x="1"][data-y="0"]')).toHaveCount(1);
-    await expect(page.locator('.game-board-cell--active-player[data-x="1"][data-y="1"]')).toHaveCount(0);
+    const session = await page.evaluate(() => window.__GAME_SESSION__);
+    expect(session.players[0].x).toBe(1);
+    expect(session.players[0].y).toBe(0);
+    expect(session.pendingPlacement).toBeNull();
   });
 });

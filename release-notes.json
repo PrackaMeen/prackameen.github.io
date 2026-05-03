@@ -1,6 +1,54 @@
 {
   "items": [
     {
+      "version": "1.1.53",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road0 sheet animation and canvas clicks stabilized",
+      "businessSummary": "The Road0 sprite-sheet animation now renders against the live canvas while the board click mapping still lines up with the visible cells after removing the grid DOM. That gives us the new animated art without losing the existing move and placement flows.",
+      "highlights": [
+        "Kept Road0 animated with the new 4-frame sprite sheets.",
+        "Restored board click mapping through the canvas wrapper after the grid removal.",
+        "Synced the PWA version so the final test build is easy to verify."
+      ]
+    },
+    {
+      "version": "1.1.52",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road0 now animates from sprite sheets",
+      "businessSummary": "The Road0 tile definitions now point at 4-frame sprite sheets, and the canvas renderer advances those frames automatically while the board is visible. That makes the new art assets render the way they were authored instead of freezing on the first frame.",
+      "highlights": [
+        "Added 4-frame Road0 sheet metadata for the new tile art.",
+        "Let the canvas renderer advance animated tile and entity frames over time.",
+        "Kept the PWA version trail in sync so the change is easy to test immediately."
+      ]
+    },
+    {
+      "version": "1.1.51",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board now renders without the grid DOM",
+      "businessSummary": "The board page now uses the canvas wrapper as the only visual surface, so the inspected DOM matches the actual rendered board instead of duplicating tile artwork in grid cells. That keeps the runtime simpler and makes the canvas the clear source of truth for board visuals.",
+      "highlights": [
+        "Removed the board grid layer from the DOM.",
+        "Moved board sizing and canvas syncing to the wrapper element.",
+        "Kept the board interactions and regression tests aligned with the canvas path."
+      ]
+    },
+    {
+      "version": "1.1.50",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board now renders from canvas only",
+      "businessSummary": "The game board page now leaves the visible tile and entity artwork to the canvas renderer instead of painting the same images through DOM cell layers. That aligns the inspected board with the actual runtime rendering path and removes the extra image-backed board surface.",
+      "highlights": [
+        "Moved the visible board artwork onto the canvas renderer.",
+        "Kept the existing cell grid for sizing, selection, and interaction state.",
+        "Raised the PWA version so the change is easy to test immediately."
+      ]
+    },
+    {
       "version": "1.1.49",
       "commit": "pending",
       "date": "2026-05-03",

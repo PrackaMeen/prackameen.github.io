@@ -4,6 +4,16 @@
             {
                 "orientation": 0,
                 "sprite": "./assets/game/tiles/Road0/Road0_0.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                },
                 "walls": {
                     "north": true,
                     "east": true,
@@ -14,6 +24,16 @@
             {
                 "orientation": 1,
                 "sprite": "./assets/game/tiles/Road0/Road0_1.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                },
                 "walls": {
                     "north": true,
                     "east": true,
@@ -24,6 +44,16 @@
             {
                 "orientation": 2,
                 "sprite": "./assets/game/tiles/Road0/Road0_2.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                },
                 "walls": {
                     "north": false,
                     "east": true,
@@ -34,6 +64,16 @@
             {
                 "orientation": 3,
                 "sprite": "./assets/game/tiles/Road0/Road0_3.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                },
                 "walls": {
                     "north": true,
                     "east": false,

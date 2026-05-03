@@ -7,17 +7,17 @@ test.describe('Hidden tile placement behavior', () => {
     await installGameBoardStub(page, createGameBoardSession());
 
     await page.goto('/#/game-board');
-    await expect(page.locator('.game-board-cell[data-x="1"][data-y="0"]')).toBeVisible();
 
     const canvas = page.locator('#gameBoardCanvas');
-    const hiddenTarget = page.locator('.game-board-cell--hidden-space[data-x="1"][data-y="0"]').first();
-    const temporaryPreview = page.locator('.game-board-cell--temporary-preview[data-x="1"][data-y="0"]');
     await clickCanvasBoardCell(page, canvas, 1, 1);
     await clickCanvasBoardCell(page, canvas, 1, 0);
 
-    await expect(hiddenTarget).toHaveClass(/game-board-cell--hidden-space/);
     await expect(page.getByText('Hidden tile preview.')).toBeVisible();
-    await expect(temporaryPreview).toHaveCount(1);
+
+    let session = await page.evaluate(() => window.__GAME_SESSION__);
+    expect(session.pendingPlacement).toBeNull();
+
+    await expect(page.getByRole('button', { name: 'Place Tile' })).toBeEnabled();
 
     await page.getByRole('button', { name: 'Place Tile' }).click();
 
@@ -34,11 +34,18 @@ test.describe('Hidden tile placement behavior', () => {
     await page.getByRole('button', { name: 'Rotate Right' }).click();
     await expect(page.locator('.game-board-placement-preview__title')).toHaveText('direct-road · 2');
 
+    session = await page.evaluate(() => window.__GAME_SESSION__);
+    expect(session.pendingPlacement.tileOrientation).toBe(2);
+
     await page.getByRole('button', { name: 'Place & Move' }).click();
 
-    await expect(page.locator('.game-board-cell--active-player[data-x="1"][data-y="0"]')).toHaveCount(1);
     await expect(page.locator('.game-board-placement-preview')).toHaveCount(0);
     await expect(page.getByText('Tile placement committed.')).toBeVisible();
+
+    session = await page.evaluate(() => window.__GAME_SESSION__);
+    expect(session.players[0].x).toBe(1);
+    expect(session.players[0].y).toBe(0);
+    expect(session.pendingPlacement).toBeNull();
   });
 
   test('supports a second hidden placement after moving the player', async ({ page }) => {
@@ -47,14 +54,16 @@ test.describe('Hidden tile placement behavior', () => {
     await page.goto('/#/game-board');
 
     const canvas = page.locator('#gameBoardCanvas');
-    await expect(page.locator('.game-board-cell[data-x="1"][data-y="0"]')).toBeVisible();
 
     await clickCanvasBoardCell(page, canvas, 1, 1);
     await clickCanvasBoardCell(page, canvas, 1, 0);
+    await expect(page.getByRole('button', { name: 'Place Tile' })).toBeEnabled();
     await page.getByRole('button', { name: 'Place Tile' }).click();
     await page.getByRole('button', { name: 'Place & Move' }).click();
 
-    await expect(page.locator('.game-board-cell--active-player[data-x="1"][data-y="0"]')).toHaveCount(1);
+    let session = await page.evaluate(() => window.__GAME_SESSION__);
+    expect(session.players[0].x).toBe(1);
+    expect(session.players[0].y).toBe(0);
 
     await clickCanvasBoardCell(page, canvas, 1, 0);
     let secondPlacementPreviewed = false;
@@ -71,10 +80,15 @@ test.describe('Hidden tile placement behavior', () => {
     }
 
     expect(secondPlacementPreviewed).toBe(true);
+    await expect(page.getByRole('button', { name: 'Place Tile' })).toBeEnabled();
     await page.getByRole('button', { name: 'Place Tile' }).click();
 
     await expect(page.locator('.game-board-placement-preview')).toHaveCount(1);
     await expect(page.locator('.game-board-placement-preview__title')).toHaveCount(1);
     await expect(page.getByText('Tile placed. Rotate it to continue.')).toBeVisible();
+
+    session = await page.evaluate(() => window.__GAME_SESSION__);
+    expect(session.pendingPlacement).not.toBeNull();
+    expect(session.pendingPlacement.canCommit).toBe(true);
   });
 });

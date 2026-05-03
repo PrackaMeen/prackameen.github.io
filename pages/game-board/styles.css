@@ -149,7 +149,8 @@ body[data-page="game-board"] {
 
 .game-board-map {
   position: relative;
-  width: fit-content;
+  width: 0;
+  height: 0;
   isolation: isolate;
   transform: translate(var(--game-board-pan-x, 0px), var(--game-board-pan-y, 0px)) scale(var(--game-board-zoom, 1));
   transform-origin: top left;
@@ -173,84 +174,6 @@ body[data-page="game-board"] {
   height: 100%;
   pointer-events: none;
   z-index: 3;
-}
-
-.game-board {
-  position: relative;
-  z-index: 2;
-  --game-cell-base-size: clamp(1.35rem, 3.1vw, 2rem);
-  --game-cell-size: var(--game-cell-base-size);
-  display: grid;
-  gap: 0;
-  width: fit-content;
-  margin-top: 0;
-  padding: 0;
-  border-radius: 0;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  pointer-events: none;
-  touch-action: none;
-  overscroll-behavior: contain;
-}
-
-.game-board-cell {
-  position: relative;
-  width: var(--game-cell-size);
-  height: var(--game-cell-size);
-  overflow: hidden;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  pointer-events: none;
-}
-
-.game-board-cell__layer {
-  position: absolute;
-  inset: 0;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  pointer-events: none;
-}
-
-.game-board-cell__layer--terrain {
-  inset: -7%;
-  background-size: 114% 114%;
-}
-
-.game-board-cell__layer--entity {
-  inset: 14%;
-  background-size: contain;
-  filter: drop-shadow(0 3px 7px rgba(20, 50, 71, 0.24));
-}
-
-.game-board-cell--hidden-space {
-  background: rgba(255, 251, 245, 0.95);
-}
-
-.game-board-cell--hidden-space .game-board-cell__layer--terrain {
-  background-image: none;
-}
-
-.game-board-cell__layer--player {
-  animation: tile-pop 180ms ease-out;
-}
-
-.game-board-cell__layer--monster {
-  animation: tile-pop 180ms ease-out;
-}
-
-@keyframes tile-pop {
-  from {
-    transform: scale(0.92);
-    opacity: 0.2;
-  }
-
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
 }
 
 @media (max-width: 700px) {

@@ -7,7 +7,7 @@ import { createOnDemandRenderLoop } from './render-loop.js';
 
 export function createGameBoardCanvas({
   canvasEl,
-  boardEl,
+  mapEl,
   getSession,
   getTileSpriteSheetSource,
   getEntitySpriteSheetSource,
@@ -21,15 +21,17 @@ export function createGameBoardCanvas({
     drawSpriteFrame
   });
   const renderLoop = createOnDemandRenderLoop();
-  const resizeObserver = typeof ResizeObserver !== "undefined" && boardEl
+  const resizeObserver = typeof ResizeObserver !== "undefined" && mapEl
     ? new ResizeObserver(() => {
         render(getSession());
       })
     : null;
   let renderToken = 0;
+  let animationTimerId = null;
+  let animationSession = null;
 
-  if (resizeObserver && boardEl) {
-    resizeObserver.observe(boardEl);
+  if (resizeObserver && mapEl) {
+    resizeObserver.observe(mapEl);
   }
 
   return {
@@ -40,10 +42,11 @@ export function createGameBoardCanvas({
   function dispose() {
     resizeObserver?.disconnect();
     renderLoop.cancel();
+    stopAnimationLoop();
   }
 
   function render(session = getSession()) {
-    if (!canvasEl || !context || !boardEl) {
+    if (!canvasEl || !context || !mapEl) {
       return Promise.resolve();
     }
 
@@ -61,7 +64,7 @@ export function createGameBoardCanvas({
       return;
     }
 
-    const canvasSize = syncCanvasElementSize(canvasEl, boardEl.getBoundingClientRect());
+    const canvasSize = syncCanvasElementSize(canvasEl, mapEl.getBoundingClientRect());
     const width = canvasSize.width;
     const height = canvasSize.height;
 
@@ -75,6 +78,7 @@ export function createGameBoardCanvas({
       boardHeight,
       canvasWidth: width,
       canvasHeight: height,
+      currentTimeMs: Date.now(),
       isTileRevealed,
       normalizeTileKind,
       normalizeEntityKind,
@@ -95,6 +99,12 @@ export function createGameBoardCanvas({
     if (token !== renderToken) {
       return;
     }
+
+    if (drawPlan.some((entry) => entry.animated)) {
+      startAnimationLoop(session);
+    } else {
+      stopAnimationLoop();
+    }
   }
 
   function clearCanvas() {
@@ -103,6 +113,37 @@ export function createGameBoardCanvas({
     }
 
     context.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  }
+
+  function startAnimationLoop(session) {
+    animationSession = session;
+
+    if (animationTimerId !== null) {
+      return;
+    }
+
+    const tick = () => {
+      animationTimerId = setTimeout(() => {
+        animationTimerId = null;
+        if (!animationSession) {
+          return;
+        }
+
+        render(animationSession);
+        tick();
+      }, 120);
+    };
+
+    tick();
+  }
+
+  function stopAnimationLoop() {
+    animationSession = null;
+
+    if (animationTimerId !== null) {
+      clearTimeout(animationTimerId);
+      animationTimerId = null;
+    }
   }
 
 }
