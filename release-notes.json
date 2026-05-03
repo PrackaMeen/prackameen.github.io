@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.1.90",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Client tile catalog now matches the JSON definitions",
+      "businessSummary": "The fallback tile catalog in game-assets.js now mirrors tile-definitions.json for sprite paths, metadata paths, and wall layouts, so the PWA stays consistent even before runtime data loads.",
+      "highlights": [
+        "Aligned Road1 and Chamber variants with the JSON catalog.",
+        "Added a regression test that compares every tile kind and orientation.",
+        "Bumped the PWA version so the updated catalog is refreshed in the browser."
+      ]
+    },
+    {
+      "version": "1.1.89",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Tile fallback paths now match the updated definitions",
+      "businessSummary": "The client-side fallback tile definitions now use the same folder-style asset paths as tile-definitions.json, so previews stay consistent even before the runtime definitions load.",
+      "highlights": [
+        "Aligned the client fallback tile paths with the updated JSON asset layout.",
+        "Kept the runtime and PWA tile catalogs in sync for road and chamber tiles.",
+        "Added a resolver regression test for the updated tile paths."
+      ]
+    },
+    {
       "version": "1.1.88",
       "commit": "pending",
       "date": "2026-05-03",

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const versionedAssetResolver = (assetPath) => `v:${assetPath}`;
@@ -16,8 +17,8 @@ test('builds sprite-sheet sources for tiles, entities, and hidden tiles', async 
     } = await import('../../lib/game-assets.js');
 
     assert.deepEqual(getTileSpriteSheetSource('road1', 2), {
-      imageUrl: 'v:./assets/game/tiles/Road1_2.png',
-      metadataUrl: 'v:./assets/game/tiles/Road1_2.json',
+      imageUrl: 'v:./assets/game/tiles/Road1/Road1_2.png',
+      metadataUrl: 'v:./assets/game/tiles/Road1/Road1_2.json',
       defaultFrameName: 'frame-0',
       animation: null
     });
@@ -53,8 +54,8 @@ test('builds sprite-sheet sources for tiles, entities, and hidden tiles', async 
     globalThis.window.__GAME_VERSIONED_ASSET_URL__ = queryVersionedAssetResolver;
 
     assert.deepEqual(getTileSpriteSheetSource('road1', 2), {
-      imageUrl: './assets/game/tiles/Road1_2.png?v=test',
-      metadataUrl: './assets/game/tiles/Road1_2.json?v=test',
+      imageUrl: './assets/game/tiles/Road1/Road1_2.png?v=test',
+      metadataUrl: './assets/game/tiles/Road1/Road1_2.json?v=test',
       defaultFrameName: 'frame-0',
       animation: null
     });
@@ -95,6 +96,49 @@ test('keeps Road0 animation when runtime tile definitions are applied', async ()
         defaultFrameName: 'frame-0'
       }
     });
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
+test('keeps the client fallback tile definitions in sync with tile-definitions.json', async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { __GAME_VERSIONED_ASSET_URL__: versionedAssetResolver };
+
+  try {
+    const {
+      getTileSpriteSheetSource,
+      getTileWalls
+    } = await import(new URL('../../lib/game-assets.js?sync-check=' + Date.now(), import.meta.url));
+
+    const jsonText = await readFile(new URL('../../assets/game/tile-definitions.json', import.meta.url), 'utf8');
+    const parsedDefinitions = JSON.parse(jsonText);
+    const tileKinds = parsedDefinitions.tileKinds || {};
+
+    for (const [tileKind, variants] of Object.entries(tileKinds)) {
+      assert.equal(Array.isArray(variants), true, `Expected ${tileKind} to have an orientation list`);
+
+      for (const variant of variants) {
+        const orientation = Number.isInteger(variant.orientation) ? variant.orientation : 0;
+        const expectedAnimation = variant.animation
+          ? {
+              frameNames: variant.animation.frameNames,
+              frameDurationMs: variant.animation.frameDurationMs,
+              loop: variant.animation.loop,
+              defaultFrameName: variant.animation.defaultFrameName || variant.animation.frameNames?.[0] || 'frame-0'
+            }
+          : null;
+
+        assert.deepEqual(getTileSpriteSheetSource(tileKind, orientation), {
+          imageUrl: `v:${variant.sprite}`,
+          metadataUrl: `v:${variant.sprite.replace(/\.png$/i, '.json')}`,
+          defaultFrameName: expectedAnimation?.defaultFrameName || 'frame-0',
+          animation: expectedAnimation
+        });
+
+        assert.deepEqual(getTileWalls(tileKind, orientation), variant.walls);
+      }
+    }
   } finally {
     globalThis.window = originalWindow;
   }
