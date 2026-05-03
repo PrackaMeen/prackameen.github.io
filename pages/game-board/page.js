@@ -217,7 +217,11 @@ export async function mountPage(context) {
       return;
     }
 
-    boardViewport.fitBoardToStage(width, height);
+    if (!state.hasInitialCameraCenterApplied) {
+      boardViewport.fitBoardToStage(width, height);
+    } else {
+      boardViewport.resizeBoardSurface(width, height);
+    }
     gameBoardCanvas.render(currentSession);
     gameBoardOverlayCanvas.render(currentSession);
 

@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.1.70",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Discovery no longer auto-zooms the board",
+      "businessSummary": "When a new tile is revealed, the board now keeps the current zoom level and only grows the board surface. That prevents the camera from shrinking the whole map every time the runtime expands the board.",
+      "highlights": [
+        "Separated initial board fitting from later board growth.",
+        "Kept manual zoom stable during discovery-driven expansion.",
+        "Bumped the app version so the viewport change is reloaded immediately."
+      ]
+    },
+    {
+      "version": "1.1.69",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board edges now expand as full rows and columns",
+      "businessSummary": "When a move reaches a new edge, the WASM runtime now fills the entire new row or column instead of placing just one tile, so mixed movement paths stay rectangular and the renderer no longer shows gray gaps or broken alignment.",
+      "highlights": [
+        "Extended movement-driven board growth to full rows and columns.",
+        "Kept the board rectangular after mixed vertical and horizontal moves.",
+        "Bumped the app version so the updated runtime is fetched immediately."
+      ]
+    },
+    {
       "version": "1.1.68",
       "commit": "pending",
       "date": "2026-05-03",

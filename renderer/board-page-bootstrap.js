@@ -17,6 +17,7 @@ export function createBoardPageBootstrap({
   const layoutResizeObserver = typeof ResizeObserver !== "undefined" && stageEl
     ? new ResizeObserver(() => {
         boardViewport.fitBoardToStage(state.boardWidth, state.boardHeight);
+        boardViewport.resizeBoardSurface(state.boardWidth, state.boardHeight);
       })
     : null;
   let suppressNextClick = false;

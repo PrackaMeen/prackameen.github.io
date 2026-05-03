@@ -20,6 +20,7 @@ export function createBoardViewportController({
     handleMapTouchCancel,
     syncZoom,
     fitBoardToStage,
+    resizeBoardSurface,
     centerCameraOnActivePlayer,
     isCameraCenteredOnActivePlayer,
     getBoardCellSize,
@@ -246,8 +247,16 @@ export function createBoardViewportController({
     const boardPixelHeight = height * nextCellSize;
 
     mapEl.style.setProperty("--game-cell-size", `${nextCellSize}px`);
-    mapEl.style.width = `${boardPixelWidth}px`;
-    mapEl.style.height = `${boardPixelHeight}px`;
+    resizeBoardSurface(width, height, nextCellSize);
+  }
+
+  function resizeBoardSurface(width, height, cellSize = getBoardCellSize()) {
+    if (!mapEl || !Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0 || !(cellSize > 0)) {
+      return;
+    }
+
+    mapEl.style.width = `${width * cellSize}px`;
+    mapEl.style.height = `${height * cellSize}px`;
   }
 
   function centerCameraOnActivePlayer(currentSession) {
