@@ -1,5 +1,5 @@
-const APP_VERSION = "1.1.109";
-const APP_COMMIT_SHORT = "a921060";
+const APP_VERSION = "1.1.110";
+const APP_COMMIT_SHORT = "74e6c5e";
 const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
 const EXCALIBUR_CDN_HOSTS = new Set([
   "cdn.jsdelivr.net"
@@ -7,8 +7,8 @@ const EXCALIBUR_CDN_HOSTS = new Set([
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=1.1.109",
-  "./app.js?v=1.1.109",
+  "./styles.css?v=1.1.110",
+  "./app.js?v=1.1.110",
   "./player-preferences.js",
   "./pages/menu/index.html",
   "./pages/menu/styles.css",

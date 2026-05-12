@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { clampScale, getBoardPointFromCell, getBoardPointFromPointer, getPointerDistance, getPointerMidpoint, getTouchPoint } from '../../renderer/pointer-to-tile.js';
+import { clampScale, getBoardPointFromCell, getBoardPointFromPointer, getBoardPointFromWorld, getPointerDistance, getPointerMidpoint, getTouchPoint } from '../../renderer/pointer-to-tile.js';
 
 test('reads board coordinates from a cell dataset', () => {
   assert.deepEqual(getBoardPointFromCell({ dataset: { x: '4', y: '7' } }), { x: 4, y: 7 });
@@ -48,4 +48,30 @@ test('supports touch geometry helpers and scale limits', () => {
   assert.equal(getPointerDistance(firstPoint, secondPoint), 5);
   assert.equal(clampScale(0.2), 0.7);
   assert.equal(clampScale(4), 2.75);
+});
+
+test('maps world coordinates into the containing board cell without rounding up', () => {
+  const point = getBoardPointFromWorld({
+    boardWidth: 6,
+    boardHeight: 4,
+    boardOriginX: 0,
+    boardOriginY: 0,
+    cellSize: 100,
+    worldX: 199,
+    worldY: 150
+  });
+
+  assert.deepEqual(point, { x: 1, y: 1 });
+
+  const outOfBounds = getBoardPointFromWorld({
+    boardWidth: 6,
+    boardHeight: 4,
+    boardOriginX: 0,
+    boardOriginY: 0,
+    cellSize: 100,
+    worldX: 600,
+    worldY: 0
+  });
+
+  assert.equal(outOfBounds, null);
 });

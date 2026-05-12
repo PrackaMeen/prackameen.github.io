@@ -1,5 +1,5 @@
-const APP_VERSION = "1.1.109";
-const APP_COMMIT_SHORT = "a921060";
+const APP_VERSION = "1.1.110";
+const APP_COMMIT_SHORT = "74e6c5e";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_ROUTE = "menu";

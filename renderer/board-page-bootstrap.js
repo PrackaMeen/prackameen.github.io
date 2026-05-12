@@ -4,7 +4,6 @@ export function createBoardPageBootstrap({
   boardViewport,
   boardHud,
   gameBoardCanvas,
-  gameBoardOverlayCanvas = null,
   boardEngineAdapter,
   state,
   renderBoard,
@@ -36,7 +35,6 @@ export function createBoardPageBootstrap({
       canvasEl?.removeEventListener("touchend", handleTouchEnd);
       canvasEl?.removeEventListener("touchcancel", handleTouchCancel);
       gameBoardCanvas.dispose();
-      gameBoardOverlayCanvas?.dispose?.();
       boardEngineAdapter?.dispose?.();
       setNavMessage("");
     }

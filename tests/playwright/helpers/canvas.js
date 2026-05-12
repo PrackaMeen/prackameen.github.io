@@ -31,7 +31,10 @@ export async function clickCanvasBoardCell(page, canvas, x, y, boardWidth = 3, b
     return Number.isFinite(rawCellSize) && rawCellSize > 0 && Number.isFinite(rawZoom) && rawZoom > 0;
   });
 
-  await page.waitForFunction(() => Boolean(window.__GAME_BOARD_ENGINE__));
+  const hasEngine = await page.evaluate(() => Boolean(window.__GAME_BOARD_ENGINE__));
+  if (!hasEngine) {
+    await page.waitForFunction(() => Boolean(window.__GAME_BOARD_ENGINE__), { timeout: 1000 }).catch(() => undefined);
+  }
 
   const clickPoint = await page.evaluate(async ({ x, y, fallbackBoardWidth, fallbackBoardHeight }) => {
     const canvasEl = document.getElementById('gameBoardCanvas');

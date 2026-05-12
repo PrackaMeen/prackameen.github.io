@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "1.1.110",
+      "commit": "pending",
+      "date": "2026-05-12",
+      "title": "Canvas board cleanup and startup hardening",
+      "businessSummary": "The game board now starts more reliably on the single-canvas route, and the remaining unused overlay-canvas branch has been removed. This reduces startup failures, keeps the rendered board path easier to maintain, and hardens the mobile verification flow around the canvas host.",
+      "highlights": [
+        "Fixed Excalibur sprite-sheet startup errors so tiles and players render again.",
+        "Removed the unused overlay-canvas branch from the shipped board path.",
+        "Added and hardened canvas-host and renderer regression coverage for the single-canvas board."
+      ]
+    },
+    {
       "version": "1.1.109",
       "commit": "pending",
       "date": "2026-05-03",

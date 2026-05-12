@@ -16,5 +16,12 @@ test.describe('Game board canvas host', () => {
     await expect(canvas).toHaveAttribute('aria-hidden', 'true');
     await expect(stage).toBeVisible();
     await expect(page.locator('.game-board-action-bar')).toBeVisible();
+
+    await expect(map.locator('canvas')).toHaveCount(1);
+
+    const nonCanvasChildren = await map.evaluate((element) =>
+      Array.from(element.children).filter((child) => child.tagName !== 'CANVAS').length
+    );
+    expect(nonCanvasChildren).toBe(0);
   });
 });

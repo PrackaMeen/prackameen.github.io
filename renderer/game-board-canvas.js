@@ -115,6 +115,11 @@ export function createGameBoardCanvas({
       return;
     }
 
+    if (typeof window !== 'undefined') {
+      const previous = Number(window.__GAME_BOARD_RENDER_COUNT__) || 0;
+      window.__GAME_BOARD_RENDER_COUNT__ = previous + 1;
+    }
+
     const boardOriginX = Number.isInteger(session?.boardOriginX) ? session.boardOriginX : 0;
     const boardOriginY = Number.isInteger(session?.boardOriginY) ? session.boardOriginY : 0;
     const pendingPlacement = session?.pendingPlacement ?? null;

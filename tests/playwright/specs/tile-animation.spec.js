@@ -18,4 +18,5 @@ test.describe('Tile animation behavior', () => {
     expect(session.board.some((cell) => cell.entityKind === 'player')).toBe(true);
     expect(session.board.some((cell) => cell.entityKind === 'monster')).toBe(true);
   });
+
 });

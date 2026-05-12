@@ -1,7 +1,7 @@
 # Canvas Rendering Transition Plan
 
 **Project:** prackameen.github.io game board  
-**Status:** Implemented, with only the DOM board renderer left in the page module  
+**Status:** Implemented, in Phase 4 hardening  
 **Updated:** 2026-05-03  
 **Audience:** Developers
 
@@ -9,18 +9,15 @@
 
 The board is now canvas-first.
 
-The main game board renders terrain and entities through `renderer/game-board-canvas.js`, while selection arrows and hidden-tile previews render through `renderer/game-board-overlay-canvas.js`. Click and touch input land on the canvas instead of the DOM cell grid, and the remaining DOM board is only a structural/state surface for layout, accessibility, and test selectors.
+The main game board renders terrain, entities, selection arrows, and hidden-tile previews through `renderer/game-board-canvas.js`. Click and touch input land on the canvas instead of the DOM cell grid, and the DOM shell remains focused on layout, HUD, and accessibility.
 
-The old phased rollout language in this document is no longer accurate. The canvas path is shipped and verified; the remaining work is the page-owned DOM board renderer that still turns board state into grid cells.
+The old phased rollout language in this document is no longer accurate. The canvas path is shipped and verified; the remaining work is cleanup, verification hardening, and release/versioning discipline.
 
 ## Current Architecture
 
 ### Rendering
 
-- `renderer/game-board-canvas.js` owns the main paint loop for revealed tiles, hidden tiles, entities, and grid lines.
-- `renderer/game-board-overlay-canvas.js` owns the move arrow and hidden-tile preview overlay.
-- `renderer/game-board-draw-plan.js` keeps board drawing deterministic by converting board state into drawable entries.
-- `renderer/game-board-painter.js` paints the draw plan onto the canvas context.
+- `renderer/game-board-canvas.js` owns the main paint loop for terrain, entities, selection overlays, preview overlays, and camera synchronization.
 
 ### Input
 
@@ -57,8 +54,8 @@ The old phased rollout language in this document is no longer accurate. The canv
 
 The board still has a little page-layer responsibility that can be split further:
 
-- Keep the DOM board pointer-transparent; the canvas is the hit target.
-- Keep board state markers on the DOM only when they help tests or layout.
+- Keep the canvas as the only interactive board surface.
+- Keep board-state markers out of the DOM unless they help tests or layout.
 - Decide whether the remaining page composition should stay in `pages/game-board/page.js` or move into a higher-level board feature module.
 
 ## Verification Already In Place
@@ -70,9 +67,8 @@ The board still has a little page-layer responsibility that can be split further
 
 ## Practical Notes
 
-- Keep the DOM board pointer-transparent; the canvas is the hit target.
-- Keep overlay visuals on the overlay canvas so the main board renderer stays focused on terrain and entities.
-- Keep board state markers on the DOM only when they help tests or layout.
+- Keep the canvas as the only interactive board surface.
+- Keep board state markers out of the DOM unless they help tests or layout.
 - Any future change that touches `src/GameLogic` or `GameWasm` still requires republishing the WASM output and bumping the app version.
 
 ## Next Step
