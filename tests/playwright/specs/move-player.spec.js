@@ -13,8 +13,7 @@ test.describe('Move player behavior', () => {
     const canvas = page.locator('#gameBoardCanvas');
     await clickCanvasBoardCell(page, canvas, 1, 1);
     await clickCanvasBoardCell(page, canvas, 1, 0);
-    await expect(page.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
-    await page.getByRole('button', { name: 'Confirm Move' }).click();
+    await clickCanvasBoardCell(page, canvas, 1, 0);
 
     const session = await page.evaluate(() => window.__GAME_SESSION__);
     expect(session.players[0].x).toBe(1);

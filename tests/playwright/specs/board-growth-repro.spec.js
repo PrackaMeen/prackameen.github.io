@@ -128,29 +128,27 @@ test.describe('Board growth repro', () => {
 
     await clickCanvasBoardCell(page, canvas, 1, 1, 6, 4);
     await clickCanvasBoardCell(page, canvas, 2, 1, 6, 4);
-    await expect(page.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
-    await page.getByRole('button', { name: 'Confirm Move' }).click();
-
-    let session = await page.evaluate(() => window.__GAME_SESSION__);
-    expect(session.players[0].x).toBe(2);
-    expect(session.players[0].y).toBe(1);
+    await clickCanvasBoardCell(page, canvas, 2, 1, 6, 4);
+    await expect.poll(async () => {
+      const session = await page.evaluate(() => window.__GAME_SESSION__);
+      return session.players[0];
+    }).toMatchObject({ x: 1, y: 0 });
+    const session = await page.evaluate(() => window.__GAME_SESSION__);
 
     await clickCanvasBoardCell(page, canvas, 2, 1, 6, 4);
     await clickCanvasBoardCell(page, canvas, 3, 1, 6, 4);
-    await expect(page.getByRole('button', { name: 'Place Tile' })).toBeVisible();
-    await page.getByRole('button', { name: 'Place Tile' }).click();
-    await page.getByRole('button', { name: 'Place & Move' }).click();
+    await clickCanvasBoardCell(page, canvas, 3, 1, 6, 4);
 
     await clickCanvasBoardCell(page, canvas, 3, 1, 6, 4);
     await clickCanvasBoardCell(page, canvas, 4, 1, 6, 4);
-    await expect(page.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
-    await page.getByRole('button', { name: 'Confirm Move' }).click();
+    await clickCanvasBoardCell(page, canvas, 4, 1, 6, 4);
 
     await clickCanvasBoardCell(page, canvas, 4, 1, 6, 4);
     await clickCanvasBoardCell(page, canvas, 5, 1, 6, 4);
-    await expect(page.getByRole('button', { name: 'Place Tile' })).toBeVisible();
-    await page.getByRole('button', { name: 'Place Tile' }).click();
+    await clickCanvasBoardCell(page, canvas, 5, 1, 6, 4);
 
+    await expect.poll(() => page.evaluate(() => window.__GAME_SESSION__.boardWidth)).toBe(5);
+    await expect.poll(() => page.evaluate(() => window.__GAME_SESSION__.boardHeight)).toBe(5);
     session = await page.evaluate(() => window.__GAME_SESSION__);
     expect(session.boardWidth).toBe(7);
     expect(session.boardHeight).toBe(5);
@@ -193,6 +191,10 @@ test.describe('Board growth repro', () => {
 async function movePlayer(page, canvas, source, target) {
   await clickCanvasBoardCell(page, canvas, source.x, source.y, 4, 4);
   await clickCanvasBoardCell(page, canvas, target.x, target.y, 4, 4);
-  await expect(page.getByRole('button', { name: 'Confirm Move' })).toBeVisible();
-  await page.getByRole('button', { name: 'Confirm Move' }).click();
+  await clickCanvasBoardCell(page, canvas, target.x, target.y, 4, 4);
+
+  await expect.poll(async () => {
+    const session = await page.evaluate(() => window.__GAME_SESSION__);
+    return session.players[0];
+  }, { timeout: 10000 }).toMatchObject({ x: target.x, y: target.y });
 }

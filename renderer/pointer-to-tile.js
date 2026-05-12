@@ -50,6 +50,37 @@ export function getBoardPointFromPointer({
   return { x, y };
 }
 
+export function getBoardPointFromWorld({
+  boardWidth,
+  boardHeight,
+  boardOriginX = 0,
+  boardOriginY = 0,
+  cellSize = null,
+  worldX,
+  worldY
+}) {
+  if (!Number.isInteger(boardWidth) || !Number.isInteger(boardHeight) || boardWidth <= 0 || boardHeight <= 0) {
+    return null;
+  }
+
+  const lockedCellSize = Number.isFinite(cellSize) && cellSize > 0 ? cellSize : null;
+  if (!lockedCellSize) {
+    return null;
+  }
+
+  const column = Math.floor((Number(worldX) - boardOriginX * lockedCellSize) / lockedCellSize);
+  const row = Math.floor((Number(worldY) - boardOriginY * lockedCellSize) / lockedCellSize);
+
+  if (column < 0 || row < 0 || column >= boardWidth || row >= boardHeight) {
+    return null;
+  }
+
+  return {
+    x: boardOriginX + column,
+    y: boardOriginY + row
+  };
+}
+
 export function getPointerDistance(firstPoint, secondPoint) {
   return Math.hypot(firstPoint.clientX - secondPoint.clientX, firstPoint.clientY - secondPoint.clientY);
 }

@@ -1,7 +1,7 @@
 import { loadSpriteSheet, resolveSpriteFrame } from './sprite-sheet.js';
-import { resolveAnimationFrameName } from './animation-frame.js';
 import { syncCanvasElementSize } from './canvas-size.js';
 import { getCellBounds } from './render-grid.js';
+import { resolveAnimationFrameName } from './animation-frame.js';
 
 export function createGameBoardCanvas({
   canvasEl,
@@ -31,11 +31,14 @@ export function createGameBoardCanvas({
   let canvasSizeLocked = false;
   let engine = null;
   let engineReadyPromise = null;
+  let animationFrameHandle = null;
+  let animationSession = null;
   let selectionOverlayCacheKey = null;
   let selectionOverlaySource = null;
 
   const actorCache = new Map();
-  const imageSourceCache = new Map();
+  const graphicCache = new Map();
+  const assetSourceCache = new Map();
 
   if (resizeObserver && mapEl) {
     resizeObserver.observe(mapEl);
@@ -43,7 +46,9 @@ export function createGameBoardCanvas({
 
   return {
     render,
-    dispose
+    dispose,
+    syncCamera,
+    getEngine: () => engine
   };
 
   function dispose() {
@@ -59,9 +64,15 @@ export function createGameBoardCanvas({
       }
     }
 
+    if (typeof window !== 'undefined' && window.__GAME_BOARD_ENGINE__ === engine) {
+      delete window.__GAME_BOARD_ENGINE__;
+    }
+
     engine = null;
     engineReadyPromise = null;
-    imageSourceCache.clear();
+    cancelAnimatedRenderLoop();
+    graphicCache.clear();
+    assetSourceCache.clear();
     selectionOverlayCacheKey = null;
     selectionOverlaySource = null;
   }
@@ -81,6 +92,7 @@ export function createGameBoardCanvas({
     const boardHeight = Number.isInteger(session?.boardHeight) && session.boardHeight > 0 ? session.boardHeight : 0;
 
     if (boardWidth <= 0 || boardHeight <= 0) {
+      cancelAnimatedRenderLoop();
       clearCanvasAndActors();
       return;
     }
@@ -112,6 +124,7 @@ export function createGameBoardCanvas({
     const selectedSource = typeof getSelectedSource === 'function' ? getSelectedSource() : null;
     const pendingTarget = typeof getPendingTarget === 'function' ? getPendingTarget() : null;
     const selectionPreviewTone = typeof getSelectionPreviewTone === 'function' ? getSelectionPreviewTone() : null;
+    applyCameraViewport(renderEngine, width, height, viewportTransform);
 
     const activeKeys = new Set();
     const cells = Array.isArray(session?.board) ? session.board : [];
@@ -121,7 +134,7 @@ export function createGameBoardCanvas({
     for (const cell of cells) {
       const x = Number.isInteger(cell?.x) ? cell.x : 0;
       const y = Number.isInteger(cell?.y) ? cell.y : 0;
-      const bounds = transformBounds(getCellBounds({
+      const bounds = getCellBounds({
         column: x,
         row: y,
         boardOriginX,
@@ -131,7 +144,7 @@ export function createGameBoardCanvas({
         cellSize,
         canvasWidth: width,
         canvasHeight: height
-      }), viewportTransform);
+      });
 
       const hasEntity = Boolean(cell?.entityKind || cell?.occupantKind || cell?.monsterKind || cell?.playerKind);
       const entityId = cell?.entityId ?? cell?.occupantId ?? cell?.playerId ?? null;
@@ -169,12 +182,11 @@ export function createGameBoardCanvas({
         const tileSource = typeof getTileSpriteSheetSource === 'function'
           ? getTileSpriteSheetSource(tileKind, tileOrientation)
           : null;
-        const tileImage = await getImageSource(tileSource, currentTimeMs);
+        const tileGraphic = await getGraphicSource(tileSource, currentTimeMs);
         hasAnimatedSources = hasAnimatedSources || isAnimatedSource(tileSource);
-
         const tileKey = `tile:${x}:${y}`;
         const tileActor = createOrGetActor(renderEngine, tileKey, 10);
-        applyImageActor(tileActor, tileImage, bounds);
+        applyGraphicActor(tileActor, tileGraphic, bounds);
         activeKeys.add(tileKey);
       }
 
@@ -190,7 +202,7 @@ export function createGameBoardCanvas({
               variant: 'char'
             })
           : null;
-        const entityImage = await getImageSource(entitySource, currentTimeMs);
+        const entityGraphic = await getGraphicSource(entitySource, currentTimeMs);
         hasAnimatedSources = hasAnimatedSources || isAnimatedSource(entitySource);
 
         const inset = Math.max(2, Math.round(Math.min(bounds.width, bounds.height) * 0.14));
@@ -203,7 +215,7 @@ export function createGameBoardCanvas({
 
         const entityKey = `entity:${x}:${y}`;
         const entityActor = createOrGetActor(renderEngine, entityKey, 20);
-        applyImageActor(entityActor, entityImage, entityBounds);
+        applyGraphicActor(entityActor, entityGraphic, entityBounds);
         activeKeys.add(entityKey);
       }
     }
@@ -213,7 +225,7 @@ export function createGameBoardCanvas({
       const previewTargetY = Number(pendingPlacement.targetY);
 
       if (Number.isFinite(previewTargetX) && Number.isFinite(previewTargetY) && !isTileRevealed(session, previewTargetX, previewTargetY)) {
-        const previewBounds = transformBounds(getCellBounds({
+        const previewBounds = getCellBounds({
           column: previewTargetX,
           row: previewTargetY,
           boardOriginX,
@@ -223,53 +235,51 @@ export function createGameBoardCanvas({
           cellSize,
           canvasWidth: width,
           canvasHeight: height
-        }), viewportTransform);
+        });
 
         const previewTileKind = normalizeTileKind(pendingPlacement.tileKind);
         const previewTileOrientation = Number.isInteger(pendingPlacement.tileOrientation) ? pendingPlacement.tileOrientation : 0;
         const previewSource = typeof getTileSpriteSheetSource === 'function'
           ? getTileSpriteSheetSource(previewTileKind, previewTileOrientation)
           : null;
-        const previewImage = await getImageSource(previewSource, currentTimeMs);
+        const previewGraphic = await getGraphicSource(previewSource, currentTimeMs);
         hasAnimatedSources = hasAnimatedSources || isAnimatedSource(previewSource);
 
         const previewKey = `preview:pending:${previewTargetX}:${previewTargetY}`;
         const previewActor = createOrGetActor(renderEngine, previewKey, 30);
-        applyImageActor(previewActor, previewImage, previewBounds);
+        applyGraphicActor(previewActor, previewGraphic, previewBounds);
         activeKeys.add(previewKey);
       }
     }
 
     if (selectedSource && pendingTarget) {
-      const sourceBounds = tryGetBoundsForPoint({
-        x: Number(selectedSource.x),
-        y: Number(selectedSource.y),
+      const sourceBounds = getCellBounds({
+        column: selectedSource.x,
+        row: selectedSource.y,
         boardOriginX,
         boardOriginY,
         boardWidth,
         boardHeight,
         cellSize,
-        width,
-        height,
-        viewportTransform
+        canvasWidth: width,
+        canvasHeight: height
       });
-      const targetBounds = tryGetBoundsForPoint({
-        x: Number(pendingTarget.x),
-        y: Number(pendingTarget.y),
+      const targetBounds = getCellBounds({
+        column: pendingTarget.x,
+        row: pendingTarget.y,
         boardOriginX,
         boardOriginY,
         boardWidth,
         boardHeight,
         cellSize,
-        width,
-        height,
-        viewportTransform
+        canvasWidth: width,
+        canvasHeight: height
       });
 
       if (sourceBounds && targetBounds) {
         const overlayColor = selectionPreviewTone?.color || selectedSource.colorHex || '#14532d';
         const showPreviewBorder = selectionPreviewTone?.tone === 'green' && !isTileRevealed(session, pendingTarget.x, pendingTarget.y);
-        const overlaySource = await getSelectionOverlayImageSource({
+        const overlaySource = await getSelectionOverlayGraphic({
           width,
           height,
           sourceBounds,
@@ -279,7 +289,7 @@ export function createGameBoardCanvas({
         });
 
         const overlayActor = createOrGetActor(renderEngine, 'overlay:selection', 40);
-        applyImageActor(overlayActor, overlaySource, {
+        applyGraphicActor(overlayActor, overlaySource, {
           x: 0,
           y: 0,
           width,
@@ -293,6 +303,8 @@ export function createGameBoardCanvas({
 
     if (hasAnimatedSources) {
       renderAnimatedSnapshot(session);
+    } else {
+      cancelAnimatedRenderLoop();
     }
   }
 
@@ -360,13 +372,18 @@ export function createGameBoardCanvas({
       canvasElement: canvasEl,
       displayMode: ex.DisplayMode?.FillContainer,
       suppressPlayButton: true,
-      antialiasing: false
+      antialiasing: false,
+      pixelRatio: 1,
+      suppressHiDPIScaling: true
     });
 
     const scene = new ex.Scene();
     createdEngine.add('board', scene);
     createdEngine.goToScene('board');
     await createdEngine.start();
+    if (typeof window !== 'undefined') {
+      window.__GAME_BOARD_ENGINE__ = createdEngine;
+    }
     forceCanvasPresentationSize();
 
     engine = createdEngine;
@@ -406,7 +423,7 @@ export function createGameBoardCanvas({
     }
   }
 
-  async function getImageSource(source, currentTimeMs = Date.now()) {
+  async function getGraphicSource(source, currentTimeMs = Date.now()) {
     const imageUrl = typeof source === 'string' ? source : String(source?.imageUrl || '');
     if (!imageUrl) {
       return null;
@@ -419,78 +436,73 @@ export function createGameBoardCanvas({
 
     if (typeof source === 'string' || !source?.metadataUrl) {
       const staticKey = `static:${imageUrl}`;
-      if (!imageSourceCache.has(staticKey)) {
-        imageSourceCache.set(staticKey, loadImageSourceFromUrl(ex, imageUrl));
+      if (!graphicCache.has(staticKey)) {
+        graphicCache.set(staticKey, loadGraphicFromUrl(ex, imageUrl));
       }
-      return imageSourceCache.get(staticKey);
+      return graphicCache.get(staticKey);
     }
 
-    const frameName = resolveFrameName(source, currentTimeMs);
-    const frameKey = `frame:${imageUrl}|${source.metadataUrl}|${frameName}`;
-    if (!imageSourceCache.has(frameKey)) {
-      imageSourceCache.set(frameKey, loadImageSourceFromSheetFrame(ex, source, frameName));
+    const frameName = resolveAnimationFrameName(source?.animation, currentTimeMs);
+    const animationKey = `animation:${imageUrl}|${source.metadataUrl}|${source.animation?.frameNames?.join(',') || 'default'}|${frameName}`;
+    if (!graphicCache.has(animationKey)) {
+      graphicCache.set(animationKey, loadGraphicFromSheet(ex, source, frameName));
     }
 
-    return imageSourceCache.get(frameKey);
+    return graphicCache.get(animationKey);
   }
 
-  async function loadImageSourceFromUrl(ex, imageUrl) {
-    const imageSource = new ex.ImageSource(imageUrl);
-    await imageSource.load();
-    return imageSource;
+  async function loadGraphicFromUrl(ex, imageUrl) {
+    const imageSource = await loadExcaliburImageSource(ex, imageUrl);
+    return imageSource.toSprite();
   }
 
-  async function loadImageSourceFromSheetFrame(ex, source, frameName) {
+  async function loadGraphicFromSheet(ex, source, resolvedFrameName = null) {
     const sheet = await loadSpriteSheet(source);
+    const imageSource = await loadExcaliburImageSource(ex, source.imageUrl);
+    if (!imageSource || !sheet?.image) {
+      return loadGraphicFromUrl(ex, source.imageUrl);
+    }
+
+    const animation = source?.animation;
+    const frameNames = Array.isArray(animation?.frameNames) && animation.frameNames.length
+      ? animation.frameNames
+      : [source?.defaultFrameName || 'default'];
+
+    const frameName = resolvedFrameName || frameNames[0];
     const frame = resolveSpriteFrame(sheet, frameName);
-    const image = sheet?.image ?? null;
-    if (!image || !frame) {
-      return loadImageSourceFromUrl(ex, source.imageUrl);
+    if (!frame) {
+      return loadGraphicFromUrl(ex, source.imageUrl);
     }
 
-    const frameCanvas = createFrameCanvas(frame.sw, frame.sh);
-    const frameContext = frameCanvas?.getContext?.('2d') ?? null;
-    if (!frameContext) {
-      return loadImageSourceFromUrl(ex, source.imageUrl);
-    }
-
-    frameContext.clearRect(0, 0, frame.sw, frame.sh);
-    frameContext.drawImage(image, frame.sx, frame.sy, frame.sw, frame.sh, 0, 0, frame.sw, frame.sh);
-    const dataUrl = frameCanvas.toDataURL('image/png');
-    const imageSource = new ex.ImageSource(dataUrl);
-    await imageSource.load();
-    return imageSource;
+    return imageSource.toSprite({
+      sourceView: {
+        x: frame.sx,
+        y: frame.sy,
+        width: frame.sw,
+        height: frame.sh
+      }
+    });
   }
 
-  function createFrameCanvas(width, height) {
-    if (typeof document === 'undefined') {
-      return null;
+  async function loadExcaliburImageSource(ex, imageUrl) {
+    const cacheKey = `asset:${imageUrl}`;
+    if (!assetSourceCache.has(cacheKey)) {
+      assetSourceCache.set(cacheKey, (async () => {
+        const imageSource = new ex.ImageSource(imageUrl);
+        await imageSource.load();
+        return imageSource;
+      })());
     }
 
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(width));
-    canvas.height = Math.max(1, Math.round(height));
-    return canvas;
-  }
-
-  function resolveFrameName(source, currentTimeMs) {
-    if (!source || typeof source !== 'object') {
-      return 'default';
-    }
-
-    if (source.animation) {
-      return resolveAnimationFrameName(source.animation, currentTimeMs);
-    }
-
-    return source.defaultFrameName || 'default';
+    return assetSourceCache.get(cacheKey);
   }
 
   function isAnimatedSource(source) {
     return Boolean(source?.animation?.frameNames?.length > 1);
   }
 
-  function applyImageActor(actor, imageSource, bounds) {
-    if (!actor || !imageSource || !bounds) {
+  function applyGraphicActor(actor, graphic, bounds) {
+    if (!actor || !graphic || !bounds) {
       return;
     }
 
@@ -498,13 +510,39 @@ export function createGameBoardCanvas({
     if (!ex) {
       return;
     }
-    const sprite = imageSource.toSprite();
-    actor.graphics.use(sprite);
+    actor.graphics.use(graphic);
 
-    const baseWidth = Math.max(1, Number(sprite?.width) || Number(imageSource?.width) || 1);
-    const baseHeight = Math.max(1, Number(sprite?.height) || Number(imageSource?.height) || 1);
+    const baseWidth = Math.max(1, Number(graphic?.width) || Number(graphic?.sourceView?.width) || Number(graphic?.destSize?.width) || 1);
+    const baseHeight = Math.max(1, Number(graphic?.height) || Number(graphic?.sourceView?.height) || Number(graphic?.destSize?.height) || 1);
     actor.pos = ex.vec(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
     actor.scale = ex.vec(bounds.width / baseWidth, bounds.height / baseHeight);
+  }
+
+  function syncCamera(viewportTransform, width, height) {
+    if (!engine) {
+      return;
+    }
+
+    const safeWidth = Math.max(1, Number(width) || canvasEl?.width || 1);
+    const safeHeight = Math.max(1, Number(height) || canvasEl?.height || 1);
+    applyCameraViewport(engine, safeWidth, safeHeight, viewportTransform);
+  }
+
+  function applyCameraViewport(renderEngine, width, height, viewportTransform) {
+    const ex = globalThis.window?.ex;
+    const camera = renderEngine?.currentScene?.camera;
+    if (!ex || !camera) {
+      return;
+    }
+
+    const scale = Number.isFinite(viewportTransform?.scale) && viewportTransform.scale > 0 ? viewportTransform.scale : 1;
+    const panX = Number.isFinite(viewportTransform?.panX) ? viewportTransform.panX : 0;
+    const panY = Number.isFinite(viewportTransform?.panY) ? viewportTransform.panY : 0;
+    const safeWidth = Math.max(1, Number(width) || 1);
+    const safeHeight = Math.max(1, Number(height) || 1);
+
+    camera.zoom = scale;
+    camera.pos = ex.vec((safeWidth / 2 - panX) / scale, (safeHeight / 2 - panY) / scale);
   }
 
   function resolveEntityOrientation(cell) {
@@ -523,38 +561,14 @@ export function createGameBoardCanvas({
     return ((cellOrientation % 4) + 4) % 4;
   }
 
-  function transformBounds(bounds, viewportTransform) {
-    const topLeft = transformPoint({ x: bounds.x, y: bounds.y }, viewportTransform);
-    const bottomRight = transformPoint({ x: bounds.x + bounds.width, y: bounds.y + bounds.height }, viewportTransform);
-
-    return {
-      ...bounds,
-      x: topLeft.x,
-      y: topLeft.y,
-      width: bottomRight.x - topLeft.x,
-      height: bottomRight.y - topLeft.y
-    };
-  }
-
-  function transformPoint(point, viewportTransform) {
-    const scale = Number.isFinite(viewportTransform?.scale) ? viewportTransform.scale : 1;
-    const panX = Number.isFinite(viewportTransform?.panX) ? viewportTransform.panX : 0;
-    const panY = Number.isFinite(viewportTransform?.panY) ? viewportTransform.panY : 0;
-
-    return {
-      x: (Number(point?.x) || 0) * scale + panX,
-      y: (Number(point?.y) || 0) * scale + panY
-    };
-  }
-
-  function tryGetBoundsForPoint({ x, y, boardOriginX, boardOriginY, boardWidth, boardHeight, cellSize, width, height, viewportTransform }) {
+  function tryGetBoundsForPoint({ x, y, boardOriginX, boardOriginY, boardWidth, boardHeight, cellSize, width, height }) {
     const column = Number(x) - boardOriginX;
     const row = Number(y) - boardOriginY;
     if (!Number.isFinite(column) || !Number.isFinite(row) || column < 0 || row < 0 || column >= boardWidth || row >= boardHeight) {
       return null;
     }
 
-    return transformBounds(getCellBounds({
+    return getCellBounds({
       column: Number(x),
       row: Number(y),
       boardOriginX,
@@ -564,10 +578,10 @@ export function createGameBoardCanvas({
       cellSize,
       canvasWidth: width,
       canvasHeight: height
-    }), viewportTransform);
+    });
   }
 
-  async function getSelectionOverlayImageSource({ width, height, sourceBounds, targetBounds, overlayColor, showPreviewBorder }) {
+  async function getSelectionOverlayGraphic({ width, height, sourceBounds, targetBounds, overlayColor, showPreviewBorder }) {
     const cacheKey = [
       width,
       height,
@@ -612,7 +626,7 @@ export function createGameBoardCanvas({
 
     selectionOverlayCacheKey = cacheKey;
     selectionOverlaySource = source;
-    return source;
+    return source.toSprite();
   }
 
   function renderSelectionOverlayToDataUrl({ width, height, sourceBounds, targetBounds, overlayColor, showPreviewBorder }) {
@@ -697,8 +711,46 @@ export function createGameBoardCanvas({
       return;
     }
 
-    // Excalibur handles timing internally in the browser; this method exists
-    // to preserve the public async render contract while keeping tests stable.
-    void session;
+    animationSession = session;
+    if (animationFrameHandle !== null) {
+      return;
+    }
+
+    animationFrameHandle = requestFrame(() => {
+      animationFrameHandle = null;
+
+      if (isDisposed) {
+        return;
+      }
+
+      const nextSession = animationSession || getSession?.() || session;
+      void render(nextSession).catch(() => undefined);
+    });
+  }
+
+  function cancelAnimatedRenderLoop() {
+    animationSession = null;
+
+    if (animationFrameHandle !== null) {
+      cancelFrame(animationFrameHandle);
+      animationFrameHandle = null;
+    }
+  }
+
+  function requestFrame(callback) {
+    if (typeof requestAnimationFrame === 'function') {
+      return requestAnimationFrame(callback);
+    }
+
+    return setTimeout(callback, 16);
+  }
+
+  function cancelFrame(handle) {
+    if (typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(handle);
+      return;
+    }
+
+    clearTimeout(handle);
   }
 }

@@ -35,9 +35,10 @@ The old phased rollout language in this document is no longer accurate. The canv
 - `renderer/board-hud-controller.js` owns the action-bar labels and navigation message.
 - `renderer/board-runtime-controller.js` owns WASM loading and hydration.
 - `renderer/board-page-bootstrap.js` owns mount/dispose wiring, resize observation, and initial render hookup.
+- `renderer/board-render-controller.js` owns session-to-viewport synchronization before the canvas render runs.
 - `renderer/board-action-controller.js` owns move, rotate, and cancel action orchestration.
 - `renderer/board-state-helpers.js` owns the shared board-state helper functions used by the page and controllers.
-- `pages/game-board/page.js` still owns the DOM board renderer that turns current state into cells and canvas layers.
+- `pages/game-board/page.js` now acts mainly as composition/wiring for the board controllers.
 - The renderer modules do not mutate game state.
 
 ### Asset loading
@@ -56,9 +57,9 @@ The old phased rollout language in this document is no longer accurate. The canv
 
 The board still has a little page-layer responsibility that can be split further:
 
-- Decide whether the DOM board renderer should stay in `pages/game-board/page.js` or move into a dedicated renderer helper.
 - Keep the DOM board pointer-transparent; the canvas is the hit target.
 - Keep board state markers on the DOM only when they help tests or layout.
+- Decide whether the remaining page composition should stay in `pages/game-board/page.js` or move into a higher-level board feature module.
 
 ## Verification Already In Place
 
@@ -76,4 +77,4 @@ The board still has a little page-layer responsibility that can be split further
 
 ## Next Step
 
-The next implementation step is to decide whether `renderBoard` should stay in `pages/game-board/page.js` or move into a separate board-render helper.
+The next implementation step is Phase 4 hardening: remove any leftover DOM-only board assumptions that no longer help layout or tests, then run the broader verification matrix.

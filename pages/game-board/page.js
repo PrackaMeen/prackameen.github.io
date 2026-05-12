@@ -6,6 +6,7 @@ import { createBoardHudController } from "../../renderer/board-hud-controller.js
 import { createBoardRuntimeController } from "../../renderer/board-runtime-controller.js";
 import { createBoardPageBootstrap } from "../../renderer/board-page-bootstrap.js";
 import { createBoardActionController } from "../../renderer/board-action-controller.js";
+import { createBoardRenderController } from "../../renderer/board-render-controller.js";
 import { createExcaliburBoardEngineAdapter } from "../../renderer/excalibur-board-engine-adapter.js";
 import { getBoardCell, isTargetEngaged, isTileRevealed } from "../../renderer/board-state-helpers.js";
 
@@ -66,6 +67,7 @@ export async function mountPage(context) {
     lockedBoardCellSize: null,
     hasInitialCameraCenterApplied: false
   };
+  window.__GAME_BOARD_STATE__ = state;
   const gameBoardCanvas = createGameBoardCanvas({
     canvasEl,
     mapEl,
@@ -95,6 +97,18 @@ export async function mountPage(context) {
     getTileWalls,
     normalizeTileKind,
     isTargetEngaged,
+    isCameraCentered: () => boardViewport.isCameraCenteredOnActivePlayer(state.session),
+    onCenterCamera: () => boardViewport.centerCameraOnActivePlayer(state.session),
+    getWorldPointFromPointer: (event) => {
+      const engine = gameBoardCanvas.getEngine?.();
+      const ex = globalThis.window?.ex;
+      if (!engine || !ex?.vec || !event) {
+        return null;
+      }
+
+      return engine.screen?.pageToWorldCoordinates?.(ex.vec(event.clientX, event.clientY)) ?? null;
+    },
+    onConfirmSelection: () => void boardAction?.handlePerformAction(),
     onBoardStateChanged: () => {
       renderBoard(state.session);
       boardHud?.syncHud();
@@ -109,10 +123,20 @@ export async function mountPage(context) {
     stageEl,
     canvasEl,
     onZoomChanged: () => {
+      gameBoardCanvas.syncCamera(
+        { scale: state.zoomScale, panX: state.panX, panY: state.panY },
+        canvasEl?.width,
+        canvasEl?.height
+      );
       gameBoardCanvas.render(state.session);
       boardHud?.syncHud();
     },
     onViewportChanged: () => {
+      gameBoardCanvas.syncCamera(
+        { scale: state.zoomScale, panX: state.panX, panY: state.panY },
+        canvasEl?.width,
+        canvasEl?.height
+      );
       gameBoardCanvas.render(state.session);
       boardHud?.syncHud();
     },
@@ -120,6 +144,13 @@ export async function mountPage(context) {
       boardHud?.syncHud();
     }
   });
+  const boardRenderer = createBoardRenderController({
+    state,
+    mapEl,
+    boardViewport,
+    gameBoardCanvas
+  });
+  const { renderBoard } = boardRenderer;
   boardRuntime = createBoardRuntimeController({
     state,
     gameWasmScriptUrl,
@@ -181,48 +212,9 @@ export async function mountPage(context) {
   return {
     dispose() {
       boardBootstrap.dispose();
+      if (window.__GAME_BOARD_STATE__ === state) {
+        delete window.__GAME_BOARD_STATE__;
+      }
     }
   };
-
-  function renderBoard(currentSession) {
-    if (!mapEl) {
-      return;
-    }
-
-    const width = Number.isInteger(currentSession?.boardWidth) && currentSession.boardWidth > 0
-      ? currentSession.boardWidth
-      : 0;
-    const height = Number.isInteger(currentSession?.boardHeight) && currentSession.boardHeight > 0
-      ? currentSession.boardHeight
-      : 0;
-    const originX = Number.isInteger(currentSession?.boardOriginX) ? currentSession.boardOriginX : 0;
-    const originY = Number.isInteger(currentSession?.boardOriginY) ? currentSession.boardOriginY : 0;
-
-    state.boardWidth = width;
-    state.boardHeight = height;
-    state.boardOriginX = originX;
-    state.boardOriginY = originY;
-    state.pendingPlacement = currentSession?.pendingPlacement || null;
-
-    if (state.pendingPlacement) {
-      state.selectedSource = null;
-      state.pendingTarget = null;
-      state.selectionPreviewTone = null;
-    }
-
-    if (width <= 0 || height <= 0) {
-      gameBoardCanvas.render(currentSession);
-      return;
-    }
-
-    boardViewport.lockBoardCellSize(width, height);
-
-    if (!state.hasInitialCameraCenterApplied) {
-      state.hasInitialCameraCenterApplied = true;
-      boardViewport.centerCameraOnActivePlayer(currentSession);
-    }
-
-    gameBoardCanvas.render(currentSession);
-  }
-
 }

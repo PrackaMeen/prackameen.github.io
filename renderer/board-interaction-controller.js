@@ -1,6 +1,6 @@
 import { areOrthogonallyAdjacent, classifyTargetPreview } from './board-selection.js';
 import { canExitTowardsTarget as canExitTowardsTargetHelper, canTraverseBetweenCells as canTraverseBetweenCellsHelper } from './board-movement.js';
-import { getBoardPointFromPointer } from './pointer-to-tile.js';
+import { getBoardPointFromPointer, getBoardPointFromWorld } from './pointer-to-tile.js';
 
 export function createBoardInteractionController({
   state,
@@ -11,6 +11,10 @@ export function createBoardInteractionController({
   getTileWalls,
   normalizeTileKind,
   isTargetEngaged,
+  getWorldPointFromPointer,
+  isCameraCentered,
+  onCenterCamera,
+  onConfirmSelection,
   onBoardStateChanged,
   onSelectionChanged
 }) {
@@ -36,7 +40,18 @@ export function createBoardInteractionController({
       panY: Number.isFinite(state.panY) ? state.panY : 0
     };
 
-    const point = canvasEl
+    const worldPoint = typeof getWorldPointFromPointer === 'function' ? getWorldPointFromPointer(event) : null;
+    const point = worldPoint
+      ? getBoardPointFromWorld({
+          boardWidth: state.boardWidth,
+          boardHeight: state.boardHeight,
+          boardOriginX: state.boardOriginX,
+          boardOriginY: state.boardOriginY,
+          cellSize: state.lockedBoardCellSize,
+          worldX: worldPoint.x,
+          worldY: worldPoint.y
+        })
+      : canvasEl
       ? getBoardPointFromPointer({
           boardRect: canvasEl.getBoundingClientRect(),
           boardWidth: state.boardWidth,
@@ -55,6 +70,12 @@ export function createBoardInteractionController({
     }
 
     const { x, y } = point;
+
+    if (state.selectedSource && state.pendingTarget && state.pendingTarget.x === x && state.pendingTarget.y === y && state.selectionPreviewTone?.tone === 'green') {
+      onConfirmSelection?.();
+      return;
+    }
+
     const cell = getBoardCell(state.session, x, y);
     if (!cell) {
       return;
@@ -65,6 +86,11 @@ export function createBoardInteractionController({
 
     if (entityKind === "player" && isActivePlayerCell(entityId, state.activePlayerId)) {
       if (state.selectedSource && state.selectedSource.x === x && state.selectedSource.y === y && !state.pendingTarget) {
+        if (typeof isCameraCentered === 'function' && typeof onCenterCamera === 'function' && !isCameraCentered()) {
+          onCenterCamera();
+          return;
+        }
+
         clearSelection();
         return;
       }
