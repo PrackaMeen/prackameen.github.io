@@ -1,6 +1,9 @@
 const APP_VERSION = "1.1.109";
 const APP_COMMIT_SHORT = "a921060";
 const CACHE_NAME = `game-mobile-admin-v${APP_VERSION}-${APP_COMMIT_SHORT}`;
+const EXCALIBUR_CDN_HOSTS = new Set([
+  "cdn.jsdelivr.net"
+]);
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -158,6 +161,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  if (isExcaliburRuntimeRequest(requestUrl)) {
+    event.respondWith(cacheFirstRuntimeAsset(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) {
@@ -195,3 +203,22 @@ self.addEventListener("message", (event) => {
     event.ports?.[0]?.postMessage({ version: APP_VERSION, commit: APP_COMMIT_SHORT });
   }
 });
+
+function isExcaliburRuntimeRequest(requestUrl) {
+  return EXCALIBUR_CDN_HOSTS.has(requestUrl.host);
+}
+
+async function cacheFirstRuntimeAsset(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cachedResponse = await cache.match(request);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
+  const response = await fetch(request);
+  if (response && (response.ok || response.type === "opaque")) {
+    await cache.put(request, response.clone());
+  }
+
+  return response;
+}

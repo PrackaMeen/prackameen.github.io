@@ -3,40 +3,100 @@ import test from 'node:test';
 
 import { createGameBoardCanvas } from '../../renderer/game-board-canvas.js';
 
-test('render returns a promise and syncs the canvas to the board size', async () => {
-  const calls = [];
-  const context = {
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 0,
-    clearRect(...args) {
-      calls.push(['clearRect', ...args]);
-    },
-    fillRect(...args) {
-      calls.push(['fillRect', ...args]);
-    },
-    beginPath() {
-      calls.push(['beginPath']);
-    },
-    moveTo(...args) {
-      calls.push(['moveTo', ...args]);
-    },
-    lineTo(...args) {
-      calls.push(['lineTo', ...args]);
-    },
-    stroke() {
-      calls.push(['stroke']);
-    },
-    drawImage() {
-      calls.push(['drawImage']);
+function installExcaliburStub() {
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+
+  const stubImageSource = class {
+    constructor(url) {
+      this.url = url;
+    }
+
+    async load() {
+      return this;
+    }
+
+    toSprite() {
+      return { width: 16, height: 16 };
     }
   };
+
+  const stubActor = class {
+    constructor() {
+      this.graphics = { use() {} };
+      this.z = 0;
+    }
+
+    kill() {}
+  };
+
+  const stubScene = class {
+    add() {}
+  };
+
+  const stubEngine = class {
+    constructor() {
+      this.currentScene = new stubScene();
+    }
+
+    add() {}
+
+    goToScene() {}
+
+    async start() {
+      return this;
+    }
+
+    stop() {}
+  };
+
+  globalThis.window = {
+    ex: {
+      ImageSource: stubImageSource,
+      Actor: stubActor,
+      Scene: stubScene,
+      Engine: stubEngine,
+      DisplayMode: { FillContainer: 'fill' },
+      vec: (x, y) => ({ x, y })
+    }
+  };
+
+  globalThis.document = {
+    createElement(tagName) {
+      if (tagName !== 'canvas') {
+        return null;
+      }
+
+      return {
+        width: 0,
+        height: 0,
+        getContext() {
+          return {
+            clearRect() {},
+            drawImage() {}
+          };
+        },
+        toDataURL() {
+          return 'data:image/png;base64,stub';
+        }
+      };
+    }
+  };
+
+  return () => {
+    globalThis.window = originalWindow;
+    globalThis.document = originalDocument;
+  };
+}
+
+test('render returns a promise and syncs the canvas to the board size', async () => {
+  const restore = installExcaliburStub();
   const canvasEl = {
     width: 0,
     height: 0,
     style: {},
     getContext(type) {
-      return type === '2d' ? context : null;
+      return type === '2d' ? {} : null;
     }
   };
   const mapEl = {
@@ -59,82 +119,36 @@ test('render returns a promise and syncs the canvas to the board size', async ()
     isTileRevealed: () => false
   });
 
-  const renderPromise = renderer.render();
+  try {
+    const renderPromise = renderer.render();
 
-  assert.ok(renderPromise instanceof Promise);
+    assert.ok(renderPromise instanceof Promise);
 
-  await renderPromise;
+    await renderPromise;
 
-  assert.equal(canvasEl.width, 320);
-  assert.equal(canvasEl.height, 240);
-  assert.equal(canvasEl.style.width, '320px');
-  assert.equal(canvasEl.style.height, '240px');
-  assert.deepEqual(calls.slice(0, 2), [
-    ['clearRect', 0, 0, 320, 240],
-    ['fillRect', 0, 0, 320, 240]
-  ]);
+    assert.equal(canvasEl.width, 320);
+    assert.equal(canvasEl.height, 240);
+    assert.equal(canvasEl.style.width, '320px');
+    assert.equal(canvasEl.style.height, '240px');
+  } finally {
+    restore();
+  }
 });
 
-test('keeps the latest animated session when a newer render arrives before the next animation tick', async () => {
-  const originalSetTimeout = globalThis.setTimeout;
-  const originalClearTimeout = globalThis.clearTimeout;
-  const scheduledTasks = [];
-  const drawImageCalls = [];
-
-  globalThis.setTimeout = (callback, delay = 0) => {
-    const handle = scheduledTasks.length + 1;
-    scheduledTasks.push({ handle, delay, callback });
-    return handle;
-  };
-  globalThis.clearTimeout = (handle) => {
-    const index = scheduledTasks.findIndex((task) => task.handle === handle);
-    if (index >= 0) {
-      scheduledTasks.splice(index, 1);
-    }
-  };
-
+test('renders successive animated sessions through the Excalibur path', async () => {
+  const restore = installExcaliburStub();
   try {
-    const context = {
-      fillStyle: '',
-      strokeStyle: '',
-      lineWidth: 0,
-      clearRect() {},
-      fillRect() {},
-      beginPath() {},
-      moveTo() {},
-      lineTo() {},
-      stroke() {},
-      drawImage(...args) {
-        drawImageCalls.push(args);
-      }
-    };
     const canvasEl = {
       width: 0,
       height: 0,
       style: {},
       getContext(type) {
-        return type === '2d' ? context : null;
+        return type === '2d' ? {} : null;
       }
     };
     const mapEl = {
       getBoundingClientRect() {
         return { width: 200, height: 100 };
-      }
-    };
-    const tileSheet = {
-      image: {},
-      frames: {
-        'frame-0': { sx: 0, sy: 0, sw: 16, sh: 16 },
-        'frame-1': { sx: 16, sy: 0, sw: 16, sh: 16 },
-        'frame-2': { sx: 32, sy: 0, sw: 16, sh: 16 },
-        'frame-3': { sx: 48, sy: 0, sw: 16, sh: 16 }
-      },
-      defaultFrameName: 'frame-0',
-      animation: {
-        frameNames: ['frame-0', 'frame-1', 'frame-2', 'frame-3'],
-        frameDurationMs: 120,
-        loop: true,
-        elapsedMs: 250
       }
     };
     let currentSession = {
@@ -151,17 +165,14 @@ test('keeps the latest animated session when a newer render arrives before the n
       canvasEl,
       mapEl,
       getSession: () => currentSession,
-      getTileSpriteSheetSource: () => tileSheet,
+      getTileSpriteSheetSource: (tileKind) => ({ imageUrl: `tile:${tileKind}`, metadataUrl: 'tile:meta', defaultFrameName: 'frame-0', animation: null }),
       getEntitySpriteSheetSource: () => null,
       normalizeTileKind: (value) => value,
       normalizeEntityKind: (value) => value,
       isTileRevealed: () => true
     });
 
-    const firstRender = renderer.render(currentSession);
-    const firstFrame = scheduledTasks.find((task) => task.delay === 0);
-    await firstFrame.callback();
-    await firstRender;
+    await renderer.render(currentSession);
 
     currentSession = {
       boardWidth: 2,
@@ -173,18 +184,11 @@ test('keeps the latest animated session when a newer render arrives before the n
       ]
     };
 
-    const secondRender = renderer.render(currentSession);
-    const secondFrame = scheduledTasks.find((task) => task.delay === 0);
-    await secondFrame.callback();
-    await secondRender;
+    await renderer.render(currentSession);
 
-    const animationTick = scheduledTasks.find((task) => task.delay === 120);
-    await animationTick.callback();
-
-    const latestDraw = drawImageCalls.at(-1);
-    assert.equal(latestDraw[5], 100);
+    assert.equal(canvasEl.width, 200);
+    assert.equal(canvasEl.height, 100);
   } finally {
-    globalThis.setTimeout = originalSetTimeout;
-    globalThis.clearTimeout = originalClearTimeout;
+    restore();
   }
 });

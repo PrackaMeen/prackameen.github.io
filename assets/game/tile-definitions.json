@@ -115,19 +115,59 @@
         "road4": [
             {
                 "orientation": 0,
-                "sprite": "./assets/game/tiles/Road4/Road4_0.png"
+                "sprite": "./assets/game/tiles/Road4/Road4_0.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
             },
             {
                 "orientation": 1,
-                "sprite": "./assets/game/tiles/Road4/Road4_1.png"
+                "sprite": "./assets/game/tiles/Road4/Road4_1.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
             },
             {
                 "orientation": 2,
-                "sprite": "./assets/game/tiles/Road4/Road4_2.png"
+                "sprite": "./assets/game/tiles/Road4/Road4_2.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
             },
             {
                 "orientation": 3,
-                "sprite": "./assets/game/tiles/Road4/Road4_3.png"
+                "sprite": "./assets/game/tiles/Road4/Road4_3.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
             }
         ],
         "chamber0": [
@@ -205,19 +245,59 @@
         "chamber4": [
             {
                 "orientation": 0,
-                "sprite": "./assets/game/tiles/Chamber4/Chamber4_0.png"
+                "sprite": "./assets/game/tiles/Chamber4/Chamber4_0.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
             },
             {
                 "orientation": 1,
-                "sprite": "./assets/game/tiles/Chamber4/Chamber4_1.png"
+                "sprite": "./assets/game/tiles/Chamber4/Chamber4_1.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
             },
             {
                 "orientation": 2,
-                "sprite": "./assets/game/tiles/Chamber4/Chamber4_2.png"
+                "sprite": "./assets/game/tiles/Chamber4/Chamber4_2.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
             },
             {
                 "orientation": 3,
-                "sprite": "./assets/game/tiles/Chamber4/Chamber4_3.png"
+                "sprite": "./assets/game/tiles/Chamber4/Chamber4_3.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
             }
         ]
     }

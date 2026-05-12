@@ -4,7 +4,8 @@ export function createBoardPageBootstrap({
   boardViewport,
   boardHud,
   gameBoardCanvas,
-  gameBoardOverlayCanvas,
+  gameBoardOverlayCanvas = null,
+  boardEngineAdapter,
   state,
   renderBoard,
   onBoardClick,
@@ -19,8 +20,9 @@ export function createBoardPageBootstrap({
   renderBoard(state.session);
   boardViewport.syncZoom();
   boardHud.syncHud();
+  void boardEngineAdapter?.initialize?.().catch(() => undefined);
 
-  canvasEl?.addEventListener("click", handleCanvasClick);
+  canvasEl?.addEventListener("click", handleCanvasClick, true);
   canvasEl?.addEventListener("touchstart", onTouchStart, { passive: false });
   canvasEl?.addEventListener("touchmove", onTouchMove, { passive: false });
   canvasEl?.addEventListener("touchend", handleTouchEnd, { passive: false });
@@ -28,13 +30,14 @@ export function createBoardPageBootstrap({
 
   return {
     dispose() {
-      canvasEl?.removeEventListener("click", handleCanvasClick);
+      canvasEl?.removeEventListener("click", handleCanvasClick, true);
       canvasEl?.removeEventListener("touchstart", onTouchStart);
       canvasEl?.removeEventListener("touchmove", onTouchMove);
       canvasEl?.removeEventListener("touchend", handleTouchEnd);
       canvasEl?.removeEventListener("touchcancel", handleTouchCancel);
       gameBoardCanvas.dispose();
-      gameBoardOverlayCanvas.dispose();
+      gameBoardOverlayCanvas?.dispose?.();
+      boardEngineAdapter?.dispose?.();
       setNavMessage("");
     }
   };

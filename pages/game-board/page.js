@@ -1,12 +1,12 @@
 import { createDefaultRoomApiClient } from "../../session/RoomApiClient.js";
 import { createGameBoardCanvas } from "../../renderer/game-board-canvas.js";
-import { createGameBoardOverlayCanvas } from "../../renderer/game-board-overlay-canvas.js";
 import { createBoardInteractionController } from "../../renderer/board-interaction-controller.js";
 import { createBoardViewportController } from "../../renderer/board-viewport-controller.js";
 import { createBoardHudController } from "../../renderer/board-hud-controller.js";
 import { createBoardRuntimeController } from "../../renderer/board-runtime-controller.js";
 import { createBoardPageBootstrap } from "../../renderer/board-page-bootstrap.js";
 import { createBoardActionController } from "../../renderer/board-action-controller.js";
+import { createExcaliburBoardEngineAdapter } from "../../renderer/excalibur-board-engine-adapter.js";
 import { getBoardCell, isTargetEngaged, isTileRevealed } from "../../renderer/board-state-helpers.js";
 
 export async function mountPage(context) {
@@ -27,7 +27,6 @@ export async function mountPage(context) {
   const mapEl = document.getElementById("gameBoardMap");
   const stageEl = document.getElementById("gameBoardStage");
   const canvasEl = document.getElementById("gameBoardCanvas");
-  const overlayCanvasEl = document.getElementById("gameBoardOverlayCanvas");
   const actionBarEl = document.querySelector(".game-board-action-bar");
   const roomApi = createDefaultRoomApiClient();
   const session = window.__GAME_SESSION__ || null;
@@ -36,6 +35,10 @@ export async function mountPage(context) {
   let boardHud = null;
   let boardRuntime = null;
   let boardAction = null;
+  const boardEngineAdapter = createExcaliburBoardEngineAdapter({
+    mapEl,
+    canvasEl
+  });
   const state = {
     session,
     activePlayerId: session?.currentPlayerId ?? session?.activePlayerId ?? session?.players?.[0]?.id ?? null,
@@ -47,7 +50,7 @@ export async function mountPage(context) {
     isSubmitting: false,
     isRuntimeReady: false,
     feedback: "",
-    zoomScale: 1.5,
+    zoomScale: 1,
     panX: 0,
     panY: 0,
     pinchStartDistance: null,
@@ -69,6 +72,8 @@ export async function mountPage(context) {
     getSession: () => state.session,
     getActivePlayerId: () => state.activePlayerId,
     getSelectedSource: () => state.selectedSource,
+    getPendingTarget: () => state.pendingTarget,
+    getSelectionPreviewTone: () => state.selectionPreviewTone,
     getCellSize: () => boardViewport.getBoardCellSize(),
     getViewportTransform: () => ({
       scale: state.zoomScale,
@@ -79,26 +84,6 @@ export async function mountPage(context) {
     getEntitySpriteSheetSource,
     normalizeTileKind,
     normalizeEntityKind,
-    isTileRevealed
-  });
-  const gameBoardOverlayCanvas = createGameBoardOverlayCanvas({
-    canvasEl: overlayCanvasEl,
-    mapEl,
-    getSession: () => state.session,
-    getCellSize: () => boardViewport.getBoardCellSize(),
-    getOverlayState: () => ({
-      selectedSource: state.selectedSource,
-      pendingTarget: state.pendingTarget,
-      pendingPlacement: state.pendingPlacement,
-      selectionPreviewTone: state.selectionPreviewTone,
-      boardOriginX: state.boardOriginX,
-      boardOriginY: state.boardOriginY,
-      viewportScale: state.zoomScale,
-      viewportPanX: state.panX,
-      viewportPanY: state.panY
-    }),
-    getHiddenTileAssetUrl,
-    getTileSpriteSheetSource,
     isTileRevealed
   });
   const boardInteraction = createBoardInteractionController({
@@ -116,7 +101,6 @@ export async function mountPage(context) {
     },
     onSelectionChanged: () => {
       gameBoardCanvas.render(state.session);
-      gameBoardOverlayCanvas.render(state.session);
     }
   });
   const boardViewport = createBoardViewportController({
@@ -126,12 +110,10 @@ export async function mountPage(context) {
     canvasEl,
     onZoomChanged: () => {
       gameBoardCanvas.render(state.session);
-      gameBoardOverlayCanvas.render(state.session);
       boardHud?.syncHud();
     },
     onViewportChanged: () => {
       gameBoardCanvas.render(state.session);
-      gameBoardOverlayCanvas.render(state.session);
       boardHud?.syncHud();
     },
     onBoardStateChanged: () => {
@@ -185,7 +167,6 @@ export async function mountPage(context) {
     boardViewport,
     boardHud,
     gameBoardCanvas,
-    gameBoardOverlayCanvas,
     state,
     renderBoard,
     onBoardClick: handleBoardClick,
@@ -193,6 +174,7 @@ export async function mountPage(context) {
     onTouchMove: handleMapTouchMove,
     onTouchEnd: handleMapTouchEnd,
     onTouchCancel: handleMapTouchCancel,
+    boardEngineAdapter,
     setNavMessage
   });
 
@@ -230,7 +212,6 @@ export async function mountPage(context) {
 
     if (width <= 0 || height <= 0) {
       gameBoardCanvas.render(currentSession);
-      gameBoardOverlayCanvas.render(currentSession);
       return;
     }
 
@@ -242,7 +223,6 @@ export async function mountPage(context) {
     }
 
     gameBoardCanvas.render(currentSession);
-    gameBoardOverlayCanvas.render(currentSession);
   }
 
 }

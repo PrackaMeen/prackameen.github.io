@@ -74,6 +74,10 @@ export function createGameBoardOverlayCanvas({
 
     clearCanvas();
 
+    if (canUseExcalibur()) {
+      return;
+    }
+
     const selectedSource = overlayState?.selectedSource ?? null;
     const pendingTarget = overlayState?.pendingTarget ?? null;
     const previewTone = overlayState?.selectionPreviewTone ?? null;
@@ -287,5 +291,9 @@ export function createGameBoardOverlayCanvas({
       width: baseBounds.width * scale,
       height: baseBounds.height * scale
     };
+  }
+
+  function canUseExcalibur() {
+    return Boolean(globalThis.window?.ex);
   }
 }
