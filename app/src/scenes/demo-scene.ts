@@ -66,6 +66,8 @@ export class DemoScene extends Scene {
   private readonly modeButtons: ModeButtonControl[] = [];
   private interactionMode: DemoMode = "action";
   private cameraDragLastScreenPos: Vector | null = null;
+  private cameraZoomLevelIndex = 1;
+  private cameraZoomDragAccumulator = 0;
   private nextTrailTileIndex = 0;
 
   constructor(controller: GameController, sprites: GameSprites) {
@@ -114,6 +116,7 @@ export class DemoScene extends Scene {
 
       if (this.interactionMode === "move" || this.interactionMode === "zoom") {
         this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+        this.cameraZoomDragAccumulator = 0;
         return;
       }
 
@@ -159,17 +162,34 @@ export class DemoScene extends Scene {
 
       if (this.interactionMode === "zoom") {
         const deltaY = event.screenPos.y - this.cameraDragLastScreenPos.y;
-        this.camera.zoom = clamp(this.camera.zoom - deltaY * 0.005, gameSettings.cameraZoomMin, gameSettings.cameraZoomMax);
+        this.cameraZoomDragAccumulator += deltaY;
+
+        if (Math.abs(this.cameraZoomDragAccumulator) < gameSettings.cameraZoomDragThreshold) {
+          this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+          return;
+        }
+
+        const zoomSteps = Math.trunc(this.cameraZoomDragAccumulator / gameSettings.cameraZoomDragThreshold);
+        if (zoomSteps !== 0) {
+          const nextZoomLevels = this.getAllowedZoomLevels();
+          const nextIndex = clamp(this.cameraZoomLevelIndex + zoomSteps, 0, nextZoomLevels.length - 1);
+          this.cameraZoomLevelIndex = nextIndex;
+          this.camera.zoom = nextZoomLevels[nextIndex];
+          this.cameraZoomDragAccumulator -= zoomSteps * gameSettings.cameraZoomDragThreshold;
+        }
+
         this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
       }
     });
 
     primaryPointer.on("up", () => {
       this.cameraDragLastScreenPos = null;
+      this.cameraZoomDragAccumulator = 0;
     });
 
     primaryPointer.on("cancel", () => {
       this.cameraDragLastScreenPos = null;
+      this.cameraZoomDragAccumulator = 0;
     });
   }
 
@@ -309,7 +329,9 @@ export class DemoScene extends Scene {
       this.messageLabel.text = "Move mode active.";
     } else {
       this.scoreLabel.text = "Zoom mode: drag vertically to change camera zoom.";
-      this.hintLabel.text = "Drag upward to zoom in and downward to zoom out.";
+      this.cameraZoomLevelIndex = this.getClosestAllowedZoomLevelIndex(this.camera.zoom);
+      this.camera.zoom = this.getAllowedZoomLevels()[this.cameraZoomLevelIndex];
+      this.hintLabel.text = "Drag downward to zoom in and upward to zoom out in fixed steps.";
       this.messageLabel.text = "Zoom mode active.";
     }
 
@@ -343,5 +365,31 @@ export class DemoScene extends Scene {
     this.add(trailTile);
     this.occupiedTrailTiles.add(key);
     this.nextTrailTileIndex += 1;
+  }
+
+  private getAllowedZoomLevels(): number[] {
+    return gameSettings.cameraZoomLevels.filter((level) => level >= gameSettings.cameraZoomMin && level <= gameSettings.cameraZoomMax);
+  }
+
+  private getClosestAllowedZoomLevelIndex(zoom: number): number {
+    const allowedZoomLevels = this.getAllowedZoomLevels();
+
+    if (allowedZoomLevels.length === 0) {
+      return 0;
+    }
+
+    let closestIndex = 0;
+    let smallestDifference = Math.abs(allowedZoomLevels[0] - zoom);
+
+    for (let index = 1; index < allowedZoomLevels.length; index += 1) {
+      const difference = Math.abs(allowedZoomLevels[index] - zoom);
+
+      if (difference < smallestDifference) {
+        smallestDifference = difference;
+        closestIndex = index;
+      }
+    }
+
+    return closestIndex;
   }
 }

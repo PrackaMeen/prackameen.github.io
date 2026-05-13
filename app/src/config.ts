@@ -11,6 +11,8 @@ export const TILE_SIZE = 128;
 export const CHAR_SIZE = 64;
 
 export const gameSettings = {
-	cameraZoomMin: 0.6,
-	cameraZoomMax: 2.5
+	cameraZoomMin: 0.5,
+	cameraZoomMax: 2,
+	cameraZoomLevels: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
+	cameraZoomDragThreshold: 18
 };
