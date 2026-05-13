@@ -17,7 +17,7 @@ export class DemoScene extends Scene {
     height: this.playerSize,
     color: Color.fromHex("#6bf0ff")
   });
-  private pointerPosition: Vector = vec(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+  private moveTargetPosition: Vector | null = null;
   private readonly topInset = clamp(GAME_HEIGHT * 0.03, 18, 28);
   private readonly sideInset = clamp(GAME_WIDTH * 0.025, 16, 32);
   private readonly scoreLabel = new Label({
@@ -82,16 +82,10 @@ export class DemoScene extends Scene {
 
     const primaryPointer = this.engine.input.pointers.primary;
 
-    primaryPointer.on("move", (event: PointerEvent) => {
-      this.pointerPosition = vec(event.worldPos.x, event.worldPos.y);
-    });
-
     primaryPointer.on("down", (event: PointerEvent) => {
       if (event.button !== PointerButton.Left) {
         return;
       }
-
-      this.pointerPosition = vec(event.worldPos.x, event.worldPos.y);
 
       const boxLeft = this.player.pos.x - this.playerSize / 2;
       const boxRight = this.player.pos.x + this.playerSize / 2;
@@ -107,7 +101,8 @@ export class DemoScene extends Scene {
       }
 
       if (this.player.isSelected) {
-        this.player.setTargetPosition(this.pointerPosition);
+        this.moveTargetPosition = vec(event.worldPos.x, event.worldPos.y);
+        this.player.setTargetPosition(this.moveTargetPosition);
         this.player.deselect();
         this.scoreLabel.text = "Click or tap the box to select it.";
         this.messageLabel.text = "The box moves at a constant speed to the tapped or clicked point.";
@@ -120,11 +115,19 @@ export class DemoScene extends Scene {
       this.controller.showMenu();
       return;
     }
+
+    if (this.moveTargetPosition && !this.player.isMoving) {
+      this.moveTargetPosition = null;
+    }
   }
 
   override onPostDraw(ctx: import("excalibur").ExcaliburGraphicsContext): void {
-    const start = this.player.pos;
-    const end = this.pointerPosition;
+    if (!this.moveTargetPosition) {
+      return;
+    }
+
+    const start = this.engine.screen.worldToScreenCoordinates(this.player.pos);
+    const end = this.engine.screen.worldToScreenCoordinates(this.moveTargetPosition);
     const deltaX = end.x - start.x;
     const deltaY = end.y - start.y;
     const distance = Math.hypot(deltaX, deltaY);

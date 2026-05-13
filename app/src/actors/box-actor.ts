@@ -24,6 +24,10 @@ export class BoxActor extends Actor {
     return this.selected;
   }
 
+  get isMoving(): boolean {
+    return this.targetPosition !== null;
+  }
+
   override onPreUpdate(engine: import("excalibur").Engine, delta: number): void {
     if (this.targetPosition) {
       const offsetX = this.targetPosition.x - this.pos.x;
