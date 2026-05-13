@@ -1,5 +1,5 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, Keys, PointerButton, Scene, TextAlign, type PointerEvent, type Vector, vec } from "excalibur";
-import { GAME_HEIGHT, GAME_WIDTH } from "../config";
+import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
 
@@ -19,7 +19,7 @@ interface ModeButtonControl {
 
 export class DemoScene extends Scene {
   private readonly controller: GameController;
-  private readonly playerSize = clamp(Math.min(GAME_WIDTH, GAME_HEIGHT) * 0.07, 36, 48);
+  private readonly playerSize = TILE_SIZE;
   private readonly player = new BoxActor({
     pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
     width: this.playerSize,
@@ -192,6 +192,8 @@ export class DemoScene extends Scene {
   }
 
   override onPostDraw(ctx: import("excalibur").ExcaliburGraphicsContext): void {
+    this.drawTileMatrix(ctx);
+
     if (this.interactionMode !== "action" || !this.moveTargetPosition) {
       return;
     }
@@ -224,6 +226,27 @@ export class DemoScene extends Scene {
     ctx.debug.drawLine(start, end, { color: arrowColor, lineWidth: 4 });
     ctx.debug.drawLine(end, leftHead, { color: arrowColor, lineWidth: 4 });
     ctx.debug.drawLine(end, rightHead, { color: arrowColor, lineWidth: 4 });
+  }
+
+  private drawTileMatrix(ctx: import("excalibur").ExcaliburGraphicsContext): void {
+    const worldBounds = this.engine.screen.getWorldBounds();
+    const startX = Math.floor(worldBounds.left / TILE_SIZE) * TILE_SIZE;
+    const endX = Math.ceil(worldBounds.right / TILE_SIZE) * TILE_SIZE;
+    const startY = Math.floor(worldBounds.top / TILE_SIZE) * TILE_SIZE;
+    const endY = Math.ceil(worldBounds.bottom / TILE_SIZE) * TILE_SIZE;
+    const gridColor = Color.fromHex("#27395f");
+
+    for (let x = startX; x <= endX; x += TILE_SIZE) {
+      const top = this.engine.screen.worldToScreenCoordinates(vec(x, startY));
+      const bottom = this.engine.screen.worldToScreenCoordinates(vec(x, endY));
+      ctx.debug.drawLine(top, bottom, { color: gridColor, lineWidth: 1 });
+    }
+
+    for (let y = startY; y <= endY; y += TILE_SIZE) {
+      const left = this.engine.screen.worldToScreenCoordinates(vec(startX, y));
+      const right = this.engine.screen.worldToScreenCoordinates(vec(endX, y));
+      ctx.debug.drawLine(left, right, { color: gridColor, lineWidth: 1 });
+    }
   }
 
   private createModeButton(mode: DemoMode, text: string, centerX: number, centerY: number, width: number, height: number): ModeButtonControl {

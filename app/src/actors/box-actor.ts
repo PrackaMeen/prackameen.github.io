@@ -1,5 +1,9 @@
 import { Actor, Color, type Vector, vec } from "excalibur";
-import { GAME_HEIGHT, GAME_WIDTH } from "../config";
+import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
+
+function snapToGrid(value: number, tileSize: number): number {
+  return Math.round((value - tileSize / 2) / tileSize) * tileSize + tileSize / 2;
+}
 
 export class BoxActor extends Actor {
   private readonly speed = 320;
@@ -39,13 +43,19 @@ export class BoxActor extends Actor {
       const distance = Math.hypot(offsetX, offsetY);
 
       if (distance <= 1) {
-        this.pos = vec(this.targetPosition.x, this.targetPosition.y);
+        this.pos = vec(
+          snapToGrid(this.targetPosition.x, TILE_SIZE),
+          snapToGrid(this.targetPosition.y, TILE_SIZE)
+        );
         this.targetPosition = null;
       } else {
         const step = this.speed * (delta / 1000);
 
         if (distance <= step) {
-          this.pos = vec(this.targetPosition.x, this.targetPosition.y);
+          this.pos = vec(
+            snapToGrid(this.targetPosition.x, TILE_SIZE),
+            snapToGrid(this.targetPosition.y, TILE_SIZE)
+          );
           this.targetPosition = null;
         } else {
           const directionX = offsetX / distance;
