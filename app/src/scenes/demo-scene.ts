@@ -75,6 +75,27 @@ export class DemoScene extends Scene {
     this.showTrailTile(this.player.pos);
     this.add(this.player);
 
+    const bottomInset = clamp(GAME_HEIGHT * 0.03, 18, 28);
+    const buttonWidth = clamp(GAME_WIDTH * 0.12, 72, 110);
+    const buttonHeight = clamp(GAME_HEIGHT * 0.055, 40, 54);
+    const buttonGap = clamp(GAME_WIDTH * 0.02, 12, 18);
+    const totalWidth = buttonWidth * 3 + buttonGap * 2;
+    const centerX = GAME_WIDTH / 2;
+    const centerY = GAME_HEIGHT - bottomInset - buttonHeight / 2;
+
+    const actionButton = this.createModeButton("action", "A", centerX - totalWidth / 2 + buttonWidth / 2, centerY, buttonWidth, buttonHeight);
+    const moveButton = this.createModeButton("move", "M", centerX, centerY, buttonWidth, buttonHeight);
+    const zoomButton = this.createModeButton("zoom", "Z", centerX + totalWidth / 2 - buttonWidth / 2, centerY, buttonWidth, buttonHeight);
+
+    this.modeButtons.push(actionButton, moveButton, zoomButton);
+
+    for (const modeButton of this.modeButtons) {
+      this.add(modeButton.button);
+      this.add(modeButton.label);
+    }
+
+    this.setInteractionMode("action");
+
     const primaryPointer = this.engine.input.pointers.primary;
 
     primaryPointer.on("down", (event: PointerEvent) => {
