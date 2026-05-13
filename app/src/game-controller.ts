@@ -7,6 +7,10 @@ export class GameController {
     this.engine.goToScene("menu");
   }
 
+  showSettings(): void {
+    this.engine.goToScene("settings");
+  }
+
   startDemo(): void {
     this.engine.goToScene("demo");
   }

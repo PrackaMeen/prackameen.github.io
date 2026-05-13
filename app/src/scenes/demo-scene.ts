@@ -1,6 +1,5 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, Keys, PointerButton, Scene, TextAlign, type PointerEvent, type Vector, vec } from "excalibur";
-import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
-import { CAMERA_ZOOM_MAX, CAMERA_ZOOM_MIN } from "../config";
+import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, gameSettings } from "../config";
 import type { GameSprites } from "../game-assets";
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
@@ -160,7 +159,7 @@ export class DemoScene extends Scene {
 
       if (this.interactionMode === "zoom") {
         const deltaY = event.screenPos.y - this.cameraDragLastScreenPos.y;
-        this.camera.zoom = clamp(this.camera.zoom - deltaY * 0.005, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX);
+        this.camera.zoom = clamp(this.camera.zoom - deltaY * 0.005, gameSettings.cameraZoomMin, gameSettings.cameraZoomMax);
         this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
       }
     });

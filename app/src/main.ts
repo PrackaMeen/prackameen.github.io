@@ -4,6 +4,7 @@ import { createGameSprites, loadGameAssets } from "./game-assets";
 import { GameController } from "./game-controller";
 import { DemoScene } from "./scenes/demo-scene";
 import { MenuScene } from "./scenes/menu-scene";
+import { SettingsScene } from "./scenes/settings-scene";
 import "./styles.css";
 
 void (async () => {
@@ -25,6 +26,7 @@ void (async () => {
   const controller = new GameController(engine);
 
   engine.addScene("menu", new MenuScene(controller));
+  engine.addScene("settings", new SettingsScene(controller));
   engine.addScene("demo", new DemoScene(controller, sprites));
   engine.goToScene("menu");
 
