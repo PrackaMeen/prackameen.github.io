@@ -78,14 +78,16 @@ export class DemoScene extends Scene {
       pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
       width: GAME_WIDTH,
       height: GAME_HEIGHT,
-      color: Color.fromHex("#0c1428")
+      color: Color.fromHex("#0c1428"),
+      z: -20
     });
 
     const platform = new Actor({
       pos: vec(GAME_WIDTH / 2, GAME_HEIGHT - this.topInset - platformHeight / 2),
       width: platformWidth,
       height: platformHeight,
-      color: Color.fromHex("#142445")
+      color: Color.fromHex("#142445"),
+      z: -10
     });
 
     const support = new Label({
@@ -146,6 +148,7 @@ export class DemoScene extends Scene {
       }
 
       if (this.player.isSelected) {
+        this.showTrailTile(this.player.pos);
         this.moveTargetPosition = vec(event.worldPos.x, event.worldPos.y);
         this.player.setTargetPosition(this.moveTargetPosition);
         this.player.deselect();
@@ -329,5 +332,17 @@ export class DemoScene extends Scene {
       modeButton.button.color = isActive ? Color.fromHex("#7cf7a3") : Color.fromHex("#1a2948");
       modeButton.label.color = isActive ? Color.fromHex("#08121c") : Color.fromHex("#edf4ff");
     }
+  }
+
+  private showTrailTile(position: Vector): void {
+    const trailTile = new Actor({
+      pos: vec(position.x, position.y),
+      width: TILE_SIZE,
+      height: TILE_SIZE,
+      color: Color.fromHex("#47e36d"),
+      z: 0
+    });
+
+    this.add(trailTile);
   }
 }
