@@ -57,6 +57,7 @@ export class DemoScene extends Scene {
     coordPlane: CoordPlane.Screen
   });
   private moveTargetPosition: Vector | null = null;
+  private pendingTrailTilePosition: Vector | null = null;
   private readonly modeButtons: ModeButtonControl[] = [];
   private interactionMode: DemoMode = "action";
   private cameraDragLastScreenPos: Vector | null = null;
@@ -104,11 +105,11 @@ export class DemoScene extends Scene {
       }
 
       if (this.player.isSelected) {
-        this.showTrailTile(this.player.pos);
         this.moveTargetPosition = vec(
           snapToTileCenter(event.worldPos.x),
           snapToTileCenter(event.worldPos.y)
         );
+        this.pendingTrailTilePosition = this.moveTargetPosition;
         this.player.setTargetPosition(this.moveTargetPosition);
         this.player.deselect();
         this.scoreLabel.text = "Click or tap the box to select it.";
@@ -153,7 +154,11 @@ export class DemoScene extends Scene {
     }
 
     if (this.moveTargetPosition && !this.player.isMoving) {
+      if (this.pendingTrailTilePosition) {
+        this.showTrailTile(this.pendingTrailTilePosition);
+      }
       this.moveTargetPosition = null;
+      this.pendingTrailTilePosition = null;
     }
   }
 
