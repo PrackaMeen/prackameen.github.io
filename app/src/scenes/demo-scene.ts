@@ -1,5 +1,6 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, Keys, PointerButton, Scene, TextAlign, type PointerEvent, type Vector, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
+import type { GameSprites } from "../game-assets";
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
 
@@ -23,6 +24,7 @@ interface ModeButtonControl {
 
 export class DemoScene extends Scene {
   private readonly controller: GameController;
+  private readonly sprites: GameSprites;
   private readonly playerSize = TILE_SIZE;
   private readonly player = new BoxActor({
     pos: vec(snapToTileCenter(GAME_WIDTH / 2), snapToTileCenter(GAME_HEIGHT / 2)),
@@ -57,10 +59,12 @@ export class DemoScene extends Scene {
   private readonly modeButtons: ModeButtonControl[] = [];
   private interactionMode: DemoMode = "action";
   private cameraDragLastScreenPos: Vector | null = null;
+  private nextTrailTileIndex = 0;
 
-  constructor(controller: GameController) {
+  constructor(controller: GameController, sprites: GameSprites) {
     super();
     this.controller = controller;
+    this.sprites = sprites;
   }
 
   override onInitialize(): void {
@@ -82,7 +86,7 @@ export class DemoScene extends Scene {
       pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
       width: GAME_WIDTH,
       height: GAME_HEIGHT,
-      color: Color.fromHex("#0c1428"),
+      graphic: this.sprites.backdrop,
       z: -20
     });
 
@@ -101,6 +105,8 @@ export class DemoScene extends Scene {
       color: Color.fromHex("#91a6cb"),
       coordPlane: CoordPlane.Screen
     });
+
+    this.player.setStateGraphics(this.sprites.playerNormal, this.sprites.playerSelected);
 
     this.modeButtons.push(
       this.createModeButton("action", "A", leftButtonX, buttonCenterY, buttonWidth, buttonHeight),
@@ -339,14 +345,16 @@ export class DemoScene extends Scene {
   }
 
   private showTrailTile(position: Vector): void {
+    const trailGraphic = this.sprites.trailTiles[this.nextTrailTileIndex % this.sprites.trailTiles.length].clone();
     const trailTile = new Actor({
       pos: vec(position.x, position.y),
       width: TILE_SIZE,
       height: TILE_SIZE,
-      color: Color.fromHex("#47e36d"),
+      graphic: trailGraphic,
       z: 0
     });
 
     this.add(trailTile);
+    this.nextTrailTileIndex += 1;
   }
 }

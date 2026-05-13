@@ -1,4 +1,4 @@
-import { Actor, Color, type Vector, vec } from "excalibur";
+import { Actor, Color, type Graphic, type Vector, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
 
 function snapToGrid(value: number, tileSize: number): number {
@@ -9,6 +9,8 @@ export class BoxActor extends Actor {
   private readonly speed = 320;
   private targetPosition: Vector | null = null;
   private selected = false;
+  private normalGraphic: Graphic | null = null;
+  private selectedGraphic: Graphic | null = null;
 
   setTargetPosition(target: Vector): void {
     this.targetPosition = vec(target.x, target.y);
@@ -18,14 +20,28 @@ export class BoxActor extends Actor {
     this.targetPosition = null;
   }
 
+  setStateGraphics(normalGraphic: Graphic, selectedGraphic: Graphic): void {
+    this.normalGraphic = normalGraphic;
+    this.selectedGraphic = selectedGraphic;
+    this.graphics.use(normalGraphic);
+  }
+
   select(): void {
     this.selected = true;
-    this.color = Color.fromHex("#ff5b5b");
+    if (this.selectedGraphic) {
+      this.graphics.use(this.selectedGraphic);
+    } else {
+      this.color = Color.fromHex("#ff5b5b");
+    }
   }
 
   deselect(): void {
     this.selected = false;
-    this.color = Color.fromHex("#6bf0ff");
+    if (this.normalGraphic) {
+      this.graphics.use(this.normalGraphic);
+    } else {
+      this.color = Color.fromHex("#6bf0ff");
+    }
   }
 
   get isSelected(): boolean {
