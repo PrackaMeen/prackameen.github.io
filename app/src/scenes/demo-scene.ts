@@ -1,5 +1,6 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, Keys, PointerButton, Scene, TextAlign, type PointerEvent, type Vector, vec } from "excalibur";
 import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
+import { CAMERA_ZOOM_MAX, CAMERA_ZOOM_MIN } from "../config";
 import type { GameSprites } from "../game-assets";
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
@@ -10,6 +11,10 @@ function clamp(value: number, minimum: number, maximum: number): number {
 
 function snapToTileCenter(value: number): number {
   return Math.round((value - TILE_SIZE / 2) / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+}
+
+function tileKey(position: Vector): string {
+  return `${Math.round(position.x / TILE_SIZE)}:${Math.round(position.y / TILE_SIZE)}`;
 }
 
 type DemoMode = "action" | "move" | "zoom";
@@ -58,6 +63,7 @@ export class DemoScene extends Scene {
   });
   private moveTargetPosition: Vector | null = null;
   private pendingTrailTilePosition: Vector | null = null;
+  private readonly occupiedTrailTiles = new Set<string>();
   private readonly modeButtons: ModeButtonControl[] = [];
   private interactionMode: DemoMode = "action";
   private cameraDragLastScreenPos: Vector | null = null;
@@ -154,7 +160,7 @@ export class DemoScene extends Scene {
 
       if (this.interactionMode === "zoom") {
         const deltaY = event.screenPos.y - this.cameraDragLastScreenPos.y;
-        this.camera.zoom = clamp(this.camera.zoom - deltaY * 0.005, 0.6, 2.5);
+        this.camera.zoom = clamp(this.camera.zoom - deltaY * 0.005, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX);
         this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
       }
     });
@@ -320,6 +326,12 @@ export class DemoScene extends Scene {
   }
 
   private showTrailTile(position: Vector): void {
+    const key = tileKey(position);
+
+    if (this.occupiedTrailTiles.has(key)) {
+      return;
+    }
+
     const trailGraphic = this.sprites.trailTiles[this.nextTrailTileIndex % this.sprites.trailTiles.length].clone();
     const trailTile = new Actor({
       pos: vec(position.x, position.y),
@@ -330,6 +342,7 @@ export class DemoScene extends Scene {
     });
 
     this.add(trailTile);
+    this.occupiedTrailTiles.add(key);
     this.nextTrailTileIndex += 1;
   }
 }
