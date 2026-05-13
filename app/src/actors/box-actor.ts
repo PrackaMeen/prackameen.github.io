@@ -10,6 +10,10 @@ export class BoxActor extends Actor {
     this.targetPosition = vec(target.x, target.y);
   }
 
+  clearTargetPosition(): void {
+    this.targetPosition = null;
+  }
+
   select(): void {
     this.selected = true;
     this.color = Color.fromHex("#ff5b5b");
