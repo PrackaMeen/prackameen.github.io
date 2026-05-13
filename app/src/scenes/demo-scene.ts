@@ -2,6 +2,10 @@ import { Actor, Color, Font, FontUnit, Label, Keys, PointerButton, Scene, TextAl
 import { GAME_HEIGHT, GAME_WIDTH } from "../config";
 import type { GameController } from "../game-controller";
 
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
 class PlayerActor extends Actor {
   private readonly speed = 320;
   private targetPosition: Vector | null = null;
@@ -42,29 +46,32 @@ class PlayerActor extends Actor {
 
 export class DemoScene extends Scene {
   private readonly controller: GameController;
+  private readonly playerSize = clamp(Math.min(GAME_WIDTH, GAME_HEIGHT) * 0.07, 36, 48);
   private readonly player = new PlayerActor({
     pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
-    width: 48,
-    height: 48,
+    width: this.playerSize,
+    height: this.playerSize,
     color: Color.fromHex("#6bf0ff")
   });
   private pointerPosition: Vector = vec(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+  private readonly topInset = clamp(GAME_HEIGHT * 0.03, 18, 28);
+  private readonly sideInset = clamp(GAME_WIDTH * 0.025, 16, 32);
   private readonly scoreLabel = new Label({
     text: "Click or tap anywhere to send the box there.",
-    pos: vec(32, 32),
-    font: new Font({ family: "Inter", size: 24, unit: FontUnit.Px, bold: true }),
+    pos: vec(this.sideInset, this.topInset),
+    font: new Font({ family: "Inter", size: clamp(GAME_WIDTH * 0.022, 18, 24), unit: FontUnit.Px, bold: true }),
     color: Color.fromHex("#ffffff")
   });
   private readonly hintLabel = new Label({
     text: "Move your finger or mouse to aim the arrow. Press Esc to return to menu.",
-    pos: vec(32, 64),
-    font: new Font({ family: "Inter", size: 18, unit: FontUnit.Px }),
+    pos: vec(this.sideInset, this.topInset + clamp(GAME_HEIGHT * 0.045, 26, 40)),
+    font: new Font({ family: "Inter", size: clamp(GAME_WIDTH * 0.014, 14, 18), unit: FontUnit.Px }),
     color: Color.fromHex("#9db0d6")
   });
   private readonly messageLabel = new Label({
     text: "The box moves at a constant speed to the tapped or clicked point.",
-    pos: vec(GAME_WIDTH / 2, 24),
-    font: new Font({ family: "Space Grotesk", size: 26, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+    pos: vec(GAME_WIDTH / 2, this.topInset),
+    font: new Font({ family: "Space Grotesk", size: clamp(GAME_WIDTH * 0.019, 18, 26), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
     color: Color.fromHex("#7cf7a3")
   });
 
@@ -74,6 +81,10 @@ export class DemoScene extends Scene {
   }
 
   override onInitialize(): void {
+    const platformWidth = clamp(GAME_WIDTH - this.sideInset * 2, 320, 760);
+    const platformHeight = clamp(GAME_HEIGHT * 0.06, 40, 52);
+    const supportSize = clamp(GAME_WIDTH * 0.013, 14, 18);
+
     const backdrop = new Actor({
       pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
       width: GAME_WIDTH,
@@ -82,16 +93,16 @@ export class DemoScene extends Scene {
     });
 
     const platform = new Actor({
-      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT - 104),
-      width: GAME_WIDTH - 120,
-      height: 52,
+      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT - this.topInset - platformHeight / 2),
+      width: platformWidth,
+      height: platformHeight,
       color: Color.fromHex("#142445")
     });
 
     const support = new Label({
       text: "A tiny starter sandbox for demo work",
-      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT - 92),
-      font: new Font({ family: "Inter", size: 18, unit: FontUnit.Px, textAlign: TextAlign.Center }),
+      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT - this.topInset - 12),
+      font: new Font({ family: "Inter", size: supportSize, unit: FontUnit.Px, textAlign: TextAlign.Center }),
       color: Color.fromHex("#91a6cb")
     });
 

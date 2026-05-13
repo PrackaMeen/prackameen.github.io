@@ -1,4 +1,4 @@
-import { Color, DisplayMode, Engine, PointerScope } from "excalibur";
+import { Color, Engine, PointerScope } from "excalibur";
 import { GAME_HEIGHT, GAME_TITLE, GAME_WIDTH } from "./config";
 import { GameController } from "./game-controller";
 import { DemoScene } from "./scenes/demo-scene";
@@ -13,7 +13,6 @@ const engine = new Engine({
   antialiasing: false,
   pixelArt: true,
   suppressHiDPIScaling: true,
-  displayMode: DisplayMode.FitScreen,
   pointerScope: PointerScope.Canvas,
   grabWindowFocus: false
 });
