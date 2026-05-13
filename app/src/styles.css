@@ -70,13 +70,20 @@ noscript {
 }
 
 @media (max-width: 900px) {
+  html,
+  body,
   .page-shell {
-    padding: 0;
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .page-shell {
+    padding: 0 0 max(0px, env(safe-area-inset-bottom));
   }
 
   canvas {
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     border: 0;
     border-radius: 0;
     box-shadow: none;

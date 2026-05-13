@@ -68,11 +68,15 @@ export class DemoScene extends Scene {
     const platformHeight = clamp(GAME_HEIGHT * 0.06, 40, 52);
     const supportSize = clamp(GAME_WIDTH * 0.013, 14, 18);
     const screenWidth = this.engine.screen.canvasWidth;
-    const buttonWidth = clamp(screenWidth * 0.15, 104, 140);
-    const buttonHeight = clamp(GAME_HEIGHT * 0.055, 36, 44);
-    const buttonGap = clamp(buttonHeight * 0.28, 8, 12);
-    const buttonCenterX = screenWidth - this.sideInset - buttonWidth / 2;
-    const firstButtonCenterY = this.topInset + 76;
+    const screenHeight = this.engine.screen.canvasHeight;
+    const buttonWidth = clamp(screenWidth * 0.15, 72, 120);
+    const buttonHeight = clamp(screenHeight * 0.06, 34, 46);
+    const buttonGap = clamp(buttonWidth * 0.12, 10, 16);
+    const bottomInset = screenWidth <= 900 ? clamp(screenHeight * 0.12, 72, 132) : clamp(screenHeight * 0.05, 24, 40);
+    const buttonCenterY = screenHeight - bottomInset - buttonHeight / 2;
+    const centerButtonX = screenWidth / 2;
+    const leftButtonX = centerButtonX - buttonWidth - buttonGap;
+    const rightButtonX = centerButtonX + buttonWidth + buttonGap;
 
     const backdrop = new Actor({
       pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
@@ -99,9 +103,9 @@ export class DemoScene extends Scene {
     });
 
     this.modeButtons.push(
-      this.createModeButton("action", "Action", buttonCenterX, firstButtonCenterY, buttonWidth, buttonHeight),
-      this.createModeButton("move", "Move", buttonCenterX, firstButtonCenterY + buttonHeight + buttonGap, buttonWidth, buttonHeight),
-      this.createModeButton("zoom", "Zoom", buttonCenterX, firstButtonCenterY + (buttonHeight + buttonGap) * 2, buttonWidth, buttonHeight)
+      this.createModeButton("action", "A", leftButtonX, buttonCenterY, buttonWidth, buttonHeight),
+      this.createModeButton("move", "M", centerButtonX, buttonCenterY, buttonWidth, buttonHeight),
+      this.createModeButton("zoom", "Z", rightButtonX, buttonCenterY, buttonWidth, buttonHeight)
     );
 
     this.add(backdrop);
