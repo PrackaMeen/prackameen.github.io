@@ -17,7 +17,7 @@ export async function expectCanvasToMatchHost(canvas, host, tolerancePx = 1) {
   expect(canvasBox.height).toBeGreaterThan(0);
 }
 
-export async function clickCanvasBoardCell(page, canvas, x, y, boardWidth = 3, boardHeight = 3) {
+export async function clickCanvasBoardCell(page, canvas, x, y, boardWidth = 3) {
   await page.waitForFunction(() => {
     const canvasEl = document.getElementById('gameBoardCanvas');
     const mapEl = document.getElementById('gameBoardMap');
@@ -31,12 +31,9 @@ export async function clickCanvasBoardCell(page, canvas, x, y, boardWidth = 3, b
     return Number.isFinite(rawCellSize) && rawCellSize > 0 && Number.isFinite(rawZoom) && rawZoom > 0;
   });
 
-  const hasEngine = await page.evaluate(() => Boolean(window.__GAME_BOARD_ENGINE__));
-  if (!hasEngine) {
-    await page.waitForFunction(() => Boolean(window.__GAME_BOARD_ENGINE__), { timeout: 1000 }).catch(() => undefined);
-  }
+  await page.waitForFunction(() => Boolean(window.__GAME_SESSION__));
 
-  const clickPoint = await page.evaluate(async ({ x, y, fallbackBoardWidth, fallbackBoardHeight }) => {
+  const clickPoint = await page.evaluate(({ x, y, fallbackBoardWidth }) => {
     const canvasEl = document.getElementById('gameBoardCanvas');
     const mapEl = document.getElementById('gameBoardMap');
     const session = window.__GAME_SESSION__ || {};
@@ -47,11 +44,7 @@ export async function clickCanvasBoardCell(page, canvas, x, y, boardWidth = 3, b
       return null;
     }
 
-    const resolveEnginePoint = () => {
-      if (!engine?.screen?.worldToPageCoordinates || typeof ex?.vec !== 'function') {
-        return null;
-      }
-
+    if (engine?.screen?.worldToPageCoordinates && typeof ex?.vec === 'function') {
       const boardOriginX = Number.isInteger(session.boardOriginX) ? session.boardOriginX : 0;
       const boardOriginY = Number.isInteger(session.boardOriginY) ? session.boardOriginY : 0;
       const mapStyle = window.getComputedStyle(mapEl);
@@ -61,20 +54,9 @@ export async function clickCanvasBoardCell(page, canvas, x, y, boardWidth = 3, b
       const cellSize = Number.isFinite(rawCellSize) && rawCellSize > 0 ? rawCellSize : rect.width / Math.max(1, boardWidth);
       const worldPoint = ex.vec((Number(x) - boardOriginX + 0.5) * cellSize, (Number(y) - boardOriginY + 0.5) * cellSize);
       const pagePoint = engine.screen.worldToPageCoordinates(worldPoint);
-      if (!Number.isFinite(pagePoint?.x) || !Number.isFinite(pagePoint?.y)) {
-        return null;
+      if (Number.isFinite(pagePoint?.x) && Number.isFinite(pagePoint?.y)) {
+        return { clickX: pagePoint.x, clickY: pagePoint.y };
       }
-
-      return { clickX: pagePoint.x, clickY: pagePoint.y };
-    };
-
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      const enginePoint = resolveEnginePoint();
-      if (enginePoint) {
-        return { ...enginePoint, useCanvasClick: false };
-      }
-
-      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
     }
 
     const rect = canvasEl.getBoundingClientRect();
@@ -95,29 +77,21 @@ export async function clickCanvasBoardCell(page, canvas, x, y, boardWidth = 3, b
     return {
       clickX: rect.left + panX + ((Number(x) - boardOriginX + 0.5) * cellSize * zoomScale),
       clickY: rect.top + panY + ((Number(y) - boardOriginY + 0.5) * cellSize * zoomScale),
-      useCanvasClick: false
     };
   }, {
     x,
     y,
-    fallbackBoardWidth: boardWidth,
-    fallbackBoardHeight: boardHeight
+    fallbackBoardWidth: boardWidth
   });
 
   expect(clickPoint).not.toBeNull();
-  if (clickPoint.useCanvasClick) {
-    const canvasBox = await canvas.boundingBox();
-    expect(canvasBox).not.toBeNull();
+  const canvasBox = await canvas.boundingBox();
+  expect(canvasBox).not.toBeNull();
 
-    await canvas.click({
-      position: {
-        x: clickPoint.clickX - canvasBox.x,
-        y: clickPoint.clickY - canvasBox.y
-      }
-    });
-  } else {
-    await page.mouse.click(clickPoint.clickX, clickPoint.clickY);
-  }
-
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await canvas.click({
+    position: {
+      x: clickPoint.clickX - canvasBox.x,
+      y: clickPoint.clickY - canvasBox.y
+    }
+  });
 }

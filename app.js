@@ -1,5 +1,5 @@
-const APP_VERSION = "1.1.110";
-const APP_COMMIT_SHORT = "74e6c5e";
+const APP_VERSION = "1.1.112";
+const APP_COMMIT_SHORT = "100dc67";
 const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_ROUTE = "menu";
@@ -64,6 +64,10 @@ const PAGES = {
   animations: {
     title: "Animations",
     basePath: "./pages/animations/"
+  },
+  demo: {
+    title: "Demo",
+    basePath: "./pages/demo/"
   },
   settings: {
     title: "Settings",
@@ -157,6 +161,11 @@ const NAV_TREE = [
         id: "animations",
         label: "Animations",
         route: "animations"
+      },
+      {
+        id: "demo",
+        label: "Demo",
+        route: "demo"
       },
       {
         id: "release-notes",

@@ -15,4 +15,11 @@ test.describe('App shell smoke tests', () => {
     await expect(page).toHaveTitle('Tile Set Demo');
     await expect(page.locator('#tileSetGrid')).toBeVisible();
   });
+
+  test('opens the canvas demo route', async ({ page }) => {
+    await page.goto('/#/demo');
+
+    await expect(page).toHaveTitle('Demo');
+    await expect(page.locator('#demoCanvas')).toBeVisible();
+  });
 });

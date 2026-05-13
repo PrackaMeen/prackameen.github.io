@@ -2,7 +2,7 @@
 
 **Project:** prackameen.github.io game board  
 **Status:** Implemented, in Phase 4 hardening  
-**Updated:** 2026-05-03  
+**Updated:** 2026-05-13
 **Audience:** Developers
 
 ## Summary
@@ -62,7 +62,7 @@ The board still has a little page-layer responsibility that can be split further
 
 - .NET solution build and verification pass.
 - Full Playwright suite passes.
-- Canvas input, hidden preview, revealed placement, revealed rotation, sprite loading, and animation behaviors all have browser coverage.
+- Canvas input, hidden preview, revealed placement, revealed rotation, sprite loading, animation, accessibility, and offline-cache behaviors all have browser coverage.
 - The app version and release notes are kept in sync with the implementation changes.
 
 ## Practical Notes
@@ -73,4 +73,4 @@ The board still has a little page-layer responsibility that can be split further
 
 ## Next Step
 
-The next implementation step is Phase 4 hardening: remove any leftover DOM-only board assumptions that no longer help layout or tests, then run the broader verification matrix.
+The remaining work is incremental hardening only: keep the verification matrix green, preserve the single-canvas board contract, and update the plan if any future board or PWA behavior changes.

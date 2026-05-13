@@ -124,7 +124,8 @@ JavaScript canvas layer
 ### Validation
 
 - Run the full Playwright suite.
-- Run a resize test, an offline-cache test, and an accessibility smoke test.
+- Run a resize test.
+- Keep the offline-cache and accessibility smoke tests in the suite.
 - Confirm no DOM map tiles remain in the final route.
 
 ## Playwright Validation Matrix
@@ -153,6 +154,7 @@ Use `pwsh -File scripts/run-all-verification.ps1` as the single proof command fo
 - .NET WASM remains the owner of game state and rules.
 - Playwright tests live in the repo and can be run locally.
 - Shared renderer services, especially animation logic, are covered by unit tests in the repo.
+- Accessibility and offline-cache smoke tests cover the PWA shell and board route.
 - The implementation stays modular and does not collapse into a single monolithic JavaScript file.
 - The repo has one reusable run-all command that GitHub Actions and local developers can use to prove the whole change set is green.
 

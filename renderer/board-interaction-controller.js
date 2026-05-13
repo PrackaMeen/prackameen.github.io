@@ -140,7 +140,6 @@ export function createBoardInteractionController({
     onSelectionChanged?.();
     onBoardStateChanged?.();
 
-    console.log({ state, normalizeTileKind, getTileWalls, areOrthogonallyAdjacent, canExitTowardsTargetHelper, canTraverseBetweenCellsHelper });
   }
 
   function clearSelection() {

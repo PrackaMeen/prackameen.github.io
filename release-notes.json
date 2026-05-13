@@ -1,6 +1,30 @@
 {
   "items": [
     {
+      "version": "1.1.112",
+      "commit": "100dc67",
+      "date": "2026-05-13",
+      "title": "Canvas-only Demo page",
+      "businessSummary": "The PWA now includes a Demo route that renders as a pure canvas page with no extra page shell chrome. This gives the app a lightweight canvas-only surface for experiments while keeping the existing navigation and game routes intact.",
+      "highlights": [
+        "Added a minimal canvas-only Demo route.",
+        "Kept the route aligned with the existing PWA versioning and shell cache.",
+        "Added browser coverage to confirm the Demo page stays canvas-only."
+      ]
+    },
+    {
+      "version": "1.1.111",
+      "commit": "100dc67",
+      "date": "2026-05-13",
+      "title": "Canvas board Phase 4 smoke coverage",
+      "businessSummary": "The canvas board migration now has explicit accessibility and offline-cache smoke coverage alongside the existing board flow tests. This makes the shipped single-canvas board easier to verify on mobile and keeps the PWA shell behavior covered while the runtime continues to evolve.",
+      "highlights": [
+        "Added an accessibility smoke test for the app shell and game board route.",
+        "Added an offline-cache smoke test for the PWA shell reload path.",
+        "Kept the canvas board migration aligned with the current shipped version metadata."
+      ]
+    },
+    {
       "version": "1.1.110",
       "commit": "pending",
       "date": "2026-05-12",

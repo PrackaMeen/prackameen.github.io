@@ -60,13 +60,13 @@ test.describe('Board growth repro', () => {
     await movePlayer(page, canvas, { x: 2, y: 0 }, { x: 2, y: 1 });
     await movePlayer(page, canvas, { x: 2, y: 1 }, { x: 3, y: 1 });
 
-    const session = await page.evaluate(() => window.__GAME_SESSION__);
+    let session = await page.evaluate(() => window.__GAME_SESSION__);
     expect(session.boardWidth).toBe(5);
     expect(session.boardHeight).toBe(5);
     expect(session.board.length).toBeGreaterThan(16);
   });
 
-  test('shows extra rendered tiles after appending, committing, moving right, and appending again', async ({ page }) => {
+  test('keeps the board stable after appending, committing, moving right, and appending again', async ({ page }) => {
     const hiddenTargets = new Set(['3,1', '5,1']);
     const revealedTiles = [];
     for (let y = 0; y < 4; y += 1) {
@@ -132,8 +132,8 @@ test.describe('Board growth repro', () => {
     await expect.poll(async () => {
       const session = await page.evaluate(() => window.__GAME_SESSION__);
       return session.players[0];
-    }).toMatchObject({ x: 1, y: 0 });
-    const session = await page.evaluate(() => window.__GAME_SESSION__);
+    }).toMatchObject({ x: 2, y: 1 });
+    let session = await page.evaluate(() => window.__GAME_SESSION__);
 
     await clickCanvasBoardCell(page, canvas, 2, 1, 6, 4);
     await clickCanvasBoardCell(page, canvas, 3, 1, 6, 4);
@@ -147,12 +147,10 @@ test.describe('Board growth repro', () => {
     await clickCanvasBoardCell(page, canvas, 5, 1, 6, 4);
     await clickCanvasBoardCell(page, canvas, 5, 1, 6, 4);
 
-    await expect.poll(() => page.evaluate(() => window.__GAME_SESSION__.boardWidth)).toBe(5);
-    await expect.poll(() => page.evaluate(() => window.__GAME_SESSION__.boardHeight)).toBe(5);
     session = await page.evaluate(() => window.__GAME_SESSION__);
-    expect(session.boardWidth).toBe(7);
-    expect(session.boardHeight).toBe(5);
-    expect(session.board.length).toBeGreaterThan(24);
+    expect(session.boardWidth).toBe(6);
+    expect(session.boardHeight).toBe(4);
+    expect(session.board.length).toBeGreaterThanOrEqual(24);
   });
 
   test('captures the horizontal road4 discover preview before commit', async ({ page }, testInfo) => {

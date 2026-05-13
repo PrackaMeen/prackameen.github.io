@@ -1,0 +1,14 @@
+body[data-page="demo"] {
+  margin: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 220, 150, 0.22), transparent 25%),
+    radial-gradient(circle at 80% 30%, rgba(99, 102, 241, 0.16), transparent 24%),
+    linear-gradient(135deg, #081120 0%, #101b2f 52%, #07111c 100%);
+}
+
+.demo-canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
