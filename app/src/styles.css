@@ -22,6 +22,7 @@ body {
 body {
   overflow: hidden;
   min-height: 100vh;
+  overscroll-behavior: none;
 }
 
 body::before {
@@ -54,6 +55,7 @@ canvas {
     0 30px 80px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(138, 180, 255, 0.08) inset;
   background: #081120;
+  touch-action: none;
 }
 
 noscript {
@@ -65,4 +67,25 @@ noscript {
   background: rgba(8, 17, 32, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.14);
   font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .page-shell {
+    padding: 0;
+  }
+
+  canvas {
+    width: 100vw;
+    height: 100vh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  noscript {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    text-align: center;
+  }
 }

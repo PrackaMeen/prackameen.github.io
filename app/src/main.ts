@@ -1,4 +1,4 @@
-import { Color, Engine } from "excalibur";
+import { Color, DisplayMode, Engine, PointerScope } from "excalibur";
 import { GAME_HEIGHT, GAME_TITLE, GAME_WIDTH } from "./config";
 import { GameController } from "./game-controller";
 import { DemoScene } from "./scenes/demo-scene";
@@ -12,7 +12,10 @@ const engine = new Engine({
   backgroundColor: Color.fromHex("#081120"),
   antialiasing: false,
   pixelArt: true,
-  suppressHiDPIScaling: true
+  suppressHiDPIScaling: true,
+  displayMode: DisplayMode.FitScreen,
+  pointerScope: PointerScope.Canvas,
+  grabWindowFocus: false
 });
 
 const controller = new GameController(engine);

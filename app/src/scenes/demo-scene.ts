@@ -1,37 +1,36 @@
-import { Actor, Color, Font, FontUnit, Label, Scene, TextAlign, Keys, vec } from "excalibur";
+import { Actor, Color, Font, FontUnit, Label, Keys, PointerButton, Scene, TextAlign, type PointerEvent, type Vector, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config";
 import type { GameController } from "../game-controller";
 
 class PlayerActor extends Actor {
   private readonly speed = 320;
+  private targetPosition: Vector | null = null;
+
+  setTargetPosition(target: Vector): void {
+    this.targetPosition = vec(target.x, target.y);
+  }
 
   override onPreUpdate(engine: import("excalibur").Engine, delta: number): void {
-    let moveX = 0;
-    let moveY = 0;
+    if (this.targetPosition) {
+      const offsetX = this.targetPosition.x - this.pos.x;
+      const offsetY = this.targetPosition.y - this.pos.y;
+      const distance = Math.hypot(offsetX, offsetY);
 
-    if (engine.input.keyboard.isHeld(Keys.ArrowLeft) || engine.input.keyboard.isHeld(Keys.A)) {
-      moveX -= 1;
-    }
+      if (distance <= 1) {
+        this.pos = vec(this.targetPosition.x, this.targetPosition.y);
+        this.targetPosition = null;
+      } else {
+        const step = this.speed * (delta / 1000);
 
-    if (engine.input.keyboard.isHeld(Keys.ArrowRight) || engine.input.keyboard.isHeld(Keys.D)) {
-      moveX += 1;
-    }
-
-    if (engine.input.keyboard.isHeld(Keys.ArrowUp) || engine.input.keyboard.isHeld(Keys.W)) {
-      moveY -= 1;
-    }
-
-    if (engine.input.keyboard.isHeld(Keys.ArrowDown) || engine.input.keyboard.isHeld(Keys.S)) {
-      moveY += 1;
-    }
-
-    if (moveX !== 0 || moveY !== 0) {
-      const length = Math.hypot(moveX, moveY);
-      const directionX = moveX / length;
-      const directionY = moveY / length;
-      const distance = this.speed * (delta / 1000);
-
-      this.pos = this.pos.add(vec(directionX * distance, directionY * distance));
+        if (distance <= step) {
+          this.pos = vec(this.targetPosition.x, this.targetPosition.y);
+          this.targetPosition = null;
+        } else {
+          const directionX = offsetX / distance;
+          const directionY = offsetY / distance;
+          this.pos = this.pos.add(vec(directionX * step, directionY * step));
+        }
+      }
     }
 
     this.pos = vec(
@@ -43,36 +42,30 @@ class PlayerActor extends Actor {
 
 export class DemoScene extends Scene {
   private readonly controller: GameController;
-  private score = 0;
-  private readonly scoreLabel = new Label({
-    text: "Beacons captured: 0",
-    pos: vec(32, 32),
-    font: new Font({ family: "Inter", size: 24, unit: FontUnit.Px, bold: true }),
-    color: Color.fromHex("#ffffff")
-  });
-  private readonly hintLabel = new Label({
-    text: "Move with WASD or arrow keys. Press Esc to return to menu.",
-    pos: vec(32, 64),
-    font: new Font({ family: "Inter", size: 18, unit: FontUnit.Px }),
-    color: Color.fromHex("#9db0d6")
-  });
-  private readonly messageLabel = new Label({
-    text: "Collect the pulsing beacon to grow the score.",
-    pos: vec(GAME_WIDTH / 2, 24),
-    font: new Font({ family: "Space Grotesk", size: 26, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-    color: Color.fromHex("#7cf7a3")
-  });
   private readonly player = new PlayerActor({
     pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
     width: 48,
     height: 48,
     color: Color.fromHex("#6bf0ff")
   });
-  private readonly beacon = new Actor({
-    pos: vec(GAME_WIDTH / 2 + 180, GAME_HEIGHT / 2 - 120),
-    width: 42,
-    height: 42,
-    color: Color.fromHex("#ffcc4d")
+  private pointerPosition: Vector = vec(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+  private readonly scoreLabel = new Label({
+    text: "Click or tap anywhere to send the box there.",
+    pos: vec(32, 32),
+    font: new Font({ family: "Inter", size: 24, unit: FontUnit.Px, bold: true }),
+    color: Color.fromHex("#ffffff")
+  });
+  private readonly hintLabel = new Label({
+    text: "Move your finger or mouse to aim the arrow. Press Esc to return to menu.",
+    pos: vec(32, 64),
+    font: new Font({ family: "Inter", size: 18, unit: FontUnit.Px }),
+    color: Color.fromHex("#9db0d6")
+  });
+  private readonly messageLabel = new Label({
+    text: "The box moves at a constant speed to the tapped or clicked point.",
+    pos: vec(GAME_WIDTH / 2, 24),
+    font: new Font({ family: "Space Grotesk", size: 26, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+    color: Color.fromHex("#7cf7a3")
   });
 
   constructor(controller: GameController) {
@@ -106,10 +99,24 @@ export class DemoScene extends Scene {
     this.add(platform);
     this.add(support);
     this.add(this.player);
-    this.add(this.beacon);
     this.add(this.scoreLabel);
     this.add(this.hintLabel);
     this.add(this.messageLabel);
+
+    const primaryPointer = this.engine.input.pointers.primary;
+
+    primaryPointer.on("move", (event: PointerEvent) => {
+      this.pointerPosition = vec(event.worldPos.x, event.worldPos.y);
+    });
+
+    primaryPointer.on("down", (event: PointerEvent) => {
+      if (event.button !== PointerButton.Left) {
+        return;
+      }
+
+      this.pointerPosition = vec(event.worldPos.x, event.worldPos.y);
+      this.player.setTargetPosition(this.pointerPosition);
+    });
   }
 
   override onPreUpdate(engine: import("excalibur").Engine): void {
@@ -117,19 +124,36 @@ export class DemoScene extends Scene {
       this.controller.showMenu();
       return;
     }
+  }
 
-    const dx = this.player.pos.x - this.beacon.pos.x;
-    const dy = this.player.pos.y - this.beacon.pos.y;
-    const distance = Math.hypot(dx, dy);
+  override onPostDraw(ctx: import("excalibur").ExcaliburGraphicsContext): void {
+    const start = this.player.pos;
+    const end = this.pointerPosition;
+    const deltaX = end.x - start.x;
+    const deltaY = end.y - start.y;
+    const distance = Math.hypot(deltaX, deltaY);
 
-    if (distance < 48) {
-      this.score += 1;
-      this.scoreLabel.text = `Beacons captured: ${this.score}`;
-      this.messageLabel.text = this.score === 1 ? "First beacon captured. Keep going." : "Beacon relocated. Chase the next one.";
-
-      const nextX = 90 + Math.random() * (GAME_WIDTH - 180);
-      const nextY = 120 + Math.random() * (GAME_HEIGHT - 220);
-      this.beacon.pos = vec(nextX, nextY);
+    if (distance < 1) {
+      return;
     }
+
+    const directionX = deltaX / distance;
+    const directionY = deltaY / distance;
+    const arrowColor = Color.fromHex("#7cf7a3");
+    const headLength = 18;
+    const headSpread = 0.45;
+    const headBase = vec(end.x - directionX * headLength, end.y - directionY * headLength);
+    const leftHead = vec(
+      headBase.x + (-directionX * Math.cos(headSpread) - -directionY * Math.sin(headSpread)) * headLength,
+      headBase.y + (-directionX * Math.sin(headSpread) + -directionY * Math.cos(headSpread)) * headLength
+    );
+    const rightHead = vec(
+      headBase.x + (-directionX * Math.cos(-headSpread) - -directionY * Math.sin(-headSpread)) * headLength,
+      headBase.y + (-directionX * Math.sin(-headSpread) + -directionY * Math.cos(-headSpread)) * headLength
+    );
+
+    ctx.debug.drawLine(start, end, { color: arrowColor, lineWidth: 4 });
+    ctx.debug.drawLine(end, leftHead, { color: arrowColor, lineWidth: 4 });
+    ctx.debug.drawLine(end, rightHead, { color: arrowColor, lineWidth: 4 });
   }
 }
