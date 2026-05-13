@@ -30,7 +30,8 @@ export class DemoScene extends Scene {
     pos: vec(snapToTileCenter(GAME_WIDTH / 2), snapToTileCenter(GAME_HEIGHT / 2)),
     width: this.playerSize,
     height: this.playerSize,
-    color: Color.fromHex("#6bf0ff")
+    color: Color.fromHex("#6bf0ff"),
+    z: 1
   });
   private readonly topInset = clamp(GAME_HEIGHT * 0.03, 18, 28);
   private readonly sideInset = clamp(GAME_WIDTH * 0.025, 16, 32);
@@ -68,65 +69,10 @@ export class DemoScene extends Scene {
   }
 
   override onInitialize(): void {
-    const platformWidth = clamp(GAME_WIDTH - this.sideInset * 2, 320, 760);
-    const platformHeight = clamp(GAME_HEIGHT * 0.06, 40, 52);
-    const supportSize = clamp(GAME_WIDTH * 0.013, 14, 18);
-    const screenWidth = this.engine.screen.canvasWidth;
-    const screenHeight = this.engine.screen.canvasHeight;
-    const buttonWidth = clamp(screenWidth * 0.15, 72, 120);
-    const buttonHeight = clamp(screenHeight * 0.06, 34, 46);
-    const buttonGap = clamp(buttonWidth * 0.12, 10, 16);
-    const bottomInset = screenWidth <= 900 ? clamp(screenHeight * 0.12, 72, 132) : clamp(screenHeight * 0.05, 24, 40);
-    const buttonCenterY = screenHeight - bottomInset - buttonHeight / 2;
-    const centerButtonX = screenWidth / 2;
-    const leftButtonX = centerButtonX - buttonWidth - buttonGap;
-    const rightButtonX = centerButtonX + buttonWidth + buttonGap;
-
-    const backdrop = new Actor({
-      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
-      width: GAME_WIDTH,
-      height: GAME_HEIGHT,
-      graphic: this.sprites.backdrop,
-      z: -20
-    });
-
-    const platform = new Actor({
-      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT - this.topInset - platformHeight / 2),
-      width: platformWidth,
-      height: platformHeight,
-      color: Color.fromHex("#142445"),
-      z: -10
-    });
-
-    const support = new Label({
-      text: "A tiny starter sandbox for demo work",
-      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT - this.topInset - 12),
-      font: new Font({ family: "Inter", size: supportSize, unit: FontUnit.Px, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#91a6cb"),
-      coordPlane: CoordPlane.Screen
-    });
-
     this.player.setStateGraphics(this.sprites.playerNormal, this.sprites.playerSelected);
 
-    this.modeButtons.push(
-      this.createModeButton("action", "A", leftButtonX, buttonCenterY, buttonWidth, buttonHeight),
-      this.createModeButton("move", "M", centerButtonX, buttonCenterY, buttonWidth, buttonHeight),
-      this.createModeButton("zoom", "Z", rightButtonX, buttonCenterY, buttonWidth, buttonHeight)
-    );
-
-    this.add(backdrop);
-    this.add(platform);
-    this.add(support);
+    this.showTrailTile(this.player.pos);
     this.add(this.player);
-    this.add(this.scoreLabel);
-    this.add(this.hintLabel);
-    this.add(this.messageLabel);
-    for (const modeButton of this.modeButtons) {
-      this.add(modeButton.button);
-      this.add(modeButton.label);
-    }
-
-    this.setInteractionMode("action");
 
     const primaryPointer = this.engine.input.pointers.primary;
 

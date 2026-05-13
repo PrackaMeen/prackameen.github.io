@@ -1,5 +1,5 @@
 import { Actor, Color, type Graphic, type Vector, vec } from "excalibur";
-import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
+import { TILE_SIZE } from "../config";
 
 function snapToGrid(value: number, tileSize: number): number {
   return Math.round((value - tileSize / 2) / tileSize) * tileSize + tileSize / 2;
@@ -82,9 +82,5 @@ export class BoxActor extends Actor {
       }
     }
 
-    this.pos = vec(
-      Math.max(32, Math.min(GAME_WIDTH - 32, this.pos.x)),
-      Math.max(32, Math.min(GAME_HEIGHT - 32, this.pos.y))
-    );
   }
 }
