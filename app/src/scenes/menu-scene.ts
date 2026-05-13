@@ -1,4 +1,4 @@
-import { Actor, Color, Font, FontUnit, Label, Scene, TextAlign, Keys, vec } from "excalibur";
+import { Actor, Color, Font, FontUnit, Label, Scene, TextAlign, type PointerEvent, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config";
 import type { GameController } from "../game-controller";
 
@@ -30,11 +30,25 @@ export class MenuScene extends Scene {
       maxWidth: 600
     });
 
-    const startHint = new Label({
-      text: "Press Enter or Space to start",
-      pos: vec(GAME_WIDTH / 2, 360),
-      font: new Font({ family: "Inter", size: 28, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+    const startButton = new Actor({
+      pos: vec(GAME_WIDTH / 2, 352),
+      width: 290,
+      height: 74,
       color: Color.fromHex("#7cf7a3")
+    });
+
+    const buttonText = new Label({
+      text: "Start Demo",
+      pos: vec(GAME_WIDTH / 2, 339),
+      font: new Font({ family: "Space Grotesk", size: 32, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#081120")
+    });
+
+    const buttonCaption = new Label({
+      text: "Tap or click to begin",
+      pos: vec(GAME_WIDTH / 2, 374),
+      font: new Font({ family: "Inter", size: 18, unit: FontUnit.Px, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#d9ffea")
     });
 
     const footer = new Label({
@@ -47,13 +61,13 @@ export class MenuScene extends Scene {
     this.add(panel);
     this.add(title);
     this.add(subtitle);
-    this.add(startHint);
+    this.add(startButton);
+    this.add(buttonText);
+    this.add(buttonCaption);
     this.add(footer);
-  }
 
-  override onPreUpdate(engine: import("excalibur").Engine): void {
-    if (engine.input.keyboard.wasPressed(Keys.Enter) || engine.input.keyboard.wasPressed(Keys.Space)) {
+    startButton.on("pointerdown", (event: PointerEvent) => {
       this.controller.startDemo();
-    }
+    });
   }
 }
