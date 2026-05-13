@@ -1,68 +1,17 @@
 import { Actor, Color, Font, FontUnit, Label, Keys, PointerButton, Scene, TextAlign, type PointerEvent, type Vector, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config";
 import type { GameController } from "../game-controller";
+import { BoxActor } from "../actors/box-actor";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
 }
 
-class PlayerActor extends Actor {
-  private readonly speed = 320;
-  private targetPosition: Vector | null = null;
-  private selected = false;
-
-  setTargetPosition(target: Vector): void {
-    this.targetPosition = vec(target.x, target.y);
-  }
-
-  select(): void {
-    this.selected = true;
-    this.color = Color.fromHex("#ff5b5b");
-  }
-
-  deselect(): void {
-    this.selected = false;
-    this.color = Color.fromHex("#6bf0ff");
-  }
-
-  get isSelected(): boolean {
-    return this.selected;
-  }
-
-  override onPreUpdate(engine: import("excalibur").Engine, delta: number): void {
-    if (this.targetPosition) {
-      const offsetX = this.targetPosition.x - this.pos.x;
-      const offsetY = this.targetPosition.y - this.pos.y;
-      const distance = Math.hypot(offsetX, offsetY);
-
-      if (distance <= 1) {
-        this.pos = vec(this.targetPosition.x, this.targetPosition.y);
-        this.targetPosition = null;
-      } else {
-        const step = this.speed * (delta / 1000);
-
-        if (distance <= step) {
-          this.pos = vec(this.targetPosition.x, this.targetPosition.y);
-          this.targetPosition = null;
-        } else {
-          const directionX = offsetX / distance;
-          const directionY = offsetY / distance;
-          this.pos = this.pos.add(vec(directionX * step, directionY * step));
-        }
-      }
-    }
-
-    this.pos = vec(
-      Math.max(32, Math.min(GAME_WIDTH - 32, this.pos.x)),
-      Math.max(32, Math.min(GAME_HEIGHT - 32, this.pos.y))
-    );
-  }
-}
-
+ 
 export class DemoScene extends Scene {
   private readonly controller: GameController;
   private readonly playerSize = clamp(Math.min(GAME_WIDTH, GAME_HEIGHT) * 0.07, 36, 48);
-  private readonly player = new PlayerActor({
+  private readonly player = new BoxActor({
     pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
     width: this.playerSize,
     height: this.playerSize,
@@ -96,6 +45,8 @@ export class DemoScene extends Scene {
   }
 
   override onInitialize(): void {
+    this.camera.strategy.lockToActor(this.player);
+
     const platformWidth = clamp(GAME_WIDTH - this.sideInset * 2, 320, 760);
     const platformHeight = clamp(GAME_HEIGHT * 0.06, 40, 52);
     const supportSize = clamp(GAME_WIDTH * 0.013, 14, 18);
