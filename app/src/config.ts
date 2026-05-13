@@ -7,4 +7,5 @@ const viewportHeight = typeof window !== "undefined" ? window.innerHeight : fall
 export const GAME_WIDTH = viewportWidth;
 export const GAME_HEIGHT = viewportHeight;
 export const GAME_TITLE = "PrackaMeen Arcade Lab";
-export const TILE_SIZE = 32;
+export const TILE_SIZE = 128;
+export const CHAR_SIZE = 64;

@@ -76,6 +76,7 @@ export class BoxActor extends Actor {
         } else {
           const directionX = offsetX / distance;
           const directionY = offsetY / distance;
+          this.rotation = Math.atan2(directionY, directionX) + Math.PI / 2;
           this.pos = this.pos.add(vec(directionX * step, directionY * step));
         }
       }

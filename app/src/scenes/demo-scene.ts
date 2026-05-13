@@ -1,5 +1,5 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, Keys, PointerButton, Scene, TextAlign, type PointerEvent, type Vector, vec } from "excalibur";
-import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
+import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
 import type { GameSprites } from "../game-assets";
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
@@ -25,7 +25,7 @@ interface ModeButtonControl {
 export class DemoScene extends Scene {
   private readonly controller: GameController;
   private readonly sprites: GameSprites;
-  private readonly playerSize = TILE_SIZE;
+  private readonly playerSize = CHAR_SIZE;
   private readonly player = new BoxActor({
     pos: vec(snapToTileCenter(GAME_WIDTH / 2), snapToTileCenter(GAME_HEIGHT / 2)),
     width: this.playerSize,
@@ -159,7 +159,10 @@ export class DemoScene extends Scene {
 
       if (this.player.isSelected) {
         this.showTrailTile(this.player.pos);
-        this.moveTargetPosition = vec(event.worldPos.x, event.worldPos.y);
+        this.moveTargetPosition = vec(
+          snapToTileCenter(event.worldPos.x),
+          snapToTileCenter(event.worldPos.y)
+        );
         this.player.setTargetPosition(this.moveTargetPosition);
         this.player.deselect();
         this.scoreLabel.text = "Click or tap the box to select it.";
