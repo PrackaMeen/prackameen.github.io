@@ -9,9 +9,24 @@ function clamp(value: number, minimum: number, maximum: number): number {
 class PlayerActor extends Actor {
   private readonly speed = 320;
   private targetPosition: Vector | null = null;
+  private selected = false;
 
   setTargetPosition(target: Vector): void {
     this.targetPosition = vec(target.x, target.y);
+  }
+
+  select(): void {
+    this.selected = true;
+    this.color = Color.fromHex("#ff5b5b");
+  }
+
+  deselect(): void {
+    this.selected = false;
+    this.color = Color.fromHex("#6bf0ff");
+  }
+
+  get isSelected(): boolean {
+    return this.selected;
   }
 
   override onPreUpdate(engine: import("excalibur").Engine, delta: number): void {
@@ -126,7 +141,26 @@ export class DemoScene extends Scene {
       }
 
       this.pointerPosition = vec(event.worldPos.x, event.worldPos.y);
-      this.player.setTargetPosition(this.pointerPosition);
+
+      const boxLeft = this.player.pos.x - this.playerSize / 2;
+      const boxRight = this.player.pos.x + this.playerSize / 2;
+      const boxTop = this.player.pos.y - this.playerSize / 2;
+      const boxBottom = this.player.pos.y + this.playerSize / 2;
+      const clickedBox = event.worldPos.x >= boxLeft && event.worldPos.x <= boxRight && event.worldPos.y >= boxTop && event.worldPos.y <= boxBottom;
+
+      if (!this.player.isSelected && clickedBox) {
+        this.player.select();
+        this.scoreLabel.text = "Box selected. Tap or click a target point.";
+        this.messageLabel.text = "Selected box is red. Tap/click again to move it.";
+        return;
+      }
+
+      if (this.player.isSelected) {
+        this.player.setTargetPosition(this.pointerPosition);
+        this.player.deselect();
+        this.scoreLabel.text = "Click or tap the box to select it.";
+        this.messageLabel.text = "The box moves at a constant speed to the tapped or clicked point.";
+      }
     });
   }
 
