@@ -7,6 +7,10 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
 }
 
+function snapToTileCenter(value: number): number {
+  return Math.round((value - TILE_SIZE / 2) / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+}
+
 type DemoMode = "action" | "move" | "zoom";
 
 interface ModeButtonControl {
@@ -21,7 +25,7 @@ export class DemoScene extends Scene {
   private readonly controller: GameController;
   private readonly playerSize = TILE_SIZE;
   private readonly player = new BoxActor({
-    pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
+    pos: vec(snapToTileCenter(GAME_WIDTH / 2), snapToTileCenter(GAME_HEIGHT / 2)),
     width: this.playerSize,
     height: this.playerSize,
     color: Color.fromHex("#6bf0ff")
