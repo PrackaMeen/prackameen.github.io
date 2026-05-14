@@ -2,8 +2,6 @@ name: Deploy prackameen.github.io
 
 on:
   push:
-    branches:
-      - main
     paths:
       - 'app/**'
       - '.github/workflows/deploy-prackameen-pages.yml'
