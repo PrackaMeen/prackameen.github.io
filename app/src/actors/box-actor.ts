@@ -8,12 +8,14 @@ function snapToGrid(value: number, tileSize: number): number {
 export class BoxActor extends Actor {
   private readonly speed = 320;
   private targetPosition: Vector | null = null;
+  private targetSnapToGrid = true;
   private selected = false;
   private normalGraphic: Graphic | null = null;
   private selectedGraphic: Graphic | null = null;
 
-  setTargetPosition(target: Vector): void {
+  setTargetPosition(target: Vector, snapToGrid = true): void {
     this.targetPosition = vec(target.x, target.y);
+    this.targetSnapToGrid = snapToGrid;
   }
 
   clearTargetPosition(): void {
@@ -59,19 +61,23 @@ export class BoxActor extends Actor {
       const distance = Math.hypot(offsetX, offsetY);
 
       if (distance <= 1) {
-        this.pos = vec(
-          snapToGrid(this.targetPosition.x, TILE_SIZE),
-          snapToGrid(this.targetPosition.y, TILE_SIZE)
-        );
+        this.pos = this.targetSnapToGrid
+          ? vec(
+            snapToGrid(this.targetPosition.x, TILE_SIZE),
+            snapToGrid(this.targetPosition.y, TILE_SIZE)
+          )
+          : vec(this.targetPosition.x, this.targetPosition.y);
         this.targetPosition = null;
       } else {
         const step = this.speed * (delta / 1000);
 
         if (distance <= step) {
-          this.pos = vec(
-            snapToGrid(this.targetPosition.x, TILE_SIZE),
-            snapToGrid(this.targetPosition.y, TILE_SIZE)
-          );
+          this.pos = this.targetSnapToGrid
+            ? vec(
+              snapToGrid(this.targetPosition.x, TILE_SIZE),
+              snapToGrid(this.targetPosition.y, TILE_SIZE)
+            )
+            : vec(this.targetPosition.x, this.targetPosition.y);
           this.targetPosition = null;
         } else {
           const directionX = offsetX / distance;

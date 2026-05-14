@@ -61,8 +61,14 @@ function createSingleSprite(image: ImageSource, displaySize: number): Graphic {
 export interface GameSprites {
   playerNormal: Graphic;
   playerSelected: Graphic;
-  trailTiles: AnimationGraphic[];
+  trailTiles: TrailTileVariant[];
   backdrop: AnimationGraphic;
+}
+
+export type TrailTileOrientation = 0 | 1 | 2 | 3;
+
+export interface TrailTileVariant {
+  orientations: AnimationGraphic[];
 }
 
 export const gameAssetSources = {
@@ -85,21 +91,25 @@ export async function loadGameAssets(): Promise<void> {
 }
 
 export function createGameSprites(): GameSprites {
+  const trailTileSources = [
+    road0,
+    road1,
+    road2,
+    road3,
+    road4,
+    chamber0,
+    chamber1,
+    chamber2,
+    chamber3,
+    chamber4
+  ];
+
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
-    trailTiles: [
-      road0,
-      road1,
-      road2,
-      road3,
-      road4,
-      chamber0,
-      chamber1,
-      chamber2,
-      chamber3,
-      chamber4
-    ].map((asset) => createGridAnimation(asset, TILE_SIZE)),
+    trailTiles: trailTileSources.map((asset) => ({
+      orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(asset, TILE_SIZE, orientationRow))
+    })),
     backdrop: createGridAnimation(chamber4, TILE_SIZE, 0, 180)
   };
 }
