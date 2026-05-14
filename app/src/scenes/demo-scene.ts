@@ -202,8 +202,10 @@ export class DemoScene extends Scene {
         );
 
         if (this.isOccupiedTrailTile(targetPosition)) {
-          this.scoreLabel.text = "That tile is already revealed. Click empty space to discover a new tile.";
-          this.messageLabel.text = "Choose an empty space for a new tile flow.";
+          this.player.deselect();
+          this.player.setTargetPosition(targetPosition);
+          this.scoreLabel.text = "Moving to the revealed tile.";
+          this.messageLabel.text = "Revealed tiles move directly without discovery.";
           return;
         }
 
