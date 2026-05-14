@@ -201,6 +201,12 @@ export class DemoScene extends Scene {
           snapToTileCenter(event.worldPos.y)
         );
 
+        if (this.isOccupiedTrailTile(targetPosition)) {
+          this.scoreLabel.text = "That tile is already revealed. Click empty space to discover a new tile.";
+          this.messageLabel.text = "Choose an empty space for a new tile flow.";
+          return;
+        }
+
         this.beginTileDiscovery(targetPosition);
         this.player.deselect();
         this.scoreLabel.text = "Tile discovery started. Rotate, accept, or reject.";
@@ -717,6 +723,10 @@ export class DemoScene extends Scene {
     trailTile.actions.scaleTo({ scale: vec(1, 1), duration: this.previewCommitDuration });
     this.occupiedTrailTiles.add(key);
     this.nextTrailTileIndex += 1;
+  }
+
+  private isOccupiedTrailTile(position: Vector): boolean {
+    return this.occupiedTrailTiles.has(tileKey(position));
   }
 
   private showPreviewTrailTile(): void {
