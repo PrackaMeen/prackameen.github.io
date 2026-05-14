@@ -78,13 +78,27 @@ export class DemoScene extends Scene {
   private movementStartPosition: Vector | null = null;
   private movementPausePosition: Vector | null = null;
   private previewTrailTile: Actor | null = null;
+  private previewAnimationMode: "revealing" | "committing" | null = null;
+  private previewOrientationAnimationDirection: 1 | -1 | null = null;
+  private previewOrientationElapsed = 0;
+  private previewCommitStartPosition: Vector | null = null;
+  private previewCommitTargetPosition: Vector | null = null;
+  private previewCommitStartScale = 1;
+  private previewCommitTargetScale = 1;
+  private previewCommitElapsed = 0;
+  private readonly previewCommitDuration = 300;
+  private readonly previewOrientationDuration = 180;
+  private readonly previewIdleScale = 2;
   private readonly occupiedTrailTiles = new Set<string>();
   private readonly modeButtons: ModeButtonControl[] = [];
   private readonly tileActionButtons: TileActionButtonControl[] = [];
   private interactionMode: DemoMode = "action";
   private cameraDragLastScreenPos: Vector | null = null;
   private cameraZoomLevelIndex = 1;
-  private cameraZoomDragAccumulator = 0;
+  private cameraZoomSwipeDistance = 0;
+  private cameraZoomSwipeConsumed = false;
+  private tileRotationSwipeDistance = 0;
+  private tileRotationSwipeConsumed = false;
   private nextTrailTileIndex = 0;
 
   constructor(controller: GameController, sprites: GameSprites) {
@@ -123,7 +137,7 @@ export class DemoScene extends Scene {
     const tileActionGap = clamp(GAME_WIDTH * 0.015, 10, 14);
     const tileActionTotalWidth = tileActionButtonWidth * 3 + tileActionGap * 2;
     const tileActionCenterX = GAME_WIDTH / 2;
-    const tileActionCenterY = this.topInset + clamp(GAME_HEIGHT * 0.16, 72, 120);
+    const tileActionCenterY = clamp(GAME_HEIGHT * 0.72, GAME_HEIGHT * 0.56, GAME_HEIGHT - bottomInset - tileActionButtonHeight / 2 - 12);
 
     const rotateButton = this.createTileActionButton("rotate", "Rotate", tileActionCenterX - tileActionTotalWidth / 2 + tileActionButtonWidth / 2, tileActionCenterY, tileActionButtonWidth, tileActionButtonHeight);
     const acceptButton = this.createTileActionButton("accept", "Accept", tileActionCenterX, tileActionCenterY, tileActionButtonWidth, tileActionButtonHeight);
@@ -154,9 +168,17 @@ export class DemoScene extends Scene {
         return;
       }
 
+      if (this.movementPhase === "waitingForOrientation") {
+        this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+        this.tileRotationSwipeDistance = 0;
+        this.tileRotationSwipeConsumed = false;
+        return;
+      }
+
       if (this.interactionMode === "move" || this.interactionMode === "zoom") {
         this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
-        this.cameraZoomDragAccumulator = 0;
+        this.cameraZoomSwipeDistance = 0;
+        this.cameraZoomSwipeConsumed = false;
         return;
       }
 
@@ -191,6 +213,21 @@ export class DemoScene extends Scene {
         return;
       }
 
+      if (this.movementPhase === "waitingForOrientation") {
+        const deltaY = event.screenPos.y - this.cameraDragLastScreenPos.y;
+        this.tileRotationSwipeDistance += deltaY;
+
+        if (this.tileRotationSwipeConsumed || Math.abs(this.tileRotationSwipeDistance) < gameSettings.cameraZoomDragThreshold) {
+          this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+          return;
+        }
+
+        this.rotatePreviewTrailTile(this.tileRotationSwipeDistance > 0 ? 1 : -1);
+        this.tileRotationSwipeConsumed = true;
+        this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+        return;
+      }
+
       if (this.interactionMode === "move") {
         const previousWorld = this.engine.screen.screenToWorldCoordinates(this.cameraDragLastScreenPos);
         const currentWorld = this.engine.screen.screenToWorldCoordinates(event.screenPos);
@@ -202,42 +239,52 @@ export class DemoScene extends Scene {
 
       if (this.interactionMode === "zoom") {
         const deltaY = event.screenPos.y - this.cameraDragLastScreenPos.y;
-        this.cameraZoomDragAccumulator += deltaY;
+        this.cameraZoomSwipeDistance += deltaY;
 
-        if (Math.abs(this.cameraZoomDragAccumulator) < gameSettings.cameraZoomDragThreshold) {
+        if (this.cameraZoomSwipeConsumed || Math.abs(this.cameraZoomSwipeDistance) < gameSettings.cameraZoomDragThreshold) {
           this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
           return;
         }
 
-        const zoomSteps = Math.trunc(this.cameraZoomDragAccumulator / gameSettings.cameraZoomDragThreshold);
-        if (zoomSteps !== 0) {
-          const nextZoomLevels = this.getAllowedZoomLevels();
-          const nextIndex = clamp(this.cameraZoomLevelIndex + zoomSteps, 0, nextZoomLevels.length - 1);
+        const zoomSteps = this.cameraZoomSwipeDistance > 0 ? 1 : -1;
+        const nextZoomLevels = this.getAllowedZoomLevels();
+        const nextIndex = clamp(this.cameraZoomLevelIndex + zoomSteps, 0, nextZoomLevels.length - 1);
+
+        if (nextIndex !== this.cameraZoomLevelIndex) {
           this.cameraZoomLevelIndex = nextIndex;
           this.camera.zoom = nextZoomLevels[nextIndex];
-          this.cameraZoomDragAccumulator -= zoomSteps * gameSettings.cameraZoomDragThreshold;
         }
 
+        this.cameraZoomSwipeConsumed = true;
         this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
       }
     });
 
     primaryPointer.on("up", () => {
       this.cameraDragLastScreenPos = null;
-      this.cameraZoomDragAccumulator = 0;
+      this.cameraZoomSwipeDistance = 0;
+      this.cameraZoomSwipeConsumed = false;
+      this.tileRotationSwipeDistance = 0;
+      this.tileRotationSwipeConsumed = false;
     });
 
     primaryPointer.on("cancel", () => {
       this.cameraDragLastScreenPos = null;
-      this.cameraZoomDragAccumulator = 0;
+      this.cameraZoomSwipeDistance = 0;
+      this.cameraZoomSwipeConsumed = false;
+      this.tileRotationSwipeDistance = 0;
+      this.tileRotationSwipeConsumed = false;
     });
   }
 
-  override onPreUpdate(engine: import("excalibur").Engine): void {
+  override onPreUpdate(engine: import("excalibur").Engine, elapsed: number): void {
     if (engine.input.keyboard.wasPressed(Keys.Escape)) {
       this.controller.showMenu();
       return;
     }
+
+    this.updatePreviewCommitAnimation(elapsed);
+    this.updatePreviewOrientationAnimation(elapsed);
 
     if (this.movementPhase === "movingToBorder" && !this.player.isMoving) {
       this.enterOrientationWait();
@@ -245,10 +292,6 @@ export class DemoScene extends Scene {
     }
 
     if (this.movementPhase === "movingToTarget" && !this.player.isMoving) {
-      if (this.pendingTrailTilePosition) {
-        this.showTrailTile(this.pendingTrailTilePosition, this.pendingTrailTileOrientation);
-      }
-
       this.finishTileDiscovery(true);
       return;
     }
@@ -361,6 +404,10 @@ export class DemoScene extends Scene {
   }
 
   private handleModeButtonPress(screenPos: Vector): boolean {
+    if (this.movementPhase === "waitingForOrientation") {
+      return false;
+    }
+
     for (const modeButton of this.modeButtons) {
       if (this.isPointInsideButton(screenPos, modeButton)) {
         this.setInteractionMode(modeButton.mode);
@@ -379,9 +426,7 @@ export class DemoScene extends Scene {
     for (const actionButton of this.tileActionButtons) {
       if (this.isPointInsideButton(screenPos, actionButton)) {
         if (actionButton.action === "rotate") {
-          this.pendingTrailTileOrientation = ((this.pendingTrailTileOrientation + 1) % 4) as TrailTileOrientation;
-          this.hintLabel.text = `Orientation: ${this.getOrientationName(this.pendingTrailTileOrientation)}.`;
-          this.updatePreviewTrailTileOrientation();
+          this.rotatePreviewTrailTile(1);
           return true;
         }
 
@@ -398,6 +443,52 @@ export class DemoScene extends Scene {
     }
 
     return false;
+  }
+
+  private rotatePreviewTrailTile(step: 1 | -1): void {
+    if (this.movementPhase !== "waitingForOrientation") {
+      return;
+    }
+
+    if (this.previewOrientationAnimationDirection) {
+      return;
+    }
+
+    this.pendingTrailTileOrientation = ((this.pendingTrailTileOrientation + step + 4) % 4) as TrailTileOrientation;
+    this.previewOrientationAnimationDirection = step;
+    this.previewOrientationElapsed = 0;
+    this.hintLabel.text = `Orientation: ${this.getOrientationName(this.pendingTrailTileOrientation)}.`;
+  }
+
+  private updatePreviewOrientationAnimation(elapsed: number): void {
+    if (!this.previewTrailTile || !this.previewOrientationAnimationDirection) {
+      return;
+    }
+
+    this.previewOrientationElapsed = Math.min(this.previewOrientationElapsed + elapsed, this.previewOrientationDuration);
+    const progress = this.previewOrientationDuration <= 0 ? 1 : this.previewOrientationElapsed / this.previewOrientationDuration;
+    const easedProgress = 1 - Math.pow(1 - progress, 3);
+    const rotationAmount = (Math.PI / 2) * easedProgress * this.previewOrientationAnimationDirection;
+
+    this.previewTrailTile.rotation = rotationAmount;
+
+    if (progress >= 1) {
+      this.previewTrailTile.rotation = 0;
+      this.updatePreviewTrailTileOrientation();
+      this.previewOrientationAnimationDirection = null;
+      this.previewOrientationElapsed = 0;
+    }
+  }
+
+  private finishPreviewOrientationAnimation(): void {
+    if (!this.previewTrailTile || !this.previewOrientationAnimationDirection) {
+      return;
+    }
+
+    this.previewTrailTile.rotation = 0;
+    this.updatePreviewTrailTileOrientation();
+    this.previewOrientationAnimationDirection = null;
+    this.previewOrientationElapsed = 0;
   }
 
   private isPointInsideButton(point: Vector, button: ModeButtonControl | TileActionButtonControl): boolean {
@@ -433,6 +524,7 @@ export class DemoScene extends Scene {
     this.showPreviewTrailTile();
     this.messageLabel.text = "Rotate the tile, accept to continue, or reject to return.";
     this.scoreLabel.text = "Waiting for tile orientation.";
+    this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
   }
 
@@ -442,7 +534,7 @@ export class DemoScene extends Scene {
     }
 
     this.movementPhase = "movingToTarget";
-    this.clearPreviewTrailTile();
+    this.beginPreviewCommitAnimation();
     this.player.setTargetPosition(this.moveTargetPosition);
     this.messageLabel.text = "Tile accepted. Continuing to destination.";
     this.scoreLabel.text = "Moving to the discovered tile.";
@@ -464,13 +556,22 @@ export class DemoScene extends Scene {
 
   private finishTileDiscovery(accepted: boolean): void {
     this.movementPhase = "idle";
+    if (accepted) {
+      this.commitPreviewTrailTile();
+    } else {
+      this.clearPreviewTrailTile();
+    }
+
     this.moveTargetPosition = null;
     this.pendingTrailTilePosition = null;
     this.movementStartPosition = null;
     this.movementPausePosition = null;
-    this.clearPreviewTrailTile();
+    this.previewCommitStartPosition = null;
+    this.previewCommitTargetPosition = null;
+    this.previewCommitElapsed = 0;
     this.cameraDragLastScreenPos = null;
-    this.cameraZoomDragAccumulator = 0;
+    this.cameraZoomSwipeDistance = 0;
+    this.cameraZoomSwipeConsumed = false;
 
     if (accepted) {
       this.messageLabel.text = "Tile discovered and added.";
@@ -481,6 +582,7 @@ export class DemoScene extends Scene {
       this.scoreLabel.text = "Back at the start position.";
     }
 
+    this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
   }
 
@@ -549,6 +651,8 @@ export class DemoScene extends Scene {
     this.interactionMode = mode;
     this.cameraDragLastScreenPos = null;
     this.moveTargetPosition = null;
+    this.cameraZoomSwipeDistance = 0;
+    this.cameraZoomSwipeConsumed = false;
     this.player.clearTargetPosition();
     this.player.deselect();
     this.camera.clearAllStrategies();
@@ -577,8 +681,16 @@ export class DemoScene extends Scene {
   }
 
   private updateModeButtonStyles(): void {
+    const isPreviewing = this.movementPhase === "waitingForOrientation";
+
     for (const modeButton of this.modeButtons) {
       const isActive = modeButton.mode === this.interactionMode;
+      if (isPreviewing) {
+        modeButton.button.color = isActive ? Color.fromHex("#4f7a57") : Color.fromHex("#152236");
+        modeButton.label.color = isActive ? Color.fromHex("#c8d7ce") : Color.fromHex("#8f9cac");
+        continue;
+      }
+
       modeButton.button.color = isActive ? Color.fromHex("#7cf7a3") : Color.fromHex("#1a2948");
       modeButton.label.color = isActive ? Color.fromHex("#08121c") : Color.fromHex("#edf4ff");
     }
@@ -597,10 +709,12 @@ export class DemoScene extends Scene {
       width: TILE_SIZE,
       height: TILE_SIZE,
       graphic: trailGraphic,
-      z: 0
+      z: 0,
+      scale: vec(this.previewIdleScale, this.previewIdleScale)
     });
 
     this.add(trailTile);
+    trailTile.actions.scaleTo({ scale: vec(1, 1), duration: this.previewCommitDuration });
     this.occupiedTrailTiles.add(key);
     this.nextTrailTileIndex += 1;
   }
@@ -614,14 +728,76 @@ export class DemoScene extends Scene {
 
     const previewGraphic = this.sprites.trailTiles[this.nextTrailTileIndex % this.sprites.trailTiles.length].orientations[this.pendingTrailTileOrientation].clone();
     this.previewTrailTile = new Actor({
-      pos: vec(this.movementPausePosition.x, this.movementPausePosition.y),
+      pos: vec(this.pendingTrailTilePosition?.x ?? this.movementPausePosition.x, this.pendingTrailTilePosition?.y ?? this.movementPausePosition.y),
       width: TILE_SIZE,
       height: TILE_SIZE,
       graphic: previewGraphic,
-      z: 0.5
+      z: 2,
+      scale: vec(1, 1)
     });
 
     this.add(this.previewTrailTile);
+    this.previewAnimationMode = "revealing";
+    this.previewCommitStartPosition = vec(this.pendingTrailTilePosition?.x ?? this.movementPausePosition.x, this.pendingTrailTilePosition?.y ?? this.movementPausePosition.y);
+    this.previewCommitTargetPosition = vec(this.movementPausePosition.x, this.movementPausePosition.y);
+    this.previewCommitStartScale = 1;
+    this.previewCommitTargetScale = this.previewIdleScale;
+    this.previewCommitElapsed = 0;
+  }
+
+  private beginPreviewCommitAnimation(): void {
+    if (!this.previewTrailTile || !this.pendingTrailTilePosition) {
+      return;
+    }
+
+    this.previewAnimationMode = "committing";
+    this.previewCommitStartPosition = vec(this.previewTrailTile.pos.x, this.previewTrailTile.pos.y);
+    this.previewCommitTargetPosition = vec(this.pendingTrailTilePosition.x, this.pendingTrailTilePosition.y);
+    this.previewCommitStartScale = this.previewTrailTile.scale.x;
+    this.previewCommitTargetScale = 1;
+    this.previewCommitElapsed = 0;
+  }
+
+  private updatePreviewCommitAnimation(elapsed: number): void {
+    if (!this.previewTrailTile || !this.previewAnimationMode || !this.previewCommitStartPosition || !this.previewCommitTargetPosition) {
+      return;
+    }
+
+    this.previewCommitElapsed = Math.min(this.previewCommitElapsed + elapsed, this.previewCommitDuration);
+    const progress = this.previewCommitDuration <= 0 ? 1 : this.previewCommitElapsed / this.previewCommitDuration;
+    const easedProgress = 1 - Math.pow(1 - progress, 3);
+    const currentX = this.previewCommitStartPosition.x + (this.previewCommitTargetPosition.x - this.previewCommitStartPosition.x) * easedProgress;
+    const currentY = this.previewCommitStartPosition.y + (this.previewCommitTargetPosition.y - this.previewCommitStartPosition.y) * easedProgress;
+    const currentScale = this.previewCommitStartScale + (this.previewCommitTargetScale - this.previewCommitStartScale) * easedProgress;
+
+    this.previewTrailTile.pos = vec(currentX, currentY);
+    this.previewTrailTile.scale = vec(currentScale, currentScale);
+
+    if (progress >= 1) {
+      if (this.previewAnimationMode === "revealing") {
+        this.previewAnimationMode = null;
+      } else {
+        this.commitPreviewTrailTile();
+      }
+    }
+  }
+
+  private commitPreviewTrailTile(): void {
+    if (!this.previewTrailTile || !this.pendingTrailTilePosition) {
+      return;
+    }
+
+    const key = tileKey(this.pendingTrailTilePosition);
+    this.previewTrailTile.pos = vec(this.pendingTrailTilePosition.x, this.pendingTrailTilePosition.y);
+    this.previewTrailTile.scale = vec(1, 1);
+    this.previewTrailTile.z = 0;
+    this.occupiedTrailTiles.add(key);
+    this.nextTrailTileIndex += 1;
+    this.previewTrailTile = null;
+    this.previewAnimationMode = null;
+    this.previewCommitStartPosition = null;
+    this.previewCommitTargetPosition = null;
+    this.previewCommitElapsed = 0;
   }
 
   private clearPreviewTrailTile(): void {
@@ -631,6 +807,10 @@ export class DemoScene extends Scene {
 
     this.previewTrailTile.kill();
     this.previewTrailTile = null;
+    this.previewAnimationMode = null;
+    this.previewCommitStartPosition = null;
+    this.previewCommitTargetPosition = null;
+    this.previewCommitElapsed = 0;
   }
 
   private updatePreviewTrailTileOrientation(): void {
