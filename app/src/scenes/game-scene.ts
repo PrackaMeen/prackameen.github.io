@@ -133,8 +133,8 @@ function isDemoSavedMonster(value: unknown): value is DemoSavedMonster {
   const monsterIndex = monster.monsterIndex;
   return isFiniteNumber(monster.x)
     && isFiniteNumber(monster.y)
-    && Number.isInteger(monsterIndex)
     && monsterIndex !== undefined
+    && Number.isInteger(monsterIndex)
     && monsterIndex >= 0;
 }
 
@@ -161,8 +161,8 @@ function isDemoSavedState(value: unknown): value is DemoSavedStateV1 {
     && isFiniteNumber(camera.x)
     && isFiniteNumber(camera.y)
     && isFiniteNumber(camera.zoom)
-    && Number.isInteger(nextTrailTileIndex)
     && nextTrailTileIndex !== undefined
+    && Number.isInteger(nextTrailTileIndex)
     && nextTrailTileIndex >= 0
     && Array.isArray(snapshot.trailTiles)
     && snapshot.trailTiles.every((tile) => isDemoSavedTrailTile(tile))

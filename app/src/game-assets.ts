@@ -34,7 +34,17 @@ const monster4 = new ImageSource(spriteSheetUrl("Monster4/Monster4.png"));
 const monster5 = new ImageSource(spriteSheetUrl("Monster5/Monster5.png"));
 const hearth0 = new ImageSource(spriteSheetUrl("Hearth0/Hearth0.png"));
 const hearth1 = new ImageSource(spriteSheetUrl("Hearth1/Hearth1.png"));
-const HEART_HUD_SIZE = clamp(clamp(GAME_HEIGHT * 0.08, 54, 72) * 0.38, 14, 22);
+const HUD_HEIGHT_RATIO = 0.08;
+const MIN_HUD_HEIGHT = 54;
+const MAX_HUD_HEIGHT = 72;
+const HEART_SCALE_FACTOR = 0.38;
+const MIN_HEART_SIZE = 14;
+const MAX_HEART_SIZE = 22;
+const HEART_HUD_SIZE = clamp(
+  clamp(GAME_HEIGHT * HUD_HEIGHT_RATIO, MIN_HUD_HEIGHT, MAX_HUD_HEIGHT) * HEART_SCALE_FACTOR,
+  MIN_HEART_SIZE,
+  MAX_HEART_SIZE
+);
 
 function createGridAnimation(image: ImageSource, displaySize: number, orientationRow = 0, frameDuration = 140): AnimationGraphic {
   const orientationCount = 4;
