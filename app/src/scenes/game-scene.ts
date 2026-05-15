@@ -18,7 +18,7 @@ function tileKey(position: Vector): string {
 }
 
 type DemoMode = "action" | "move" | "zoom";
-type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "turningBlocked" | "returningBlocked" | "returningToStart";
+type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "movingBlockedToWall" | "turningBlocked" | "returningBlocked" | "returningToStart";
 
 type TileActionType = "rotate" | "accept" | "reject";
 type TileWallKey = keyof TrailTileWalls;
@@ -276,6 +276,10 @@ export class DemoScene extends Scene {
         return;
       }
 
+      if (this.isMovementInputLocked()) {
+        return;
+      }
+
       if (this.movementPhase === "waitingForOrientation") {
         this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
         this.tileRotationSwipeDistance = 0;
@@ -345,6 +349,10 @@ export class DemoScene extends Scene {
 
     primaryPointer.on("move", (event: PointerEvent) => {
       if (!this.cameraDragLastScreenPos) {
+        return;
+      }
+
+      if (this.isMovementInputLocked()) {
         return;
       }
 
@@ -427,6 +435,11 @@ export class DemoScene extends Scene {
       return;
     }
 
+    if (this.movementPhase === "movingBlockedToWall" && !this.player.isMoving) {
+      this.beginBlockedReturnTurn();
+      return;
+    }
+
     if (this.movementPhase === "turningBlocked") {
       this.blockedTurnElapsed = Math.min(this.blockedTurnElapsed + elapsed, this.blockedTurnDuration);
       const progress = this.blockedTurnDuration <= 0 ? 1 : this.blockedTurnElapsed / this.blockedTurnDuration;
@@ -474,7 +487,7 @@ export class DemoScene extends Scene {
 
     const directionX = deltaX / distance;
     const directionY = deltaY / distance;
-    const arrowColor = this.movementPhase === "turningBlocked" || this.movementPhase === "returningBlocked"
+    const arrowColor = this.movementPhase === "movingBlockedToWall" || this.movementPhase === "turningBlocked" || this.movementPhase === "returningBlocked"
       ? Color.fromHex("#ff7b7b")
       : Color.fromHex("#7cf7a3");
     const headLength = 18;
@@ -981,6 +994,15 @@ export class DemoScene extends Scene {
     }
   }
 
+  private isMovementInputLocked(): boolean {
+    return this.movementPhase === "movingToBorder"
+      || this.movementPhase === "movingToTarget"
+      || this.movementPhase === "movingBlockedToWall"
+      || this.movementPhase === "turningBlocked"
+      || this.movementPhase === "returningBlocked"
+      || this.movementPhase === "returningToStart";
+  }
+
   private updateDebugInfoLabel(): void {
     if (!gameSettings.debugInfoEnabled) {
       this.debugInfoLabel.text = "";
@@ -1067,7 +1089,20 @@ export class DemoScene extends Scene {
     this.blockedTurnElapsed = 0;
     this.blockedTurnStartRotation = this.player.rotation;
     this.blockedTurnTargetRotation = this.player.rotation + Math.PI;
+    const blockedApproachTarget = this.computeBorderPosition(
+      this.movementStartPosition ?? this.player.pos,
+      targetPosition
+    );
+
+    this.movementPhase = "movingBlockedToWall";
+    this.player.setTargetPosition(blockedApproachTarget, false);
+  }
+
+  private beginBlockedReturnTurn(): void {
     this.movementPhase = "turningBlocked";
+    this.blockedTurnElapsed = 0;
+    this.blockedTurnStartRotation = this.player.rotation;
+    this.blockedTurnTargetRotation = this.player.rotation + Math.PI;
   }
 
   private beginBlockedReturnMovement(): void {
