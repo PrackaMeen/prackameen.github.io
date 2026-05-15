@@ -149,14 +149,16 @@ function isDemoSavedState(value: unknown): value is DemoSavedStateV1 {
   const nextTrailTileIndex = snapshot.nextTrailTileIndex;
 
   return snapshot.version === 1
-    && !!player
+    && player !== null
+    && player !== undefined
     && typeof player === "object"
     && isFiniteNumber(player.x)
     && isFiniteNumber(player.y)
     && isFiniteNumber(player.rotation)
     && typeof player.selected === "boolean"
     && (snapshot.playerHealth === undefined || isFiniteNumber(snapshot.playerHealth))
-    && !!camera
+    && camera !== null
+    && camera !== undefined
     && typeof camera === "object"
     && isFiniteNumber(camera.x)
     && isFiniteNumber(camera.y)

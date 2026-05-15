@@ -40,6 +40,7 @@ const MAX_HUD_HEIGHT = 72;
 const HEART_SCALE_FACTOR = 0.38;
 const MIN_HEART_SIZE = 14;
 const MAX_HEART_SIZE = 22;
+// Match the top-bar HUD sizing in DemoScene so heart sprites render at the same size as their screen-space actors.
 const HUD_HEIGHT = clamp(GAME_HEIGHT * HUD_HEIGHT_RATIO, MIN_HUD_HEIGHT, MAX_HUD_HEIGHT);
 const HEART_HUD_SIZE = clamp(
   HUD_HEIGHT * HEART_SCALE_FACTOR,
