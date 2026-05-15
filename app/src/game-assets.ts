@@ -32,8 +32,8 @@ const monster2 = new ImageSource(spriteSheetUrl("Monster2/Monster2.png"));
 const monster3 = new ImageSource(spriteSheetUrl("Monster3/Monster3.png"));
 const monster4 = new ImageSource(spriteSheetUrl("Monster4/Monster4.png"));
 const monster5 = new ImageSource(spriteSheetUrl("Monster5/Monster5.png"));
-const hearth0 = new ImageSource(spriteSheetUrl("Hearth0/Hearth0.png"));
-const hearth1 = new ImageSource(spriteSheetUrl("Hearth1/Hearth1.png"));
+const heart0 = new ImageSource(spriteSheetUrl("Hearth0/Hearth0.png"));
+const heart1 = new ImageSource(spriteSheetUrl("Hearth1/Hearth1.png"));
 const HUD_HEIGHT_RATIO = 0.08;
 const MIN_HUD_HEIGHT = 54;
 const MAX_HUD_HEIGHT = 72;
@@ -237,8 +237,8 @@ export const gameAssetSources = {
   monster3,
   monster4,
   monster5,
-  hearth0,
-  hearth1,
+  heart0,
+  heart1,
 };
 
 export async function loadGameAssets(): Promise<void> {
@@ -271,8 +271,8 @@ export function createGameSprites(): GameSprites {
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
-    heartActive: createSingleSprite(hearth0, HEART_HUD_SIZE),
-    heartInactive: createSingleSprite(hearth1, HEART_HUD_SIZE),
+    heartActive: createSingleSprite(heart0, HEART_HUD_SIZE),
+    heartInactive: createSingleSprite(heart1, HEART_HUD_SIZE),
     monsters: monsterTileSources.map(({ assetName, source }) => ({
       assetName,
       graphic: createSingleSprite(source, CHAR_SIZE)
