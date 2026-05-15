@@ -29,6 +29,13 @@ interface ModeButtonControl {
   height: number;
 }
 
+interface SimpleButtonControl {
+  button: Actor;
+  label: Label;
+  width: number;
+  height: number;
+}
+
 interface TileActionButtonControl {
   action: TileActionType;
   button: Actor;
@@ -71,6 +78,13 @@ export class DemoScene extends Scene {
     color: Color.fromHex("#7cf7a3"),
     coordPlane: CoordPlane.Screen
   });
+  private readonly debugInfoLabel = new Label({
+    text: "M[0,0]\nZ[1.00]",
+    pos: vec(this.sideInset, this.topInset + clamp(GAME_HEIGHT * 0.11, 56, 92)),
+    font: new Font({ family: "Space Grotesk", size: clamp(GAME_WIDTH * 0.012, 12, 16), unit: FontUnit.Px, bold: true }),
+    color: Color.fromHex("#ff4d4d"),
+    coordPlane: CoordPlane.Screen
+  });
   private moveTargetPosition: Vector | null = null;
   private pendingTrailTilePosition: Vector | null = null;
   private pendingTrailTileOrientation: TrailTileOrientation = 0;
@@ -90,8 +104,10 @@ export class DemoScene extends Scene {
   private readonly previewOrientationDuration = 180;
   private readonly previewIdleScale = 2;
   private readonly occupiedTrailTiles = new Set<string>();
+  private readonly trailTileActors: Actor[] = [];
   private readonly modeButtons: ModeButtonControl[] = [];
   private readonly tileActionButtons: TileActionButtonControl[] = [];
+  private readonly menuButton: SimpleButtonControl;
   private interactionMode: DemoMode = "action";
   private cameraDragLastScreenPos: Vector | null = null;
   private cameraZoomLevelIndex = 1;
@@ -100,11 +116,73 @@ export class DemoScene extends Scene {
   private tileRotationSwipeDistance = 0;
   private tileRotationSwipeConsumed = false;
   private nextTrailTileIndex = 0;
+  private resetRequested = false;
 
   constructor(controller: GameController, sprites: GameSprites) {
     super();
     this.controller = controller;
     this.sprites = sprites;
+    this.menuButton = this.createSimpleButton(this.sideInset, this.topInset + 18, clamp(GAME_WIDTH * 0.11, 84, 120), clamp(GAME_HEIGHT * 0.05, 36, 48), "Menu");
+  }
+
+  public requestGameReset(): void {
+    this.resetRequested = true;
+  }
+
+  override onActivate(): void {
+    if (!this.resetRequested) {
+      return;
+    }
+
+    this.performGameReset();
+    this.resetRequested = false;
+  }
+
+  private performGameReset(): void {
+    for (const trailTile of this.trailTileActors) {
+      trailTile.kill();
+    }
+
+    this.trailTileActors.length = 0;
+    this.occupiedTrailTiles.clear();
+    this.clearPreviewTrailTile();
+
+    this.moveTargetPosition = null;
+    this.pendingTrailTilePosition = null;
+    this.pendingTrailTileOrientation = 0;
+    this.movementPhase = "idle";
+    this.movementStartPosition = null;
+    this.movementPausePosition = null;
+    this.previewAnimationMode = null;
+    this.previewOrientationAnimationDirection = null;
+    this.previewOrientationElapsed = 0;
+    this.previewCommitStartPosition = null;
+    this.previewCommitTargetPosition = null;
+    this.previewCommitStartScale = 1;
+    this.previewCommitTargetScale = 1;
+    this.previewCommitElapsed = 0;
+    this.cameraDragLastScreenPos = null;
+    this.cameraZoomLevelIndex = 1;
+    this.cameraZoomSwipeDistance = 0;
+    this.cameraZoomSwipeConsumed = false;
+    this.tileRotationSwipeDistance = 0;
+    this.tileRotationSwipeConsumed = false;
+    this.nextTrailTileIndex = 0;
+
+    this.player.pos = vec(snapToTileCenter(GAME_WIDTH / 2), snapToTileCenter(GAME_HEIGHT / 2));
+    this.player.rotation = 0;
+    this.player.clearTargetPosition();
+    this.player.deselect();
+    this.camera.clearAllStrategies();
+    this.camera.strategy.lockToActor(this.player);
+    this.camera.pos = vec(this.player.pos.x, this.player.pos.y);
+    this.camera.zoom = 1;
+
+    this.showTrailTile(this.player.pos, 0);
+    this.setInteractionMode("action");
+    this.updateModeButtonStyles();
+    this.updateTileActionButtonStyles();
+    this.updateDebugInfoLabel();
   }
 
   override onInitialize(): void {
@@ -112,6 +190,9 @@ export class DemoScene extends Scene {
 
     this.showTrailTile(this.player.pos, 0);
     this.add(this.player);
+
+    this.add(this.menuButton.button);
+    this.add(this.menuButton.label);
 
     const bottomInset = clamp(GAME_HEIGHT * 0.03, 18, 28);
     const buttonWidth = clamp(GAME_WIDTH * 0.12, 72, 110);
@@ -150,6 +231,8 @@ export class DemoScene extends Scene {
       this.add(actionButton.label);
     }
 
+    this.add(this.debugInfoLabel);
+
     this.setInteractionMode("action");
     this.updateTileActionButtonStyles();
 
@@ -157,6 +240,10 @@ export class DemoScene extends Scene {
 
     primaryPointer.on("down", (event: PointerEvent) => {
       if (event.button !== PointerButton.Left) {
+        return;
+      }
+
+      if (this.handleMenuButtonPress(event.screenPos)) {
         return;
       }
 
@@ -286,11 +373,7 @@ export class DemoScene extends Scene {
   }
 
   override onPreUpdate(engine: import("excalibur").Engine, elapsed: number): void {
-    if (engine.input.keyboard.wasPressed(Keys.Escape)) {
-      this.controller.showMenu();
-      return;
-    }
-
+    this.updateDebugInfoLabel();
     this.updatePreviewCommitAnimation(elapsed);
     this.updatePreviewOrientationAnimation(elapsed);
 
@@ -389,6 +472,28 @@ export class DemoScene extends Scene {
     return { mode, button, label, width, height };
   }
 
+  private createSimpleButton(centerX: number, centerY: number, width: number, height: number, text: string): SimpleButtonControl {
+    const button = new Actor({
+      pos: vec(centerX, centerY),
+      width,
+      height,
+      color: Color.fromHex("#1a2948"),
+      coordPlane: CoordPlane.Screen,
+      z: 100
+    });
+
+    const label = new Label({
+      text,
+      pos: vec(centerX, centerY),
+      font: new Font({ family: "Space Grotesk", size: clamp(height * 0.42, 14, 18), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#edf4ff"),
+      coordPlane: CoordPlane.Screen,
+      z: 101
+    });
+
+    return { button, label, width, height };
+  }
+
   private createTileActionButton(action: TileActionType, text: string, centerX: number, centerY: number, width: number, height: number): TileActionButtonControl {
     const button = new Actor({
       pos: vec(centerX, centerY),
@@ -421,6 +526,15 @@ export class DemoScene extends Scene {
         this.setInteractionMode(modeButton.mode);
         return true;
       }
+    }
+
+    return false;
+  }
+
+  private handleMenuButtonPress(screenPos: Vector): boolean {
+    if (this.isPointInsideButton(screenPos, this.menuButton)) {
+      this.controller.showMenu();
+      return true;
     }
 
     return false;
@@ -499,7 +613,7 @@ export class DemoScene extends Scene {
     this.previewOrientationElapsed = 0;
   }
 
-  private isPointInsideButton(point: Vector, button: ModeButtonControl | TileActionButtonControl): boolean {
+  private isPointInsideButton(point: Vector, button: ModeButtonControl | TileActionButtonControl | SimpleButtonControl): boolean {
     const halfWidth = button.width / 2;
     const halfHeight = button.height / 2;
     const left = button.button.pos.x - halfWidth;
@@ -704,6 +818,18 @@ export class DemoScene extends Scene {
     }
   }
 
+  private updateDebugInfoLabel(): void {
+    if (!gameSettings.debugInfoEnabled) {
+      this.debugInfoLabel.text = "";
+      return;
+    }
+
+    const cameraX = Math.round(this.camera.pos.x);
+    const cameraY = Math.round(this.camera.pos.y);
+    const zoom = this.camera.zoom.toFixed(2);
+    this.debugInfoLabel.text = `M[${cameraX},${cameraY}]\nZ[${zoom}]`;
+  }
+
   private showTrailTile(position: Vector, orientation: TrailTileOrientation): void {
     const key = tileKey(position);
 
@@ -724,6 +850,7 @@ export class DemoScene extends Scene {
     this.add(trailTile);
     trailTile.actions.scaleTo({ scale: vec(1, 1), duration: this.previewCommitDuration });
     this.occupiedTrailTiles.add(key);
+    this.trailTileActors.push(trailTile);
     this.nextTrailTileIndex += 1;
   }
 
@@ -804,6 +931,7 @@ export class DemoScene extends Scene {
     this.previewTrailTile.scale = vec(1, 1);
     this.previewTrailTile.z = 0;
     this.occupiedTrailTiles.add(key);
+    this.trailTileActors.push(this.previewTrailTile);
     this.nextTrailTileIndex += 1;
     this.previewTrailTile = null;
     this.previewAnimationMode = null;

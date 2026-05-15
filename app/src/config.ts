@@ -14,5 +14,6 @@ export const gameSettings = {
 	cameraZoomMin: 0.5,
 	cameraZoomMax: 2,
 	cameraZoomLevels: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
-	cameraZoomDragThreshold: 18
+	cameraZoomDragThreshold: 18,
+	debugInfoEnabled: true
 };

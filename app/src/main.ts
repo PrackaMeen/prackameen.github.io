@@ -24,10 +24,12 @@ void (async () => {
 
   const sprites = createGameSprites();
   const controller = new GameController(engine);
+  const demoScene = new DemoScene(controller, sprites);
 
   engine.addScene("menu", new MenuScene(controller));
   engine.addScene("settings", new SettingsScene(controller));
-  engine.addScene("demo", new DemoScene(controller, sprites));
+  engine.addScene("demo", demoScene);
+  controller.registerDemoResetter(() => demoScene.requestGameReset());
   engine.goToScene("menu");
 
   void engine.start();
