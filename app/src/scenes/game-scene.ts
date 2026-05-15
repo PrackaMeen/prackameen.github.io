@@ -18,7 +18,7 @@ function tileKey(position: Vector): string {
 }
 
 type DemoMode = "action" | "move" | "zoom";
-type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "movingBlockedToWall" | "turningBlocked" | "returningBlocked" | "returningToStart";
+type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "attackingMonster" | "turningAfterMonsterDefeat" | "returningAfterMonsterDefeat" | "movingBlockedToWall" | "turningBlocked" | "returningBlocked" | "returningToStart";
 
 type TileActionType = "rotate" | "accept" | "reject";
 type TileWallKey = keyof TrailTileWalls;
@@ -59,6 +59,8 @@ interface MonsterDebugUnit {
   debugGraphic: Rectangle;
   colorHex: string;
   debugLabel: string;
+  monsterIndex: number;
+  tilePositionKey: string;
   offsetX: number;
   offsetY: number;
 }
@@ -132,6 +134,14 @@ export class DemoScene extends Scene {
   private readonly menuButton: SimpleButtonControl;
   private interactionMode: DemoMode = "action";
   private monsterVisualDebugMode = !gameSettings.debugInfoEnabled;
+  private activeMonsterEncounter: MonsterDebugUnit | null = null;
+  private lastMonsterEncounterWinner: "char" | "monster" | null = null;
+  private monsterCombatElapsed = 0;
+  private readonly monsterCombatDuration = 240;
+  private monsterDefeatTurnElapsed = 0;
+  private readonly monsterDefeatTurnDuration = 140;
+  private monsterDefeatTurnStartRotation = 0;
+  private monsterDefeatTurnTargetRotation = 0;
   private cameraDragLastScreenPos: Vector | null = null;
   private cameraZoomLevelIndex = 1;
   private cameraZoomSwipeDistance = 0;
@@ -197,6 +207,12 @@ export class DemoScene extends Scene {
     this.previewCommitTargetScale = 1;
     this.previewCommitElapsed = 0;
     this.tileValidation.reset();
+    this.activeMonsterEncounter = null;
+    this.lastMonsterEncounterWinner = null;
+    this.monsterCombatElapsed = 0;
+    this.monsterDefeatTurnElapsed = 0;
+    this.monsterDefeatTurnStartRotation = 0;
+    this.monsterDefeatTurnTargetRotation = 0;
     this.cameraDragLastScreenPos = null;
     this.cameraZoomLevelIndex = 1;
     this.cameraZoomSwipeDistance = 0;
@@ -336,10 +352,19 @@ export class DemoScene extends Scene {
           const wallKeys = this.getMoveWallKeys(this.player.pos, targetPosition);
 
           if (wallKeys && this.canMoveBetweenPositions(this.player.pos, targetPosition)) {
+            const monster = this.chamberMonsters.get(tileKey(targetPosition));
+
             this.player.deselect();
-            this.player.setTargetPosition(targetPosition);
-            this.scoreLabel.text = "Moving to the revealed tile.";
-            this.messageLabel.text = "Revealed tiles move directly through open walls.";
+
+            if (monster) {
+              this.startMonsterEncounter(monster, targetPosition);
+              this.scoreLabel.text = "Monster encountered in the chamber.";
+              this.messageLabel.text = "The box attacks before reaching the center.";
+            } else {
+              this.player.setTargetPosition(targetPosition);
+              this.scoreLabel.text = "Moving to the revealed tile.";
+              this.messageLabel.text = "Revealed tiles move directly through open walls.";
+            }
           } else if (wallKeys) {
             const returnPosition = vec(this.player.pos.x, this.player.pos.y);
             this.player.deselect();
@@ -450,7 +475,39 @@ export class DemoScene extends Scene {
       return;
     }
 
+    if (this.movementPhase === "attackingMonster") {
+      this.monsterCombatElapsed = Math.min(this.monsterCombatElapsed + elapsed, this.monsterCombatDuration);
+
+      if (this.monsterCombatElapsed >= this.monsterCombatDuration) {
+        this.resolveMonsterEncounter();
+      }
+
+      return;
+    }
+
+    if (this.movementPhase === "turningAfterMonsterDefeat") {
+      this.monsterDefeatTurnElapsed = Math.min(this.monsterDefeatTurnElapsed + elapsed, this.monsterDefeatTurnDuration);
+      const progress = this.monsterDefeatTurnDuration <= 0 ? 1 : this.monsterDefeatTurnElapsed / this.monsterDefeatTurnDuration;
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      this.player.rotation = this.monsterDefeatTurnStartRotation + (this.monsterDefeatTurnTargetRotation - this.monsterDefeatTurnStartRotation) * easedProgress;
+
+      if (progress >= 1) {
+        this.beginMonsterDefeatReturnMovement();
+      }
+
+      return;
+    }
+
+    if (this.movementPhase === "returningAfterMonsterDefeat" && !this.player.isMoving) {
+      this.finishMonsterDefeatMovement();
+      return;
+    }
+
     if (this.movementPhase === "movingToTarget" && !this.player.isMoving) {
+      if (this.activeMonsterEncounter) {
+        return;
+      }
+
       this.finishTileDiscovery(true);
       return;
     }
@@ -776,8 +833,19 @@ export class DemoScene extends Scene {
       return;
     }
 
-    this.movementPhase = "movingToTarget";
+    const nextTrailVariant = this.getNextTrailTileVariant();
+    const isChamberTile = nextTrailVariant.assetName.startsWith("chamber");
+
     this.beginPreviewCommitAnimation();
+
+    if (isChamberTile && this.pendingTrailTilePosition) {
+      this.maybeShowChamberMonster(this.pendingTrailTilePosition, nextTrailVariant.assetName);
+      this.messageLabel.text = "Chamber accepted. Monster encounter started.";
+      this.scoreLabel.text = "Fighting the chamber monster.";
+      return;
+    }
+
+    this.movementPhase = "movingToTarget";
     this.player.setTargetPosition(this.moveTargetPosition);
     this.messageLabel.text = "Tile accepted. Continuing to destination.";
     this.scoreLabel.text = "Moving to the discovered tile.";
@@ -1017,6 +1085,9 @@ export class DemoScene extends Scene {
   private isMovementInputLocked(): boolean {
     return this.movementPhase === "movingToBorder"
       || this.movementPhase === "movingToTarget"
+      || this.movementPhase === "attackingMonster"
+      || this.movementPhase === "turningAfterMonsterDefeat"
+      || this.movementPhase === "returningAfterMonsterDefeat"
       || this.movementPhase === "movingBlockedToWall"
       || this.movementPhase === "turningBlocked"
       || this.movementPhase === "returningBlocked"
@@ -1034,7 +1105,8 @@ export class DemoScene extends Scene {
     const characterX = Math.round(this.player.pos.x);
     const characterY = Math.round(this.player.pos.y);
     const zoom = this.camera.zoom.toFixed(2);
-    this.debugInfoLabel.text = `M[${cameraX},${cameraY}]\nCh[${characterX},${characterY}]\nZ[${zoom}]`;
+    const winner = this.lastMonsterEncounterWinner === null ? "none" : this.lastMonsterEncounterWinner;
+    this.debugInfoLabel.text = `M[${cameraX},${cameraY}]\nCh[${characterX},${characterY}]\nZ[${zoom}]\nFight[${winner}]`;
   }
 
   private showTrailTile(position: Vector, orientation: TrailTileOrientation): void {
@@ -1085,16 +1157,17 @@ export class DemoScene extends Scene {
     }
 
     const debugColors = ["#ff3b30", "#34c759", "#007aff", "#ffcc00", "#ff2d55", "#00c7be"];
-    const monster = this.createChamberMonsterUnit(monsterIndex, vec(tilePosition.x, tilePosition.y), monsterGraphic, debugColors[monsterIndex] ?? "#00c7be");
+    const monster = this.createChamberMonsterUnit(monsterIndex, tilePositionKey, vec(tilePosition.x, tilePosition.y), monsterGraphic, debugColors[monsterIndex] ?? "#00c7be");
 
     this.chamberMonsters.set(tilePositionKey, monster);
     this.add(monster.actor);
     this.add(monster.label);
     this.applyChamberMonsterVisualMode(monster, gameSettings.debugInfoEnabled);
     this.syncChamberMonsterVisualMode();
+    this.startMonsterEncounter(monster, tilePosition);
   }
 
-  private createChamberMonsterUnit(monsterIndex: number, position: Vector, assetGraphic: Graphic, colorHex: string): MonsterDebugUnit {
+  private createChamberMonsterUnit(monsterIndex: number, tilePositionKey: string, position: Vector, assetGraphic: Graphic, colorHex: string): MonsterDebugUnit {
     const actor = new Actor({
       pos: vec(position.x, position.y),
       width: this.playerSize,
@@ -1115,7 +1188,97 @@ export class DemoScene extends Scene {
       smoothing: false
     });
 
-    return { actor, label, assetGraphic, debugGraphic, colorHex, debugLabel: (monsterIndex + 1).toString(), offsetX: 0, offsetY: 0 };
+    return { actor, label, assetGraphic, debugGraphic, colorHex, debugLabel: (monsterIndex + 1).toString(), monsterIndex, tilePositionKey, offsetX: 0, offsetY: 0 };
+  }
+
+  private startMonsterEncounter(monster: MonsterDebugUnit, targetPosition: Vector): void {
+    if (this.activeMonsterEncounter) {
+      return;
+    }
+
+    this.activeMonsterEncounter = monster;
+    this.lastMonsterEncounterWinner = null;
+    this.monsterCombatElapsed = 0;
+    this.monsterDefeatTurnElapsed = 0;
+    this.player.clearTargetPosition();
+    this.moveTargetPosition = targetPosition;
+    this.movementPhase = "attackingMonster";
+    this.scoreLabel.text = "Monster encounter started.";
+    this.messageLabel.text = "The box attacks immediately.";
+  }
+
+  private resolveMonsterEncounter(): void {
+    const monster = this.activeMonsterEncounter;
+
+    if (!monster) {
+      this.movementPhase = "idle";
+      return;
+    }
+
+    if (this.isPlayerVictoriousAgainstMonster(monster.monsterIndex)) {
+      this.removeChamberMonster(monster);
+      this.activeMonsterEncounter = null;
+      this.lastMonsterEncounterWinner = "char";
+      this.messageLabel.text = "The monster is defeated. The box keeps moving forward.";
+      this.scoreLabel.text = "Monster defeated.";
+      this.player.setTargetPosition(this.moveTargetPosition ?? this.player.pos);
+      this.movementPhase = "movingToTarget";
+      return;
+    }
+
+    this.lastMonsterEncounterWinner = "monster";
+    this.messageLabel.text = "The monster wins. The box turns back.";
+    this.scoreLabel.text = "Monster won the encounter.";
+    this.activeMonsterEncounter = null;
+    if (this.movementPausePosition) {
+      this.player.pos = vec(this.movementPausePosition.x, this.movementPausePosition.y);
+    }
+    this.player.clearTargetPosition();
+    this.blockedReturnPosition = this.movementStartPosition ? vec(this.movementStartPosition.x, this.movementStartPosition.y) : null;
+    this.beginMonsterDefeatTurn();
+    this.messageLabel.text = "The monster wins. The box turns back at the border.";
+    this.scoreLabel.text = "Returning to the initial position.";
+  }
+
+  private beginMonsterDefeatTurn(): void {
+    this.movementPhase = "turningAfterMonsterDefeat";
+    this.monsterDefeatTurnElapsed = 0;
+    this.monsterDefeatTurnStartRotation = this.player.rotation;
+    this.monsterDefeatTurnTargetRotation = this.player.rotation + Math.PI;
+  }
+
+  private beginMonsterDefeatReturnMovement(): void {
+    this.player.setTargetPosition(this.movementStartPosition ?? this.player.pos, false);
+    this.movementPhase = "returningAfterMonsterDefeat";
+  }
+
+  private finishMonsterDefeatMovement(): void {
+    this.activeMonsterEncounter = null;
+    this.player.clearTargetPosition();
+    this.player.deselect();
+    this.player.select();
+    this.moveTargetPosition = null;
+    this.pendingTrailTilePosition = null;
+    this.movementStartPosition = null;
+    this.movementPausePosition = null;
+    this.blockedReturnPosition = null;
+    this.previewTrailTile = null;
+    this.previewCommitStartPosition = null;
+    this.previewCommitTargetPosition = null;
+    this.previewCommitElapsed = 0;
+    this.movementPhase = "idle";
+    this.scoreLabel.text = "The box returned to the start tile.";
+    this.messageLabel.text = "The chamber monster pushed it back.";
+  }
+
+  private removeChamberMonster(monster: MonsterDebugUnit): void {
+    this.chamberMonsters.delete(monster.tilePositionKey);
+    monster.actor.kill();
+    monster.label.kill();
+  }
+
+  private isPlayerVictoriousAgainstMonster(monsterIndex: number): boolean {
+    return monsterIndex % 2 === 0;
   }
 
   private syncChamberMonsterVisualMode(): void {
