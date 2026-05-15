@@ -61,6 +61,14 @@ export class SettingsScene extends Scene {
       coordPlane: CoordPlane.Screen
     });
 
+    const debugLabel = new Label({
+      text: "Debug info",
+      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.19),
+      font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#d9ffea"),
+      coordPlane: CoordPlane.Screen
+    });
+
     const maxLabel = new Label({
       text: "Zoom max",
       pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.08),
@@ -89,6 +97,9 @@ export class SettingsScene extends Scene {
     const minIncrease = this.createButton(rowRightX, GAME_HEIGHT / 2 - panelHeight * 0.05, buttonWidth, buttonHeight, "+");
     const maxDecrease = this.createButton(rowLeftX, GAME_HEIGHT / 2 + panelHeight * 0.08, buttonWidth, buttonHeight, "-");
     const maxIncrease = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.08, buttonWidth, buttonHeight, "+");
+    const debugToggle = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.19, buttonWidth, buttonHeight, gameSettings.debugInfoEnabled ? "On" : "Off");
+    debugToggle.button.color = gameSettings.debugInfoEnabled ? Color.fromHex("#7cf7a3") : Color.fromHex("#7b8492");
+    debugToggle.label.color = gameSettings.debugInfoEnabled ? Color.fromHex("#08121c") : Color.fromHex("#edf4ff");
     const backButton = this.createButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + panelHeight * 0.28, buttonWidth * 1.5, buttonHeight, "Back");
 
     const controls: ButtonControl[] = [
@@ -114,6 +125,15 @@ export class SettingsScene extends Scene {
         }
       },
       {
+        ...debugToggle,
+        onPress: () => {
+          gameSettings.debugInfoEnabled = !gameSettings.debugInfoEnabled;
+          debugToggle.label.text = gameSettings.debugInfoEnabled ? "On" : "Off";
+          debugToggle.button.color = gameSettings.debugInfoEnabled ? Color.fromHex("#7cf7a3") : Color.fromHex("#7b8492");
+          debugToggle.label.color = gameSettings.debugInfoEnabled ? Color.fromHex("#08121c") : Color.fromHex("#edf4ff");
+        }
+      },
+      {
         ...maxIncrease,
         onPress: () => {
           gameSettings.cameraZoomMax = clamp(gameSettings.cameraZoomMax + 0.1, gameSettings.cameraZoomMin + 0.1, 5);
@@ -133,6 +153,7 @@ export class SettingsScene extends Scene {
     this.add(subtitle);
     this.add(minLabel);
     this.add(maxLabel);
+    this.add(debugLabel);
     this.add(minValue);
     this.add(maxValue);
 

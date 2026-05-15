@@ -2,7 +2,7 @@ import { Color, Engine, PointerScope } from "excalibur";
 import { GAME_HEIGHT, GAME_TITLE, GAME_WIDTH } from "./config";
 import { createGameSprites, loadGameAssets } from "./game-assets";
 import { GameController } from "./game-controller";
-import { DemoScene } from "./scenes/demo-scene";
+import { DemoScene } from "./scenes/game-scene";
 import { MenuScene } from "./scenes/menu-scene";
 import { SettingsScene } from "./scenes/settings-scene";
 import "./styles.css";
@@ -24,10 +24,12 @@ void (async () => {
 
   const sprites = createGameSprites();
   const controller = new GameController(engine);
+  const demoScene = new DemoScene(controller, sprites);
 
   engine.addScene("menu", new MenuScene(controller));
   engine.addScene("settings", new SettingsScene(controller));
-  engine.addScene("demo", new DemoScene(controller, sprites));
+  engine.addScene("demo", demoScene);
+  controller.registerDemoResetter(() => demoScene.requestGameReset());
   engine.goToScene("menu");
 
   void engine.start();

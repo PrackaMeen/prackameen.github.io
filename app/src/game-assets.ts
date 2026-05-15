@@ -1,5 +1,6 @@
 import { Animation, AnimationStrategy, ImageSource, SpriteSheet, type Animation as AnimationGraphic, type Graphic } from "excalibur";
 import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "./config";
+import trailTileCollisionCsv from "./data/trail-tile-collision-metadata.csv?raw";
 
 function assetUrl(path: string): string {
   return new URL(`../assets/${path}`, import.meta.url).toString();
@@ -67,9 +68,124 @@ export interface GameSprites {
 
 export type TrailTileOrientation = 0 | 1 | 2 | 3;
 
-export interface TrailTileVariant {
-  orientations: AnimationGraphic[];
+export interface TrailTileWalls {
+  northWall: boolean;
+  eastWall: boolean;
+  southWall: boolean;
+  westWall: boolean;
 }
+
+interface TrailTileCollisionRow extends TrailTileWalls {
+  assetName: string;
+  orientation: TrailTileOrientation;
+}
+
+export interface TrailTileVariant {
+  assetName: string;
+  orientations: AnimationGraphic[];
+  collisionByOrientation: TrailTileWalls[];
+}
+
+function parseBooleanCell(value: string): boolean {
+  const normalizedValue = value.trim().toLowerCase();
+
+  if (normalizedValue === "true") {
+    return true;
+  }
+
+  if (normalizedValue === "false") {
+    return false;
+  }
+
+  throw new Error(`Expected a boolean CSV value but received "${value}".`);
+}
+
+function parseTrailTileCollisionCsv(csvText: string): TrailTileCollisionRow[] {
+  const lines = csvText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) {
+    throw new Error("Trail tile collision metadata CSV is empty.");
+  }
+
+  const [headerLine, ...dataLines] = lines;
+  const header = headerLine.split(",").map((cell) => cell.trim());
+  const expectedHeader = ["assetName", "orientation", "northWall", "eastWall", "southWall", "westWall"];
+
+  if (header.length !== expectedHeader.length || expectedHeader.some((cell, index) => header[index] !== cell)) {
+    throw new Error("Trail tile collision metadata CSV has an unexpected header.");
+  }
+
+  return dataLines.map((line) => {
+    const cells = line.split(",").map((cell) => cell.trim());
+
+    if (cells.length !== expectedHeader.length) {
+      throw new Error(`Trail tile collision metadata CSV row has ${cells.length} columns, expected ${expectedHeader.length}.`);
+    }
+
+    const orientation = Number.parseInt(cells[1], 10);
+
+    if (!Number.isInteger(orientation) || orientation < 0 || orientation > 3) {
+      throw new Error(`Trail tile collision metadata CSV contains an invalid orientation value: ${cells[1]}.`);
+    }
+
+    return {
+      assetName: cells[0],
+      orientation: orientation as TrailTileOrientation,
+      northWall: parseBooleanCell(cells[2]),
+      eastWall: parseBooleanCell(cells[3]),
+      southWall: parseBooleanCell(cells[4]),
+      westWall: parseBooleanCell(cells[5])
+    };
+  });
+}
+
+function buildTrailTileCollisionLookup(rows: TrailTileCollisionRow[]): Map<string, TrailTileWalls[]> {
+  const lookup = new Map<string, Array<TrailTileWalls | undefined>>();
+
+  for (const row of rows) {
+    const existingRows = lookup.get(row.assetName) ?? [undefined, undefined, undefined, undefined];
+
+    if (existingRows[row.orientation]) {
+      throw new Error(`Duplicate trail tile collision metadata row for ${row.assetName} orientation ${row.orientation}.`);
+    }
+
+    existingRows[row.orientation] = {
+      northWall: row.northWall,
+      eastWall: row.eastWall,
+      southWall: row.southWall,
+      westWall: row.westWall
+    };
+
+    lookup.set(row.assetName, existingRows);
+  }
+
+  const resolvedLookup = new Map<string, TrailTileWalls[]>();
+
+  for (const [assetName, rowsByOrientation] of lookup.entries()) {
+    if (rowsByOrientation.some((row) => row === undefined)) {
+      throw new Error(`Trail tile collision metadata CSV is missing one or more orientations for ${assetName}.`);
+    }
+
+    resolvedLookup.set(assetName, rowsByOrientation as TrailTileWalls[]);
+  }
+
+  return resolvedLookup;
+}
+
+function getTrailTileCollisionByAsset(assetName: string): TrailTileWalls[] {
+  const collisions = trailTileCollisionLookup.get(assetName);
+
+  if (!collisions) {
+    throw new Error(`Missing trail tile collision metadata for ${assetName}.`);
+  }
+
+  return collisions;
+}
+
+const trailTileCollisionLookup = buildTrailTileCollisionLookup(parseTrailTileCollisionCsv(trailTileCollisionCsv));
 
 export const gameAssetSources = {
   char0,
@@ -92,23 +208,25 @@ export async function loadGameAssets(): Promise<void> {
 
 export function createGameSprites(): GameSprites {
   const trailTileSources = [
-    road0,
-    road1,
-    road2,
-    road3,
-    road4,
-    chamber0,
-    chamber1,
-    chamber2,
-    chamber3,
-    chamber4
+    { assetName: "road0", source: road0 },
+    { assetName: "road1", source: road1 },
+    { assetName: "road2", source: road2 },
+    { assetName: "road3", source: road3 },
+    { assetName: "road4", source: road4 },
+    { assetName: "chamber0", source: chamber0 },
+    { assetName: "chamber1", source: chamber1 },
+    { assetName: "chamber2", source: chamber2 },
+    { assetName: "chamber3", source: chamber3 },
+    { assetName: "chamber4", source: chamber4 }
   ];
 
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
-    trailTiles: trailTileSources.map((asset) => ({
-      orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(asset, TILE_SIZE, orientationRow))
+    trailTiles: trailTileSources.map(({ assetName, source }) => ({
+      assetName,
+      orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(source, TILE_SIZE, orientationRow)),
+      collisionByOrientation: getTrailTileCollisionByAsset(assetName)
     })),
     backdrop: createGridAnimation(chamber4, TILE_SIZE, 0, 180)
   };
