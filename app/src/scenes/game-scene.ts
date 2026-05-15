@@ -207,6 +207,7 @@ export class DemoScene extends Scene {
     super();
     this.controller = controller;
     this.sprites = sprites;
+    const topBarButtonHeight = clamp(this.topBarHeight * 0.4, 24, 32);
     this.topBar = new Actor({
       pos: vec(GAME_WIDTH / 2, this.topBarHeight / 2),
       width: GAME_WIDTH,
@@ -215,8 +216,8 @@ export class DemoScene extends Scene {
       coordPlane: CoordPlane.Screen,
       z: 90
     });
-    this.menuButton = this.createSimpleButton(clamp(GAME_WIDTH * 0.09, 64, 96), this.topBarItemY, clamp(GAME_WIDTH * 0.1, 76, 112), clamp(this.topBarHeight * 0.52, 30, 40), "Menu");
-    this.inventoryButton = this.createSimpleButton(GAME_WIDTH - clamp(GAME_WIDTH * 0.09, 64, 96), this.topBarItemY, clamp(GAME_WIDTH * 0.12, 84, 120), clamp(this.topBarHeight * 0.52, 30, 40), "Inventory");
+    this.menuButton = this.createSimpleButton(clamp(GAME_WIDTH * 0.07, 24, 44), this.topBarItemY, clamp(GAME_WIDTH * 0.08, 56, 72), topBarButtonHeight, "Menu");
+    this.inventoryButton = this.createSimpleButton(GAME_WIDTH - clamp(GAME_WIDTH * 0.07, 24, 44), this.topBarItemY, clamp(GAME_WIDTH * 0.12, 84, 120), topBarButtonHeight, "Inventory");
   }
 
   public requestGameReset(): void {
