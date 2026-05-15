@@ -135,6 +135,7 @@ export class DemoScene extends Scene {
   private interactionMode: DemoMode = "action";
   private monsterVisualDebugMode = !gameSettings.debugInfoEnabled;
   private activeMonsterEncounter: MonsterDebugUnit | null = null;
+  private pendingMonsterEncounter: MonsterDebugUnit | null = null;
   private lastMonsterEncounterWinner: "char" | "monster" | null = null;
   private monsterCombatElapsed = 0;
   private readonly monsterCombatDuration = 240;
@@ -208,6 +209,7 @@ export class DemoScene extends Scene {
     this.previewCommitElapsed = 0;
     this.tileValidation.reset();
     this.activeMonsterEncounter = null;
+    this.pendingMonsterEncounter = null;
     this.lastMonsterEncounterWinner = null;
     this.monsterCombatElapsed = 0;
     this.monsterDefeatTurnElapsed = 0;
@@ -357,9 +359,17 @@ export class DemoScene extends Scene {
             this.player.deselect();
 
             if (monster) {
-              this.startMonsterEncounter(monster, targetPosition);
-              this.scoreLabel.text = "Monster encountered in the chamber.";
-              this.messageLabel.text = "The box attacks before reaching the center.";
+              const startPosition = vec(this.player.pos.x, this.player.pos.y);
+              const pausePosition = this.computeBorderPosition(startPosition, targetPosition);
+
+              this.movementStartPosition = startPosition;
+              this.moveTargetPosition = targetPosition;
+              this.movementPausePosition = pausePosition;
+              this.pendingMonsterEncounter = monster;
+              this.movementPhase = "movingToBorder";
+              this.player.setTargetPosition(pausePosition, false);
+              this.scoreLabel.text = "Moving to the chamber border.";
+              this.messageLabel.text = "The box advances before the fight starts.";
             } else {
               this.player.setTargetPosition(targetPosition);
               this.scoreLabel.text = "Moving to the revealed tile.";
@@ -471,6 +481,13 @@ export class DemoScene extends Scene {
     this.updatePreviewOrientationAnimation(elapsed);
 
     if (this.movementPhase === "movingToBorder" && !this.player.isMoving) {
+      if (this.pendingMonsterEncounter) {
+        const monster = this.pendingMonsterEncounter;
+        this.pendingMonsterEncounter = null;
+        this.startMonsterEncounter(monster, this.moveTargetPosition ?? this.player.pos);
+        return;
+      }
+
       this.enterOrientationWait();
       return;
     }
