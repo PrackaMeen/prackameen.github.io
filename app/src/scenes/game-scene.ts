@@ -690,6 +690,8 @@ export class DemoScene extends Scene {
               this.scoreLabel.text = "Moving to the chamber border.";
               this.messageLabel.text = "The box advances before the fight starts.";
             } else {
+              this.moveTargetPosition = targetPosition;
+              this.movementPhase = "movingToTarget";
               this.player.setTargetPosition(targetPosition);
               this.scoreLabel.text = "Moving to the revealed tile.";
               this.messageLabel.text = "Revealed tiles move directly through open walls.";
@@ -844,7 +846,7 @@ export class DemoScene extends Scene {
         return;
       }
 
-      this.finishTileDiscovery(true);
+      this.finishMovementToTarget();
       return;
     }
 
@@ -1241,6 +1243,24 @@ export class DemoScene extends Scene {
 
     this.controller.saveDemoState();
 
+    this.updateModeButtonStyles();
+    this.updateTileActionButtonStyles();
+  }
+
+  private finishMovementToTarget(): void {
+    if (this.pendingTrailTilePosition || this.previewTrailTile) {
+      this.finishTileDiscovery(true);
+      return;
+    }
+
+    this.movementPhase = "idle";
+    this.moveTargetPosition = null;
+    this.movementStartPosition = null;
+    this.movementPausePosition = null;
+    this.cameraDragLastScreenPos = null;
+    this.cameraZoomSwipeDistance = 0;
+    this.cameraZoomSwipeConsumed = false;
+    this.controller.saveDemoState();
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
   }
