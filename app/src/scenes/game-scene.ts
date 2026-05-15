@@ -1244,8 +1244,7 @@ export class DemoScene extends Scene {
 
     this.controller.saveDemoState();
 
-    this.updateModeButtonStyles();
-    this.updateTileActionButtonStyles();
+    this.refreshButtonStyles();
   }
 
   private finishMovementToTarget(): void {
@@ -1262,6 +1261,10 @@ export class DemoScene extends Scene {
     this.cameraZoomSwipeDistance = 0;
     this.cameraZoomSwipeConsumed = false;
     this.controller.saveDemoState();
+    this.refreshButtonStyles();
+  }
+
+  private refreshButtonStyles(): void {
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
   }
