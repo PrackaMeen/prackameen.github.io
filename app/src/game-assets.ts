@@ -2,6 +2,10 @@ import { Animation, AnimationStrategy, ImageSource, SpriteSheet, type Animation 
 import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "./config";
 import trailTileCollisionCsv from "./data/trail-tile-collision-metadata.csv?raw";
 
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
 function assetUrl(path: string): string {
   return new URL(`../assets/${path}`, import.meta.url).toString();
 }
@@ -22,6 +26,27 @@ const chamber1 = new ImageSource(spriteSheetUrl("Chamber1/Chamber1.png"));
 const chamber2 = new ImageSource(spriteSheetUrl("Chamber2/Chamber2.png"));
 const chamber3 = new ImageSource(spriteSheetUrl("Chamber3/Chamber3.png"));
 const chamber4 = new ImageSource(spriteSheetUrl("Chamber4/Chamber4.png"));
+const monster0 = new ImageSource(spriteSheetUrl("Monster0/Monster0.png"));
+const monster1 = new ImageSource(spriteSheetUrl("Monster1/Monster1.png"));
+const monster2 = new ImageSource(spriteSheetUrl("Monster2/Monster2.png"));
+const monster3 = new ImageSource(spriteSheetUrl("Monster3/Monster3.png"));
+const monster4 = new ImageSource(spriteSheetUrl("Monster4/Monster4.png"));
+const monster5 = new ImageSource(spriteSheetUrl("Monster5/Monster5.png"));
+const heart0 = new ImageSource(spriteSheetUrl("Hearth0/Hearth0.png"));
+const heart1 = new ImageSource(spriteSheetUrl("Hearth1/Hearth1.png"));
+const HUD_HEIGHT_RATIO = 0.08;
+const MIN_HUD_HEIGHT = 54;
+const MAX_HUD_HEIGHT = 72;
+const HEART_SCALE_FACTOR = 0.38;
+const MIN_HEART_SIZE = 14;
+const MAX_HEART_SIZE = 22;
+// Match the top-bar HUD sizing in DemoScene so heart sprites render at the same size as their screen-space actors.
+const HUD_HEIGHT = clamp(GAME_HEIGHT * HUD_HEIGHT_RATIO, MIN_HUD_HEIGHT, MAX_HUD_HEIGHT);
+const HEART_HUD_SIZE = clamp(
+  HUD_HEIGHT * HEART_SCALE_FACTOR,
+  MIN_HEART_SIZE,
+  MAX_HEART_SIZE
+);
 
 function createGridAnimation(image: ImageSource, displaySize: number, orientationRow = 0, frameDuration = 140): AnimationGraphic {
   const orientationCount = 4;
@@ -62,6 +87,9 @@ function createSingleSprite(image: ImageSource, displaySize: number): Graphic {
 export interface GameSprites {
   playerNormal: Graphic;
   playerSelected: Graphic;
+  heartActive: Graphic;
+  heartInactive: Graphic;
+  monsters: MonsterVariant[];
   trailTiles: TrailTileVariant[];
   backdrop: AnimationGraphic;
 }
@@ -84,6 +112,11 @@ export interface TrailTileVariant {
   assetName: string;
   orientations: AnimationGraphic[];
   collisionByOrientation: TrailTileWalls[];
+}
+
+export interface MonsterVariant {
+  assetName: string;
+  graphic: Graphic;
 }
 
 function parseBooleanCell(value: string): boolean {
@@ -200,6 +233,14 @@ export const gameAssetSources = {
   chamber2,
   chamber3,
   chamber4,
+  monster0,
+  monster1,
+  monster2,
+  monster3,
+  monster4,
+  monster5,
+  heart0,
+  heart1,
 };
 
 export async function loadGameAssets(): Promise<void> {
@@ -207,6 +248,15 @@ export async function loadGameAssets(): Promise<void> {
 }
 
 export function createGameSprites(): GameSprites {
+  const monsterTileSources = [
+    { assetName: "monster0", source: monster0 },
+    { assetName: "monster1", source: monster1 },
+    { assetName: "monster2", source: monster2 },
+    { assetName: "monster3", source: monster3 },
+    { assetName: "monster4", source: monster4 },
+    { assetName: "monster5", source: monster5 }
+  ];
+
   const trailTileSources = [
     { assetName: "road0", source: road0 },
     { assetName: "road1", source: road1 },
@@ -223,6 +273,12 @@ export function createGameSprites(): GameSprites {
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
+    heartActive: createSingleSprite(heart0, HEART_HUD_SIZE),
+    heartInactive: createSingleSprite(heart1, HEART_HUD_SIZE),
+    monsters: monsterTileSources.map(({ assetName, source }) => ({
+      assetName,
+      graphic: createSingleSprite(source, CHAR_SIZE)
+    })),
     trailTiles: trailTileSources.map(({ assetName, source }) => ({
       assetName,
       orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(source, TILE_SIZE, orientationRow)),
