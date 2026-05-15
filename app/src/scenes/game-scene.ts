@@ -1841,7 +1841,6 @@ export class DemoScene extends Scene {
     });
     this.trailTileActors.push(this.previewTrailTile);
     this.nextTrailTileIndex += 1;
-    this.maybeShowChamberMonster(this.previewTrailTile.pos, trailVariant.assetName);
     this.previewTrailTile = null;
     this.previewAnimationMode = null;
     this.previewCommitStartPosition = null;
