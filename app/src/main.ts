@@ -26,6 +26,8 @@ void (async () => {
   const controller = new GameController(engine);
   const demoScene = new DemoScene(controller, sprites);
 
+  controller.registerDemoStateSerializer(() => demoScene.exportDemoState());
+
   engine.addScene("menu", new MenuScene(controller));
   engine.addScene("settings", new SettingsScene(controller));
   engine.addScene("demo", demoScene);

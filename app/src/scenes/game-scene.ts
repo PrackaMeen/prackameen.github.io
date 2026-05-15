@@ -65,6 +65,37 @@ interface MonsterDebugUnit {
   offsetY: number;
 }
 
+interface DemoSavedTrailTile {
+  x: number;
+  y: number;
+  assetName: string;
+  orientation: TrailTileOrientation;
+}
+
+interface DemoSavedMonster {
+  x: number;
+  y: number;
+  monsterIndex: number;
+}
+
+interface DemoSavedStateV1 {
+  version: 1;
+  player: {
+    x: number;
+    y: number;
+    rotation: number;
+    selected: boolean;
+  };
+  camera: {
+    x: number;
+    y: number;
+    zoom: number;
+  };
+  nextTrailTileIndex: number;
+  trailTiles: DemoSavedTrailTile[];
+  monsters: DemoSavedMonster[];
+}
+
 export class DemoScene extends Scene {
   private readonly controller: GameController;
   private readonly sprites: GameSprites;
@@ -169,29 +200,25 @@ export class DemoScene extends Scene {
   }
 
   override onActivate(): void {
+    const pendingDemoState = this.controller.consumePendingDemoState();
+
+    if (pendingDemoState) {
+      this.restoreDemoState(pendingDemoState);
+      return;
+    }
+
     if (!this.resetRequested) {
+      this.controller.saveDemoState();
       return;
     }
 
     this.performGameReset();
     this.resetRequested = false;
+    this.controller.saveDemoState();
   }
 
   private performGameReset(): void {
-    for (const trailTile of this.trailTileActors) {
-      trailTile.kill();
-    }
-
-    for (const monster of this.chamberMonsters.values()) {
-      monster.actor.kill();
-      monster.label.kill();
-    }
-
-    this.trailTileActors.length = 0;
-    this.occupiedTrailTiles.clear();
-    this.trailTilePlacements.clear();
-    this.chamberMonsters.clear();
-    this.clearPreviewTrailTile();
+    this.clearDynamicSceneState();
 
     this.moveTargetPosition = null;
     this.pendingTrailTilePosition = null;
@@ -241,6 +268,194 @@ export class DemoScene extends Scene {
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
     this.updateDebugInfoLabel();
+  }
+
+  private clearDynamicSceneState(): void {
+    for (const trailTile of this.trailTileActors) {
+      trailTile.kill();
+    }
+
+    for (const monster of this.chamberMonsters.values()) {
+      monster.actor.kill();
+      monster.label.kill();
+    }
+
+    this.trailTileActors.length = 0;
+    this.occupiedTrailTiles.clear();
+    this.trailTilePlacements.clear();
+    this.chamberMonsters.clear();
+    this.clearPreviewTrailTile();
+
+    this.moveTargetPosition = null;
+    this.pendingTrailTilePosition = null;
+    this.pendingTrailTileOrientation = 0;
+    this.movementPhase = "idle";
+    this.movementStartPosition = null;
+    this.movementPausePosition = null;
+    this.previewAnimationMode = null;
+    this.previewOrientationAnimationDirection = null;
+    this.previewOrientationElapsed = 0;
+    this.previewCommitStartPosition = null;
+    this.previewCommitTargetPosition = null;
+    this.previewCommitStartScale = 1;
+    this.previewCommitTargetScale = 1;
+    this.previewCommitElapsed = 0;
+    this.activeMonsterEncounter = null;
+    this.pendingMonsterEncounter = null;
+    this.lastMonsterEncounterWinner = null;
+    this.monsterCombatElapsed = 0;
+    this.monsterDefeatTurnElapsed = 0;
+    this.monsterDefeatTurnStartRotation = 0;
+    this.monsterDefeatTurnTargetRotation = 0;
+    this.blockedReturnPosition = null;
+    this.blockedTurnElapsed = 0;
+    this.blockedTurnStartRotation = 0;
+    this.blockedTurnTargetRotation = 0;
+    this.nextTrailTileIndex = 0;
+  }
+
+  public exportDemoState(): string | null {
+    if (this.movementPhase !== "idle" || this.activeMonsterEncounter || this.pendingMonsterEncounter) {
+      return null;
+    }
+
+    const trailTiles: DemoSavedTrailTile[] = [];
+
+    for (const trailTile of this.trailTileActors) {
+      const placement = this.trailTilePlacements.get(tileKey(trailTile.pos));
+
+      if (!placement) {
+        continue;
+      }
+
+      trailTiles.push({
+        x: trailTile.pos.x,
+        y: trailTile.pos.y,
+        assetName: placement.assetName,
+        orientation: placement.orientation
+      });
+    }
+
+    const monsters: DemoSavedMonster[] = [];
+
+    for (const monster of this.chamberMonsters.values()) {
+      monsters.push({
+        x: monster.actor.pos.x,
+        y: monster.actor.pos.y,
+        monsterIndex: monster.monsterIndex
+      });
+    }
+
+    const snapshot: DemoSavedStateV1 = {
+      version: 1,
+      player: {
+        x: this.player.pos.x,
+        y: this.player.pos.y,
+        rotation: this.player.rotation,
+        selected: this.player.isSelected
+      },
+      camera: {
+        x: this.camera.pos.x,
+        y: this.camera.pos.y,
+        zoom: this.camera.zoom
+      },
+      nextTrailTileIndex: this.nextTrailTileIndex,
+      trailTiles,
+      monsters
+    };
+
+    return JSON.stringify(snapshot);
+  }
+
+  private restoreDemoState(serializedState: string): void {
+    let snapshot: DemoSavedStateV1;
+
+    try {
+      snapshot = JSON.parse(serializedState) as DemoSavedStateV1;
+    } catch {
+      this.performGameReset();
+      this.controller.clearDemoState();
+      this.controller.saveDemoState();
+      return;
+    }
+
+    if (snapshot.version !== 1) {
+      this.performGameReset();
+      this.controller.clearDemoState();
+      this.controller.saveDemoState();
+      return;
+    }
+
+    this.clearDynamicSceneState();
+
+    this.nextTrailTileIndex = snapshot.nextTrailTileIndex;
+
+    for (const tile of snapshot.trailTiles) {
+      const trailVariant = this.sprites.trailTiles.find((variant) => variant.assetName === tile.assetName);
+
+      if (!trailVariant) {
+        continue;
+      }
+
+      const key = tileKey(vec(tile.x, tile.y));
+      const trailGraphic = trailVariant.orientations[tile.orientation].clone();
+      const trailTile = new Actor({
+        pos: vec(tile.x, tile.y),
+        width: TILE_SIZE,
+        height: TILE_SIZE,
+        graphic: trailGraphic,
+        z: 0,
+        scale: vec(1, 1)
+      });
+
+      this.add(trailTile);
+      this.occupiedTrailTiles.add(key);
+      this.trailTilePlacements.set(key, {
+        assetName: tile.assetName,
+        orientation: tile.orientation,
+        walls: trailVariant.collisionByOrientation[tile.orientation]
+      });
+      this.trailTileActors.push(trailTile);
+    }
+
+    const debugColors = ["#ff3b30", "#34c759", "#007aff", "#ffcc00", "#ff2d55", "#00c7be"];
+
+    for (const monster of snapshot.monsters) {
+      const monsterGraphic = this.sprites.monsters[monster.monsterIndex]?.graphic;
+
+      if (!monsterGraphic) {
+        continue;
+      }
+
+      const tilePosition = vec(monster.x, monster.y);
+      const tilePositionKey = tileKey(tilePosition);
+      const monsterUnit = this.createChamberMonsterUnit(monster.monsterIndex, tilePositionKey, tilePosition, monsterGraphic, debugColors[monster.monsterIndex] ?? "#00c7be");
+
+      this.chamberMonsters.set(tilePositionKey, monsterUnit);
+      this.add(monsterUnit.actor);
+      this.add(monsterUnit.label);
+      this.applyChamberMonsterVisualMode(monsterUnit, gameSettings.debugInfoEnabled);
+    }
+
+    this.player.pos = vec(snapshot.player.x, snapshot.player.y);
+    this.player.rotation = snapshot.player.rotation;
+    this.player.clearTargetPosition();
+
+    if (snapshot.player.selected) {
+      this.player.select();
+    } else {
+      this.player.deselect();
+    }
+
+    this.camera.clearAllStrategies();
+    this.camera.strategy.lockToActor(this.player);
+    this.camera.pos = vec(snapshot.camera.x, snapshot.camera.y);
+    this.camera.zoom = snapshot.camera.zoom;
+    this.cameraZoomLevelIndex = this.getClosestAllowedZoomLevelIndex(this.camera.zoom);
+    this.updateModeButtonStyles();
+    this.updateTileActionButtonStyles();
+    this.updateDebugInfoLabel();
+    this.controller.setCanContinueDemo(true);
   }
 
   override onInitialize(): void {
@@ -910,6 +1125,8 @@ export class DemoScene extends Scene {
       this.scoreLabel.text = "Back at the start position.";
     }
 
+    this.controller.saveDemoState();
+
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
   }
@@ -1046,6 +1263,7 @@ export class DemoScene extends Scene {
     this.clearPreviewTrailTile();
     this.scoreLabel.text = "Movement blocked by walls.";
     this.messageLabel.text = "The box turned back and returned to the start.";
+    this.controller.saveDemoState();
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
   }
@@ -1286,6 +1504,7 @@ export class DemoScene extends Scene {
     this.movementPhase = "idle";
     this.scoreLabel.text = "The box returned to the start tile.";
     this.messageLabel.text = "The chamber monster pushed it back.";
+    this.controller.saveDemoState();
   }
 
   private removeChamberMonster(monster: MonsterDebugUnit): void {
