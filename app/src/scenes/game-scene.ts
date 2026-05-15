@@ -1190,7 +1190,7 @@ export class DemoScene extends Scene {
       this.maybeShowChamberMonster(this.pendingTrailTilePosition, nextTrailVariant.assetName);
       this.messageLabel.text = "Chamber accepted. Monster encounter started.";
       this.scoreLabel.text = "Fighting the chamber monster.";
-      this.updateTileActionButtonStyles();
+      this.refreshButtonStyles();
       return;
     }
 
