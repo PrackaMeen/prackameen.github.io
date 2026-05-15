@@ -17,7 +17,7 @@ function tileKey(position: Vector): string {
 }
 
 type DemoMode = "action" | "move" | "zoom";
-type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "movingBlocked" | "returningBlocked" | "returningToStart";
+type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "turningBlocked" | "returningBlocked" | "returningToStart";
 
 type TileActionType = "rotate" | "accept" | "reject";
 type TileWallKey = keyof TrailTileWalls;
@@ -112,6 +112,7 @@ export class DemoScene extends Scene {
   private readonly previewIdleScale = 2;
   private readonly occupiedTrailTiles = new Set<string>();
   private readonly trailTilePlacements = new Map<string, TrailTilePlacement>();
+  private allowedPendingTrailTileOrientations: TrailTileOrientation[] = [];
   private readonly trailTileActors: Actor[] = [];
   private readonly modeButtons: ModeButtonControl[] = [];
   private readonly tileActionButtons: TileActionButtonControl[] = [];
@@ -123,7 +124,11 @@ export class DemoScene extends Scene {
   private cameraZoomSwipeConsumed = false;
   private tileRotationSwipeDistance = 0;
   private tileRotationSwipeConsumed = false;
-  private blockedMovementStopPosition: Vector | null = null;
+  private blockedReturnPosition: Vector | null = null;
+  private blockedTurnElapsed = 0;
+  private readonly blockedTurnDuration = 140;
+  private blockedTurnStartRotation = 0;
+  private blockedTurnTargetRotation = 0;
   private nextTrailTileIndex = 0;
   private resetRequested = false;
 
@@ -171,12 +176,17 @@ export class DemoScene extends Scene {
     this.previewCommitStartScale = 1;
     this.previewCommitTargetScale = 1;
     this.previewCommitElapsed = 0;
+    this.allowedPendingTrailTileOrientations = [];
     this.cameraDragLastScreenPos = null;
     this.cameraZoomLevelIndex = 1;
     this.cameraZoomSwipeDistance = 0;
     this.cameraZoomSwipeConsumed = false;
     this.tileRotationSwipeDistance = 0;
     this.tileRotationSwipeConsumed = false;
+    this.blockedReturnPosition = null;
+    this.blockedTurnElapsed = 0;
+    this.blockedTurnStartRotation = 0;
+    this.blockedTurnTargetRotation = 0;
     this.nextTrailTileIndex = 0;
 
     this.player.pos = vec(snapToTileCenter(GAME_WIDTH / 2), snapToTileCenter(GAME_HEIGHT / 2));
@@ -307,14 +317,21 @@ export class DemoScene extends Scene {
             this.scoreLabel.text = "Moving to the revealed tile.";
             this.messageLabel.text = "Revealed tiles move directly through open walls.";
           } else if (wallKeys) {
+            const returnPosition = vec(this.player.pos.x, this.player.pos.y);
             this.player.deselect();
-            this.startBlockedMovement(targetPosition);
+            this.startBlockedMovement(targetPosition, returnPosition);
             this.scoreLabel.text = "Movement blocked by walls.";
             this.messageLabel.text = "The box stops at the border midpoint.";
           } else {
             this.scoreLabel.text = "Choose an adjacent revealed tile.";
             this.messageLabel.text = "Wall-aware movement only works between neighboring tiles.";
           }
+          return;
+        }
+
+        if (!this.getMoveWallKeys(this.player.pos, targetPosition)) {
+          this.scoreLabel.text = "Choose a neighboring tile.";
+          this.messageLabel.text = "Only tiles with a shared border can start the flow.";
           return;
         }
 
@@ -409,8 +426,15 @@ export class DemoScene extends Scene {
       return;
     }
 
-    if (this.movementPhase === "movingBlocked" && !this.player.isMoving) {
-      this.beginBlockedReturnMovement();
+    if (this.movementPhase === "turningBlocked") {
+      this.blockedTurnElapsed = Math.min(this.blockedTurnElapsed + elapsed, this.blockedTurnDuration);
+      const progress = this.blockedTurnDuration <= 0 ? 1 : this.blockedTurnElapsed / this.blockedTurnDuration;
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      this.player.rotation = this.blockedTurnStartRotation + (this.blockedTurnTargetRotation - this.blockedTurnStartRotation) * easedProgress;
+
+      if (progress >= 1) {
+        this.beginBlockedReturnMovement();
+      }
       return;
     }
 
@@ -449,7 +473,7 @@ export class DemoScene extends Scene {
 
     const directionX = deltaX / distance;
     const directionY = deltaY / distance;
-    const arrowColor = this.movementPhase === "movingBlocked" || this.movementPhase === "returningBlocked"
+    const arrowColor = this.movementPhase === "turningBlocked" || this.movementPhase === "returningBlocked"
       ? Color.fromHex("#ff7b7b")
       : Color.fromHex("#7cf7a3");
     const headLength = 18;
@@ -616,7 +640,14 @@ export class DemoScene extends Scene {
       return;
     }
 
-    this.pendingTrailTileOrientation = ((this.pendingTrailTileOrientation + step + 4) % 4) as TrailTileOrientation;
+    if (this.allowedPendingTrailTileOrientations.length === 0) {
+      return;
+    }
+
+    const currentIndex = this.allowedPendingTrailTileOrientations.indexOf(this.pendingTrailTileOrientation);
+    const nextIndex = (currentIndex + step + this.allowedPendingTrailTileOrientations.length) % this.allowedPendingTrailTileOrientations.length;
+
+    this.pendingTrailTileOrientation = this.allowedPendingTrailTileOrientations[nextIndex];
     this.previewOrientationAnimationDirection = step;
     this.previewOrientationElapsed = 0;
     this.hintLabel.text = `Orientation: ${this.getOrientationName(this.pendingTrailTileOrientation)}.`;
@@ -681,12 +712,11 @@ export class DemoScene extends Scene {
   }
 
   private enterOrientationWait(): void {
-    this.movementPhase = "waitingForOrientation";
-    this.player.clearTargetPosition();
     const entryWallKey = this.getEntryWallKey(this.movementStartPosition ?? this.player.pos, this.pendingTrailTilePosition ?? this.player.pos);
+    this.allowedPendingTrailTileOrientations = this.getAllowedPendingTrailTileOrientations();
 
-    if (!this.canAcceptPendingTrailTile()) {
-      this.startBlockedMovement(this.pendingTrailTilePosition ?? this.player.pos, this.player.pos);
+    if (this.allowedPendingTrailTileOrientations.length === 0) {
+      this.startBlockedMovement(this.pendingTrailTilePosition ?? this.player.pos, this.movementStartPosition ?? this.player.pos);
       this.messageLabel.text = "That tile collides with the incoming side. The box stops at the border midpoint.";
       this.scoreLabel.text = "Collision blocked the discovery.";
       this.hintLabel.text = `Orientation: ${this.getOrientationName(this.pendingTrailTileOrientation)}. Open the ${this.getWallLabel(entryWallKey)} side to accept.`;
@@ -694,6 +724,10 @@ export class DemoScene extends Scene {
       this.updateTileActionButtonStyles();
       return;
     }
+
+    this.movementPhase = "waitingForOrientation";
+    this.player.clearTargetPosition();
+    this.pendingTrailTileOrientation = this.allowedPendingTrailTileOrientations[0];
 
     this.showPreviewTrailTile();
     this.messageLabel.text = "Rotate the tile, accept to continue, or reject to return.";
@@ -877,17 +911,46 @@ export class DemoScene extends Scene {
       return false;
     }
 
-    return !sourceTile.walls[wallKeys.fromWall] && !destinationWalls[wallKeys.toWall];
+    return this.canTraverseBetweenWalls(sourceTile.walls, destinationWalls, wallKeys);
+  }
+
+  private getAllowedPendingTrailTileOrientations(): TrailTileOrientation[] {
+    if (!this.movementStartPosition || !this.pendingTrailTilePosition) {
+      return [];
+    }
+
+    const wallKeys = this.getMoveWallKeys(this.movementStartPosition, this.pendingTrailTilePosition);
+
+    if (!wallKeys) {
+      return [];
+    }
+
+    const sourceTile = this.getPlacedTrailTile(this.movementStartPosition);
+
+    if (!sourceTile) {
+      return [];
+    }
+
+    const currentVariant = this.getPendingTrailTileVariant();
+
+    return [0, 1, 2, 3].filter((orientation) => {
+      const walls = currentVariant.collisionByOrientation[orientation as TrailTileOrientation];
+      return this.canTraverseBetweenWalls(sourceTile.walls, walls, wallKeys);
+    }) as TrailTileOrientation[];
   }
 
   private finishBlockedMovement(): void {
     this.movementPhase = "idle";
     this.moveTargetPosition = null;
-    this.blockedMovementStopPosition = null;
+    this.blockedReturnPosition = null;
+    this.blockedTurnElapsed = 0;
+    this.blockedTurnStartRotation = 0;
+    this.blockedTurnTargetRotation = 0;
     this.movementStartPosition = null;
     this.movementPausePosition = null;
     this.pendingTrailTilePosition = null;
     this.pendingTrailTileOrientation = 0;
+    this.allowedPendingTrailTileOrientations = [];
     this.previewCommitStartPosition = null;
     this.previewCommitTargetPosition = null;
     this.previewCommitElapsed = 0;
@@ -959,8 +1022,10 @@ export class DemoScene extends Scene {
 
     const cameraX = Math.round(this.camera.pos.x);
     const cameraY = Math.round(this.camera.pos.y);
+    const characterX = Math.round(this.player.pos.x);
+    const characterY = Math.round(this.player.pos.y);
     const zoom = this.camera.zoom.toFixed(2);
-    this.debugInfoLabel.text = `M[${cameraX},${cameraY}]\nZ[${zoom}]`;
+    this.debugInfoLabel.text = `M[${cameraX},${cameraY}]\nCh[${characterX},${characterY}]\nZ[${zoom}]`;
   }
 
   private showTrailTile(position: Vector, orientation: TrailTileOrientation): void {
@@ -1046,27 +1111,31 @@ export class DemoScene extends Scene {
       return false;
     }
 
-    return !fromTile.walls[wallKeys.fromWall] && !toTile.walls[wallKeys.toWall];
+    return this.canTraverseBetweenWalls(fromTile.walls, toTile.walls, wallKeys);
   }
 
-  private startBlockedMovement(targetPosition: Vector, stopPosition?: Vector): void {
-    const blockedTargetPosition = stopPosition ?? this.computeBorderPosition(this.player.pos, targetPosition);
+  private canTraverseBetweenWalls(fromWalls: TrailTileWalls, toWalls: TrailTileWalls, wallKeys: { fromWall: TileWallKey; toWall: TileWallKey }): boolean {
+    return !fromWalls[wallKeys.fromWall] && !toWalls[wallKeys.toWall];
+  }
 
+  private startBlockedMovement(targetPosition: Vector, returnPosition?: Vector): void {
     this.clearPreviewTrailTile();
     this.moveTargetPosition = targetPosition;
-    this.blockedMovementStopPosition = blockedTargetPosition;
-    this.movementPhase = "movingBlocked";
-    this.player.setTargetPosition(blockedTargetPosition, false);
+    this.blockedReturnPosition = returnPosition ? vec(returnPosition.x, returnPosition.y) : this.movementStartPosition;
+    this.blockedTurnElapsed = 0;
+    this.blockedTurnStartRotation = this.player.rotation;
+    this.blockedTurnTargetRotation = this.player.rotation + Math.PI;
+    this.movementPhase = "turningBlocked";
   }
 
   private beginBlockedReturnMovement(): void {
-    if (!this.movementStartPosition) {
+    if (!this.blockedReturnPosition) {
       this.finishBlockedMovement();
       return;
     }
 
     this.movementPhase = "returningBlocked";
-    this.player.setTargetPosition(this.movementStartPosition, false);
+    this.player.setTargetPosition(this.blockedReturnPosition, false);
     this.messageLabel.text = "Blocked by walls. Turning back to start.";
     this.scoreLabel.text = "Returning to the initial position.";
   }
