@@ -2,6 +2,10 @@ import { Animation, AnimationStrategy, ImageSource, SpriteSheet, type Animation 
 import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "./config";
 import trailTileCollisionCsv from "./data/trail-tile-collision-metadata.csv?raw";
 
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
 function assetUrl(path: string): string {
   return new URL(`../assets/${path}`, import.meta.url).toString();
 }
@@ -30,6 +34,7 @@ const monster4 = new ImageSource(spriteSheetUrl("Monster4/Monster4.png"));
 const monster5 = new ImageSource(spriteSheetUrl("Monster5/Monster5.png"));
 const hearth0 = new ImageSource(spriteSheetUrl("Hearth0/Hearth0.png"));
 const hearth1 = new ImageSource(spriteSheetUrl("Hearth1/Hearth1.png"));
+const HEART_HUD_SIZE = clamp(clamp(GAME_HEIGHT * 0.08, 54, 72) * 0.38, 14, 22);
 
 function createGridAnimation(image: ImageSource, displaySize: number, orientationRow = 0, frameDuration = 140): AnimationGraphic {
   const orientationCount = 4;
@@ -256,8 +261,8 @@ export function createGameSprites(): GameSprites {
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
-    heartActive: createSingleSprite(hearth0, CHAR_SIZE),
-    heartInactive: createSingleSprite(hearth1, CHAR_SIZE),
+    heartActive: createSingleSprite(hearth0, HEART_HUD_SIZE),
+    heartInactive: createSingleSprite(hearth1, HEART_HUD_SIZE),
     monsters: monsterTileSources.map(({ assetName, source }) => ({
       assetName,
       graphic: createSingleSprite(source, CHAR_SIZE)

@@ -104,6 +104,72 @@ interface DemoSavedStateV1 {
   monsters: DemoSavedMonster[];
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isValidTrailTileOrientation(value: unknown): value is TrailTileOrientation {
+  return value === 0 || value === 1 || value === 2 || value === 3;
+}
+
+function isDemoSavedTrailTile(value: unknown): value is DemoSavedTrailTile {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const tile = value as Partial<DemoSavedTrailTile>;
+  return isFiniteNumber(tile.x)
+    && isFiniteNumber(tile.y)
+    && typeof tile.assetName === "string"
+    && isValidTrailTileOrientation(tile.orientation);
+}
+
+function isDemoSavedMonster(value: unknown): value is DemoSavedMonster {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const monster = value as Partial<DemoSavedMonster>;
+  const monsterIndex = monster.monsterIndex;
+  return isFiniteNumber(monster.x)
+    && isFiniteNumber(monster.y)
+    && Number.isInteger(monsterIndex)
+    && monsterIndex !== undefined
+    && monsterIndex >= 0;
+}
+
+function isDemoSavedState(value: unknown): value is DemoSavedStateV1 {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const snapshot = value as Partial<DemoSavedStateV1>;
+  const player = snapshot.player;
+  const camera = snapshot.camera;
+  const nextTrailTileIndex = snapshot.nextTrailTileIndex;
+
+  return snapshot.version === 1
+    && !!player
+    && typeof player === "object"
+    && isFiniteNumber(player.x)
+    && isFiniteNumber(player.y)
+    && isFiniteNumber(player.rotation)
+    && typeof player.selected === "boolean"
+    && (snapshot.playerHealth === undefined || isFiniteNumber(snapshot.playerHealth))
+    && !!camera
+    && typeof camera === "object"
+    && isFiniteNumber(camera.x)
+    && isFiniteNumber(camera.y)
+    && isFiniteNumber(camera.zoom)
+    && Number.isInteger(nextTrailTileIndex)
+    && nextTrailTileIndex !== undefined
+    && nextTrailTileIndex >= 0
+    && Array.isArray(snapshot.trailTiles)
+    && snapshot.trailTiles.every((tile) => isDemoSavedTrailTile(tile))
+    && Array.isArray(snapshot.monsters)
+    && snapshot.monsters.every((monster) => isDemoSavedMonster(monster));
+}
+
 export class DemoScene extends Scene {
   private readonly controller: GameController;
   private readonly sprites: GameSprites;
@@ -461,21 +527,17 @@ export class DemoScene extends Scene {
   }
 
   private restoreDemoState(serializedState: string): void {
-    let snapshot: DemoSavedStateV1;
+    let snapshot: unknown;
 
     try {
-      snapshot = JSON.parse(serializedState) as DemoSavedStateV1;
+      snapshot = JSON.parse(serializedState) as unknown;
     } catch {
-      this.performGameReset();
-      this.controller.clearDemoState();
-      this.controller.saveDemoState();
+      this.resetInvalidDemoState();
       return;
     }
 
-    if (snapshot.version !== 1) {
-      this.performGameReset();
-      this.controller.clearDemoState();
-      this.controller.saveDemoState();
+    if (!isDemoSavedState(snapshot)) {
+      this.resetInvalidDemoState();
       return;
     }
 
@@ -551,6 +613,12 @@ export class DemoScene extends Scene {
     this.updateTileActionButtonStyles();
     this.updateDebugInfoLabel();
     this.controller.setCanContinueDemo(true);
+  }
+
+  private resetInvalidDemoState(): void {
+    this.performGameReset();
+    this.controller.clearDemoState();
+    this.controller.saveDemoState();
   }
 
   override onInitialize(): void {
