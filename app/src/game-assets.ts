@@ -28,6 +28,8 @@ const monster2 = new ImageSource(spriteSheetUrl("Monster2/Monster2.png"));
 const monster3 = new ImageSource(spriteSheetUrl("Monster3/Monster3.png"));
 const monster4 = new ImageSource(spriteSheetUrl("Monster4/Monster4.png"));
 const monster5 = new ImageSource(spriteSheetUrl("Monster5/Monster5.png"));
+const hearth0 = new ImageSource(spriteSheetUrl("Hearth0/Hearth0.png"));
+const hearth1 = new ImageSource(spriteSheetUrl("Hearth1/Hearth1.png"));
 
 function createGridAnimation(image: ImageSource, displaySize: number, orientationRow = 0, frameDuration = 140): AnimationGraphic {
   const orientationCount = 4;
@@ -68,6 +70,8 @@ function createSingleSprite(image: ImageSource, displaySize: number): Graphic {
 export interface GameSprites {
   playerNormal: Graphic;
   playerSelected: Graphic;
+  heartActive: Graphic;
+  heartInactive: Graphic;
   monsters: MonsterVariant[];
   trailTiles: TrailTileVariant[];
   backdrop: AnimationGraphic;
@@ -218,6 +222,8 @@ export const gameAssetSources = {
   monster3,
   monster4,
   monster5,
+  hearth0,
+  hearth1,
 };
 
 export async function loadGameAssets(): Promise<void> {
@@ -250,6 +256,8 @@ export function createGameSprites(): GameSprites {
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
+    heartActive: createSingleSprite(hearth0, CHAR_SIZE),
+    heartInactive: createSingleSprite(hearth1, CHAR_SIZE),
     monsters: monsterTileSources.map(({ assetName, source }) => ({
       assetName,
       graphic: createSingleSprite(source, CHAR_SIZE)

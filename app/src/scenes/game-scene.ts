@@ -1,4 +1,4 @@
-import { Actor, Color, CoordPlane, Font, FontUnit, Label, PointerButton, Rectangle, Scene, TextAlign, type Graphic, type PointerEvent, type Vector, vec } from "excalibur";
+import { Actor, Circle, Color, CoordPlane, Font, FontUnit, Label, PointerButton, Rectangle, Scene, TextAlign, type Graphic, type PointerEvent, type Vector, vec } from "excalibur";
 import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, gameSettings } from "../config";
 import type { GameSprites, TrailTileOrientation, TrailTileWalls } from "../game-assets";
 import type { GameController } from "../game-controller";
@@ -78,6 +78,13 @@ interface DemoSavedMonster {
   monsterIndex: number;
 }
 
+interface HeartControl {
+  actor: Actor;
+  index: number;
+  activeGraphic: Graphic;
+  inactiveGraphic: Graphic;
+}
+
 interface DemoSavedStateV1 {
   version: 1;
   player: {
@@ -86,6 +93,7 @@ interface DemoSavedStateV1 {
     rotation: number;
     selected: boolean;
   };
+  playerHealth?: number;
   camera: {
     x: number;
     y: number;
@@ -107,7 +115,9 @@ export class DemoScene extends Scene {
     color: Color.fromHex("#6bf0ff"),
     z: 1
   });
-  private readonly topInset = clamp(GAME_HEIGHT * 0.03, 18, 28);
+  private readonly topBarHeight = clamp(GAME_HEIGHT * 0.08, 54, 72);
+  private readonly topBarItemY = this.topBarHeight / 2;
+  private readonly topInset = this.topBarHeight + clamp(GAME_HEIGHT * 0.02, 10, 16);
   private readonly sideInset = clamp(GAME_WIDTH * 0.025, 16, 32);
   private readonly scoreLabel = new Label({
     text: "Action mode: select the box, then tap a target.",
@@ -137,6 +147,9 @@ export class DemoScene extends Scene {
     color: Color.fromHex("#ff4d4d"),
     coordPlane: CoordPlane.Screen
   });
+  private readonly maxPlayerHealth = 5;
+  private playerHealth = this.maxPlayerHealth;
+  private readonly heartControls: HeartControl[] = [];
   private moveTargetPosition: Vector | null = null;
   private pendingTrailTilePosition: Vector | null = null;
   private pendingTrailTileOrientation: TrailTileOrientation = 0;
@@ -163,6 +176,8 @@ export class DemoScene extends Scene {
   private readonly modeButtons: ModeButtonControl[] = [];
   private readonly tileActionButtons: TileActionButtonControl[] = [];
   private readonly menuButton: SimpleButtonControl;
+  private readonly inventoryButton: SimpleButtonControl;
+  private readonly topBar: Actor;
   private interactionMode: DemoMode = "action";
   private monsterVisualDebugMode = !gameSettings.debugInfoEnabled;
   private activeMonsterEncounter: MonsterDebugUnit | null = null;
@@ -192,7 +207,16 @@ export class DemoScene extends Scene {
     super();
     this.controller = controller;
     this.sprites = sprites;
-    this.menuButton = this.createSimpleButton(this.sideInset, this.topInset + 18, clamp(GAME_WIDTH * 0.11, 84, 120), clamp(GAME_HEIGHT * 0.05, 36, 48), "Menu");
+    this.topBar = new Actor({
+      pos: vec(GAME_WIDTH / 2, this.topBarHeight / 2),
+      width: GAME_WIDTH,
+      height: this.topBarHeight,
+      color: Color.fromHex("#6a4322"),
+      coordPlane: CoordPlane.Screen,
+      z: 90
+    });
+    this.menuButton = this.createSimpleButton(clamp(GAME_WIDTH * 0.09, 64, 96), this.topBarItemY, clamp(GAME_WIDTH * 0.1, 76, 112), clamp(this.topBarHeight * 0.52, 30, 40), "Menu");
+    this.inventoryButton = this.createSimpleButton(GAME_WIDTH - clamp(GAME_WIDTH * 0.09, 64, 96), this.topBarItemY, clamp(GAME_WIDTH * 0.12, 84, 120), clamp(this.topBarHeight * 0.52, 30, 40), "Inventory");
   }
 
   public requestGameReset(): void {
@@ -235,6 +259,7 @@ export class DemoScene extends Scene {
     this.previewCommitTargetScale = 1;
     this.previewCommitElapsed = 0;
     this.tileValidation.reset();
+    this.playerHealth = this.maxPlayerHealth;
     this.activeMonsterEncounter = null;
     this.pendingMonsterEncounter = null;
     this.lastMonsterEncounterWinner = null;
@@ -268,6 +293,7 @@ export class DemoScene extends Scene {
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
     this.updateDebugInfoLabel();
+    this.updateHeartDisplay();
   }
 
   private clearDynamicSceneState(): void {
@@ -314,6 +340,71 @@ export class DemoScene extends Scene {
     this.nextTrailTileIndex = 0;
   }
 
+  private createHeartHud(): void {
+    if (this.heartControls.length > 0) {
+      return;
+    }
+
+    const heartSize = clamp(this.topBarHeight * 0.38, 14, 22);
+    const heartGap = clamp(heartSize * 0.35, 4, 8);
+    const totalWidth = this.maxPlayerHealth * heartSize + (this.maxPlayerHealth - 1) * heartGap;
+    const startX = GAME_WIDTH / 2 - totalWidth / 2 + heartSize / 2;
+    const heartY = this.topBarItemY;
+
+    for (let index = 0; index < this.maxPlayerHealth; index += 1) {
+      const heartActor = new Actor({
+        pos: vec(startX + index * (heartSize + heartGap), heartY),
+        width: heartSize,
+        height: heartSize,
+        coordPlane: CoordPlane.Screen,
+        z: 101
+      });
+
+      this.heartControls.push({
+        actor: heartActor,
+        index,
+        activeGraphic: this.sprites.heartActive,
+        inactiveGraphic: this.sprites.heartInactive
+      });
+      this.add(heartActor);
+    }
+  }
+
+  private layoutHeartHud(): void {
+    if (this.heartControls.length === 0) {
+      return;
+    }
+
+    const heartSize = this.heartControls[0].actor.width;
+    const heartGap = clamp(heartSize * 0.35, 4, 8);
+    const totalWidth = this.maxPlayerHealth * heartSize + (this.maxPlayerHealth - 1) * heartGap;
+    const startX = GAME_WIDTH / 2 - totalWidth / 2 + heartSize / 2;
+    const heartY = this.topBarItemY;
+
+    for (const heart of this.heartControls) {
+      heart.actor.pos = vec(startX + heart.index * (heartSize + heartGap), heartY);
+    }
+  }
+
+  private updateHeartDisplay(): void {
+    this.layoutHeartHud();
+    const debugMode = gameSettings.debugInfoEnabled;
+
+    for (const heart of this.heartControls) {
+      const filled = heart.index < this.playerHealth;
+
+      if (debugMode) {
+        const colorHex = filled ? "#ff4d4d" : "#5b1f26";
+        heart.actor.graphics.use(new Circle({ radius: heart.actor.width / 2, color: Color.fromHex(colorHex) }));
+        heart.actor.graphics.opacity = filled ? 1 : 0.35;
+        continue;
+      }
+
+      heart.actor.graphics.use(filled ? heart.activeGraphic : heart.inactiveGraphic);
+      heart.actor.graphics.opacity = filled ? 1 : 0.9;
+    }
+  }
+
   public exportDemoState(): string | null {
     if (this.movementPhase !== "idle" || this.activeMonsterEncounter || this.pendingMonsterEncounter) {
       return null;
@@ -354,6 +445,7 @@ export class DemoScene extends Scene {
         rotation: this.player.rotation,
         selected: this.player.isSelected
       },
+      playerHealth: this.playerHealth,
       camera: {
         x: this.camera.pos.x,
         y: this.camera.pos.y,
@@ -440,6 +532,7 @@ export class DemoScene extends Scene {
     this.player.pos = vec(snapshot.player.x, snapshot.player.y);
     this.player.rotation = snapshot.player.rotation;
     this.player.clearTargetPosition();
+    this.playerHealth = clamp(snapshot.playerHealth ?? this.maxPlayerHealth, 0, this.maxPlayerHealth);
 
     if (snapshot.player.selected) {
       this.player.select();
@@ -452,6 +545,7 @@ export class DemoScene extends Scene {
     this.camera.pos = vec(snapshot.camera.x, snapshot.camera.y);
     this.camera.zoom = snapshot.camera.zoom;
     this.cameraZoomLevelIndex = this.getClosestAllowedZoomLevelIndex(this.camera.zoom);
+    this.updateHeartDisplay();
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
     this.updateDebugInfoLabel();
@@ -464,8 +558,11 @@ export class DemoScene extends Scene {
     this.showTrailTile(this.player.pos, 0);
     this.add(this.player);
 
+    this.add(this.topBar);
     this.add(this.menuButton.button);
     this.add(this.menuButton.label);
+    this.add(this.inventoryButton.button);
+    this.add(this.inventoryButton.label);
 
     const bottomInset = clamp(GAME_HEIGHT * 0.03, 18, 28);
     const buttonWidth = clamp(GAME_WIDTH * 0.12, 72, 110);
@@ -505,9 +602,11 @@ export class DemoScene extends Scene {
     }
 
     this.add(this.debugInfoLabel);
+    this.createHeartHud();
 
     this.setInteractionMode("action");
     this.updateTileActionButtonStyles();
+    this.updateHeartDisplay();
 
     const primaryPointer = this.engine.input.pointers.primary;
 
@@ -517,6 +616,10 @@ export class DemoScene extends Scene {
       }
 
       if (this.handleMenuButtonPress(event.screenPos)) {
+        return;
+      }
+
+      if (this.handleInventoryButtonPress(event.screenPos)) {
         return;
       }
 
@@ -921,6 +1024,16 @@ export class DemoScene extends Scene {
   private handleMenuButtonPress(screenPos: Vector): boolean {
     if (this.isPointInsideButton(screenPos, this.menuButton)) {
       this.controller.showMenu();
+      return true;
+    }
+
+    return false;
+  }
+
+  private handleInventoryButtonPress(screenPos: Vector): boolean {
+    if (this.isPointInsideButton(screenPos, this.inventoryButton)) {
+      this.scoreLabel.text = "Inventory is not implemented yet.";
+      this.messageLabel.text = "Inventory button tapped.";
       return true;
     }
 
@@ -1465,6 +1578,8 @@ export class DemoScene extends Scene {
     this.messageLabel.text = "The monster wins. The box turns back.";
     this.scoreLabel.text = "Monster won the encounter.";
     this.activeMonsterEncounter = null;
+    this.playerHealth = clamp(this.playerHealth - 1, 0, this.maxPlayerHealth);
+    this.updateHeartDisplay();
     if (this.movementPausePosition) {
       this.player.pos = vec(this.movementPausePosition.x, this.movementPausePosition.y);
     }
