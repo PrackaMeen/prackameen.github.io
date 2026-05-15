@@ -22,6 +22,12 @@ const chamber1 = new ImageSource(spriteSheetUrl("Chamber1/Chamber1.png"));
 const chamber2 = new ImageSource(spriteSheetUrl("Chamber2/Chamber2.png"));
 const chamber3 = new ImageSource(spriteSheetUrl("Chamber3/Chamber3.png"));
 const chamber4 = new ImageSource(spriteSheetUrl("Chamber4/Chamber4.png"));
+const monster0 = new ImageSource(spriteSheetUrl("Monster0/Monster0.png"));
+const monster1 = new ImageSource(spriteSheetUrl("Monster1/Monster1.png"));
+const monster2 = new ImageSource(spriteSheetUrl("Monster2/Monster2.png"));
+const monster3 = new ImageSource(spriteSheetUrl("Monster3/Monster3.png"));
+const monster4 = new ImageSource(spriteSheetUrl("Monster4/Monster4.png"));
+const monster5 = new ImageSource(spriteSheetUrl("Monster5/Monster5.png"));
 
 function createGridAnimation(image: ImageSource, displaySize: number, orientationRow = 0, frameDuration = 140): AnimationGraphic {
   const orientationCount = 4;
@@ -62,6 +68,7 @@ function createSingleSprite(image: ImageSource, displaySize: number): Graphic {
 export interface GameSprites {
   playerNormal: Graphic;
   playerSelected: Graphic;
+  monsters: MonsterVariant[];
   trailTiles: TrailTileVariant[];
   backdrop: AnimationGraphic;
 }
@@ -84,6 +91,11 @@ export interface TrailTileVariant {
   assetName: string;
   orientations: AnimationGraphic[];
   collisionByOrientation: TrailTileWalls[];
+}
+
+export interface MonsterVariant {
+  assetName: string;
+  graphic: Graphic;
 }
 
 function parseBooleanCell(value: string): boolean {
@@ -200,6 +212,12 @@ export const gameAssetSources = {
   chamber2,
   chamber3,
   chamber4,
+  monster0,
+  monster1,
+  monster2,
+  monster3,
+  monster4,
+  monster5,
 };
 
 export async function loadGameAssets(): Promise<void> {
@@ -207,6 +225,15 @@ export async function loadGameAssets(): Promise<void> {
 }
 
 export function createGameSprites(): GameSprites {
+  const monsterTileSources = [
+    { assetName: "monster0", source: monster0 },
+    { assetName: "monster1", source: monster1 },
+    { assetName: "monster2", source: monster2 },
+    { assetName: "monster3", source: monster3 },
+    { assetName: "monster4", source: monster4 },
+    { assetName: "monster5", source: monster5 }
+  ];
+
   const trailTileSources = [
     { assetName: "road0", source: road0 },
     { assetName: "road1", source: road1 },
@@ -223,6 +250,10 @@ export function createGameSprites(): GameSprites {
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
+    monsters: monsterTileSources.map(({ assetName, source }) => ({
+      assetName,
+      graphic: createSingleSprite(source, CHAR_SIZE)
+    })),
     trailTiles: trailTileSources.map(({ assetName, source }) => ({
       assetName,
       orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(source, TILE_SIZE, orientationRow)),
