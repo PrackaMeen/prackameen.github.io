@@ -1,6 +1,6 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, Keys, PointerButton, Scene, TextAlign, type PointerEvent, type Vector, vec } from "excalibur";
 import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, gameSettings } from "../config";
-import type { GameSprites, TrailTileOrientation } from "../game-assets";
+import type { GameSprites, TrailTileOrientation, TrailTileWalls } from "../game-assets";
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
 
@@ -17,9 +17,16 @@ function tileKey(position: Vector): string {
 }
 
 type DemoMode = "action" | "move" | "zoom";
-type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "returningToStart";
+type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "movingBlocked" | "returningBlocked" | "returningToStart";
 
 type TileActionType = "rotate" | "accept" | "reject";
+type TileWallKey = keyof TrailTileWalls;
+
+interface TrailTilePlacement {
+  assetName: string;
+  orientation: TrailTileOrientation;
+  walls: TrailTileWalls;
+}
 
 interface ModeButtonControl {
   mode: DemoMode;
@@ -104,6 +111,7 @@ export class DemoScene extends Scene {
   private readonly previewOrientationDuration = 180;
   private readonly previewIdleScale = 2;
   private readonly occupiedTrailTiles = new Set<string>();
+  private readonly trailTilePlacements = new Map<string, TrailTilePlacement>();
   private readonly trailTileActors: Actor[] = [];
   private readonly modeButtons: ModeButtonControl[] = [];
   private readonly tileActionButtons: TileActionButtonControl[] = [];
@@ -115,6 +123,7 @@ export class DemoScene extends Scene {
   private cameraZoomSwipeConsumed = false;
   private tileRotationSwipeDistance = 0;
   private tileRotationSwipeConsumed = false;
+  private blockedMovementStopPosition: Vector | null = null;
   private nextTrailTileIndex = 0;
   private resetRequested = false;
 
@@ -145,6 +154,7 @@ export class DemoScene extends Scene {
 
     this.trailTileActors.length = 0;
     this.occupiedTrailTiles.clear();
+    this.trailTilePlacements.clear();
     this.clearPreviewTrailTile();
 
     this.moveTargetPosition = null;
@@ -289,10 +299,22 @@ export class DemoScene extends Scene {
         );
 
         if (this.isOccupiedTrailTile(targetPosition)) {
-          this.player.deselect();
-          this.player.setTargetPosition(targetPosition);
-          this.scoreLabel.text = "Moving to the revealed tile.";
-          this.messageLabel.text = "Revealed tiles move directly without discovery.";
+          const wallKeys = this.getMoveWallKeys(this.player.pos, targetPosition);
+
+          if (wallKeys && this.canMoveBetweenPositions(this.player.pos, targetPosition)) {
+            this.player.deselect();
+            this.player.setTargetPosition(targetPosition);
+            this.scoreLabel.text = "Moving to the revealed tile.";
+            this.messageLabel.text = "Revealed tiles move directly through open walls.";
+          } else if (wallKeys) {
+            this.player.deselect();
+            this.startBlockedMovement(targetPosition);
+            this.scoreLabel.text = "Movement blocked by walls.";
+            this.messageLabel.text = "The box stops at the border midpoint.";
+          } else {
+            this.scoreLabel.text = "Choose an adjacent revealed tile.";
+            this.messageLabel.text = "Wall-aware movement only works between neighboring tiles.";
+          }
           return;
         }
 
@@ -387,6 +409,16 @@ export class DemoScene extends Scene {
       return;
     }
 
+    if (this.movementPhase === "movingBlocked" && !this.player.isMoving) {
+      this.beginBlockedReturnMovement();
+      return;
+    }
+
+    if (this.movementPhase === "returningBlocked" && !this.player.isMoving) {
+      this.finishBlockedMovement();
+      return;
+    }
+
     if (this.movementPhase === "returningToStart" && !this.player.isMoving) {
       this.finishTileDiscovery(false);
     }
@@ -400,7 +432,13 @@ export class DemoScene extends Scene {
     }
 
     const start = this.engine.screen.worldToScreenCoordinates(this.player.pos);
-    const end = this.engine.screen.worldToScreenCoordinates(this.moveTargetPosition);
+    const endTarget = this.moveTargetPosition;
+
+    if (!endTarget) {
+      return;
+    }
+
+    const end = this.engine.screen.worldToScreenCoordinates(endTarget);
     const deltaX = end.x - start.x;
     const deltaY = end.y - start.y;
     const distance = Math.hypot(deltaX, deltaY);
@@ -411,7 +449,9 @@ export class DemoScene extends Scene {
 
     const directionX = deltaX / distance;
     const directionY = deltaY / distance;
-    const arrowColor = Color.fromHex("#7cf7a3");
+    const arrowColor = this.movementPhase === "movingBlocked" || this.movementPhase === "returningBlocked"
+      ? Color.fromHex("#ff7b7b")
+      : Color.fromHex("#7cf7a3");
     const headLength = 18;
     const headSpread = 0.45;
     const headBase = vec(end.x - directionX * headLength, end.y - directionY * headLength);
@@ -643,15 +683,35 @@ export class DemoScene extends Scene {
   private enterOrientationWait(): void {
     this.movementPhase = "waitingForOrientation";
     this.player.clearTargetPosition();
+    const entryWallKey = this.getEntryWallKey(this.movementStartPosition ?? this.player.pos, this.pendingTrailTilePosition ?? this.player.pos);
+
+    if (!this.canAcceptPendingTrailTile()) {
+      this.startBlockedMovement(this.pendingTrailTilePosition ?? this.player.pos, this.player.pos);
+      this.messageLabel.text = "That tile collides with the incoming side. The box stops at the border midpoint.";
+      this.scoreLabel.text = "Collision blocked the discovery.";
+      this.hintLabel.text = `Orientation: ${this.getOrientationName(this.pendingTrailTileOrientation)}. Open the ${this.getWallLabel(entryWallKey)} side to accept.`;
+      this.updateModeButtonStyles();
+      this.updateTileActionButtonStyles();
+      return;
+    }
+
     this.showPreviewTrailTile();
     this.messageLabel.text = "Rotate the tile, accept to continue, or reject to return.";
     this.scoreLabel.text = "Waiting for tile orientation.";
+    this.hintLabel.text = `Orientation: ${this.getOrientationName(this.pendingTrailTileOrientation)}. Open the ${this.getWallLabel(entryWallKey)} side to accept.`;
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
   }
 
   private resumeTileDiscovery(): void {
     if (!this.moveTargetPosition) {
+      return;
+    }
+
+    if (!this.canAcceptPendingTrailTile()) {
+      this.startBlockedMovement(this.moveTargetPosition);
+      this.messageLabel.text = "That tile collides with the incoming side. The box stops at the border midpoint.";
+      this.scoreLabel.text = "Collision blocked the discovery.";
       return;
     }
 
@@ -769,6 +829,79 @@ export class DemoScene extends Scene {
     }
   }
 
+  private getPendingTrailTileVariant(): GameSprites["trailTiles"][number] {
+    return this.sprites.trailTiles[this.nextTrailTileIndex % this.sprites.trailTiles.length];
+  }
+
+  private getEntryWallKey(start: Vector, target: Vector): TileWallKey {
+    const deltaX = target.x - start.x;
+    const deltaY = target.y - start.y;
+
+    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+      return deltaX >= 0 ? "westWall" : "eastWall";
+    }
+
+    return deltaY >= 0 ? "northWall" : "southWall";
+  }
+
+  private getWallLabel(wallKey: TileWallKey): string {
+    switch (wallKey) {
+      case "northWall":
+        return "North";
+      case "eastWall":
+        return "East";
+      case "southWall":
+        return "South";
+      case "westWall":
+      default:
+        return "West";
+    }
+  }
+
+  private canAcceptPendingTrailTile(): boolean {
+    if (!this.movementStartPosition || !this.pendingTrailTilePosition) {
+      return true;
+    }
+
+    const wallKeys = this.getMoveWallKeys(this.movementStartPosition, this.pendingTrailTilePosition);
+
+    if (!wallKeys) {
+      return false;
+    }
+
+    const sourceTile = this.getPlacedTrailTile(this.movementStartPosition);
+    const currentVariant = this.getPendingTrailTileVariant();
+    const destinationWalls = currentVariant.collisionByOrientation[this.pendingTrailTileOrientation];
+
+    if (!sourceTile) {
+      return false;
+    }
+
+    return !sourceTile.walls[wallKeys.fromWall] && !destinationWalls[wallKeys.toWall];
+  }
+
+  private finishBlockedMovement(): void {
+    this.movementPhase = "idle";
+    this.moveTargetPosition = null;
+    this.blockedMovementStopPosition = null;
+    this.movementStartPosition = null;
+    this.movementPausePosition = null;
+    this.pendingTrailTilePosition = null;
+    this.pendingTrailTileOrientation = 0;
+    this.previewCommitStartPosition = null;
+    this.previewCommitTargetPosition = null;
+    this.previewCommitElapsed = 0;
+    this.cameraDragLastScreenPos = null;
+    this.cameraZoomSwipeDistance = 0;
+    this.cameraZoomSwipeConsumed = false;
+    this.player.clearTargetPosition();
+    this.clearPreviewTrailTile();
+    this.scoreLabel.text = "Movement blocked by walls.";
+    this.messageLabel.text = "Stopped at the border midpoint.";
+    this.updateModeButtonStyles();
+    this.updateTileActionButtonStyles();
+  }
+
   private setInteractionMode(mode: DemoMode): void {
     this.interactionMode = mode;
     this.cameraDragLastScreenPos = null;
@@ -832,12 +965,13 @@ export class DemoScene extends Scene {
 
   private showTrailTile(position: Vector, orientation: TrailTileOrientation): void {
     const key = tileKey(position);
+    const trailVariant = this.getNextTrailTileVariant();
 
     if (this.occupiedTrailTiles.has(key)) {
       return;
     }
 
-    const trailGraphic = this.sprites.trailTiles[this.nextTrailTileIndex % this.sprites.trailTiles.length].orientations[orientation].clone();
+    const trailGraphic = trailVariant.orientations[orientation].clone();
     const trailTile = new Actor({
       pos: vec(position.x, position.y),
       width: TILE_SIZE,
@@ -850,12 +984,91 @@ export class DemoScene extends Scene {
     this.add(trailTile);
     trailTile.actions.scaleTo({ scale: vec(1, 1), duration: this.previewCommitDuration });
     this.occupiedTrailTiles.add(key);
+    this.trailTilePlacements.set(key, {
+      assetName: trailVariant.assetName,
+      orientation,
+      walls: trailVariant.collisionByOrientation[orientation]
+    });
     this.trailTileActors.push(trailTile);
     this.nextTrailTileIndex += 1;
   }
 
   private isOccupiedTrailTile(position: Vector): boolean {
     return this.occupiedTrailTiles.has(tileKey(position));
+  }
+
+  private getPlacedTrailTile(position: Vector): TrailTilePlacement | null {
+    return this.trailTilePlacements.get(tileKey(position)) ?? null;
+  }
+
+  private getNextTrailTileVariant(): GameSprites["trailTiles"][number] {
+    return this.sprites.trailTiles[this.nextTrailTileIndex % this.sprites.trailTiles.length];
+  }
+
+  private getMoveWallKeys(from: Vector, to: Vector): { fromWall: TileWallKey; toWall: TileWallKey } | null {
+    const deltaX = to.x - from.x;
+    const deltaY = to.y - from.y;
+
+    if (Math.abs(deltaX) + Math.abs(deltaY) !== TILE_SIZE) {
+      return null;
+    }
+
+    if (deltaX === TILE_SIZE && deltaY === 0) {
+      return { fromWall: "eastWall", toWall: "westWall" };
+    }
+
+    if (deltaX === -TILE_SIZE && deltaY === 0) {
+      return { fromWall: "westWall", toWall: "eastWall" };
+    }
+
+    if (deltaX === 0 && deltaY === TILE_SIZE) {
+      return { fromWall: "southWall", toWall: "northWall" };
+    }
+
+    if (deltaX === 0 && deltaY === -TILE_SIZE) {
+      return { fromWall: "northWall", toWall: "southWall" };
+    }
+
+    return null;
+  }
+
+  private canMoveBetweenPositions(from: Vector, to: Vector): boolean {
+    const wallKeys = this.getMoveWallKeys(from, to);
+
+    if (!wallKeys) {
+      return false;
+    }
+
+    const fromTile = this.getPlacedTrailTile(from);
+    const toTile = this.getPlacedTrailTile(to);
+
+    if (!fromTile || !toTile) {
+      return false;
+    }
+
+    return !fromTile.walls[wallKeys.fromWall] && !toTile.walls[wallKeys.toWall];
+  }
+
+  private startBlockedMovement(targetPosition: Vector, stopPosition?: Vector): void {
+    const blockedTargetPosition = stopPosition ?? this.computeBorderPosition(this.player.pos, targetPosition);
+
+    this.clearPreviewTrailTile();
+    this.moveTargetPosition = targetPosition;
+    this.blockedMovementStopPosition = blockedTargetPosition;
+    this.movementPhase = "movingBlocked";
+    this.player.setTargetPosition(blockedTargetPosition, false);
+  }
+
+  private beginBlockedReturnMovement(): void {
+    if (!this.movementStartPosition) {
+      this.finishBlockedMovement();
+      return;
+    }
+
+    this.movementPhase = "returningBlocked";
+    this.player.setTargetPosition(this.movementStartPosition, false);
+    this.messageLabel.text = "Blocked by walls. Turning back to start.";
+    this.scoreLabel.text = "Returning to the initial position.";
   }
 
   private showPreviewTrailTile(): void {
@@ -927,10 +1140,16 @@ export class DemoScene extends Scene {
     }
 
     const key = tileKey(this.pendingTrailTilePosition);
+    const trailVariant = this.getNextTrailTileVariant();
     this.previewTrailTile.pos = vec(this.pendingTrailTilePosition.x, this.pendingTrailTilePosition.y);
     this.previewTrailTile.scale = vec(1, 1);
     this.previewTrailTile.z = 0;
     this.occupiedTrailTiles.add(key);
+    this.trailTilePlacements.set(key, {
+      assetName: trailVariant.assetName,
+      orientation: this.pendingTrailTileOrientation,
+      walls: trailVariant.collisionByOrientation[this.pendingTrailTileOrientation]
+    });
     this.trailTileActors.push(this.previewTrailTile);
     this.nextTrailTileIndex += 1;
     this.previewTrailTile = null;
