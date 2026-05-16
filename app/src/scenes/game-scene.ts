@@ -292,7 +292,7 @@ export class DemoScene extends Scene {
     if (event.pointerType === PointerType.Touch) {
       this.activeTouchPointerIds.add(event.pointerId);
 
-      if (this.shouldActivateTouchMove(event.screenPos, event.worldPos) && !this.touchMoveOverrideActive) {
+      if (!this.player.isSelected && this.shouldActivateTouchMove(event.screenPos, event.worldPos) && !this.touchMoveOverrideActive) {
         this.enableTouchMoveOverride(event.screenPos);
       }
     }
@@ -910,10 +910,17 @@ export class DemoScene extends Scene {
       const boxBottom = this.player.pos.y + this.playerSize / 2;
       const clickedBox = event.worldPos.x >= boxLeft && event.worldPos.x <= boxRight && event.worldPos.y >= boxTop && event.worldPos.y <= boxBottom;
 
-      if (!this.player.isSelected && clickedBox) {
-        this.player.select();
-        this.scoreLabel.text = "Box selected. Tap or click a target point.";
-        this.messageLabel.text = "Selected box is red. Tap/click again to move it.";
+      if (clickedBox) {
+        if (this.player.isSelected) {
+          this.player.deselect();
+          this.scoreLabel.text = "Box deselected.";
+          this.messageLabel.text = "Tap the box again to select it.";
+        } else {
+          this.player.select();
+          this.scoreLabel.text = "Box selected. Tap or click a target point.";
+          this.messageLabel.text = "Selected box is red. Tap/click again to move it.";
+        }
+
         return;
       }
 
@@ -1010,6 +1017,11 @@ export class DemoScene extends Scene {
       }
 
       if (this.interactionMode === "zoom") {
+        if (event.pointerType === PointerType.Touch && this.activeTouchPointerIds.size < 2 && !this.touchZoomOverrideActive) {
+          this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+          return;
+        }
+
         const deltaY = event.screenPos.y - this.cameraDragLastScreenPos.y;
         this.cameraZoomSwipeDistance += deltaY;
 
@@ -1302,6 +1314,10 @@ export class DemoScene extends Scene {
   }
 
   private handleModeButtonPress(screenPos: Vector, pointerType: PointerType): boolean {
+    if (!gameSettings.debugInfoEnabled) {
+      return false;
+    }
+
     if (this.movementPhase === "waitingForOrientation") {
       return false;
     }
@@ -1309,6 +1325,10 @@ export class DemoScene extends Scene {
     const isTwoFingerTouch = pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2;
 
     for (const modeButton of this.modeButtons) {
+      if (pointerType === PointerType.Touch && modeButton.mode !== "move") {
+        continue;
+      }
+
       if (this.isPointInsideButton(screenPos, modeButton) && (!isTwoFingerTouch || modeButton.mode === "move")) {
         this.logPointerClick(`mode:${modeButton.mode}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
         this.setInteractionMode(modeButton.mode);
@@ -1416,6 +1436,10 @@ export class DemoScene extends Scene {
   }
 
   private shouldActivateTouchMove(screenPos: Vector, worldPos: Vector): boolean {
+    if (this.movementPhase === "waitingForOrientation" || this.previewTrailTile) {
+      return false;
+    }
+
     if (screenPos.y <= this.topBarHeight || screenPos.y >= GAME_HEIGHT - this.topBarHeight) {
       return false;
     }
@@ -1778,9 +1802,12 @@ export class DemoScene extends Scene {
   }
 
   private setInteractionMode(mode: DemoMode): void {
+    const preservePreviewState = this.movementPhase === "waitingForOrientation";
     this.interactionMode = mode;
     this.cameraDragLastScreenPos = null;
-    this.moveTargetPosition = null;
+    if (!preservePreviewState) {
+      this.moveTargetPosition = null;
+    }
     this.cameraZoomSwipeDistance = 0;
     this.cameraZoomSwipeConsumed = false;
     this.player.clearTargetPosition();
@@ -1861,7 +1888,7 @@ export class DemoScene extends Scene {
       return;
     }
 
-    const restoreMode = this.activeTouchPointerIds.size >= 1 && this.touchMoveOverrideActive ? "move" : (this.touchZoomOverrideBaseMode ?? "action");
+    const restoreMode = "action";
     this.touchZoomOverrideActive = false;
     this.touchZoomOverrideBaseMode = null;
     this.touchZoomLastDistance = null;
@@ -1935,10 +1962,18 @@ export class DemoScene extends Scene {
   }
 
   private updateModeButtonStyles(): void {
+    const visible = gameSettings.debugInfoEnabled;
     const isPreviewing = this.movementPhase === "waitingForOrientation";
 
     for (const modeButton of this.modeButtons) {
       const isActive = modeButton.mode === this.interactionMode;
+      modeButton.button.graphics.opacity = visible ? 1 : 0;
+      modeButton.label.opacity = visible ? 1 : 0;
+
+      if (!visible) {
+        continue;
+      }
+
       if (isPreviewing) {
         modeButton.button.color = isActive ? Color.fromHex("#4f7a57") : Color.fromHex("#152236");
         modeButton.label.color = isActive ? Color.fromHex("#c8d7ce") : Color.fromHex("#8f9cac");
