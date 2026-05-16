@@ -13,6 +13,26 @@ interface ButtonControl {
 }
 
 export class SettingsScene extends Scene {
+  private inputEnabled = false;
+  private settingsPointerHandler = (event: PointerEvent): void => {
+    if (!this.inputEnabled) {
+      return;
+    }
+
+    if (event.button !== PointerButton.Left) {
+      return;
+    }
+
+    for (const control of this.controls) {
+      if (this.isPointInsideButton(event.screenPos, control.button)) {
+        control.onPress();
+        return;
+      }
+    }
+  };
+
+  private controls: ButtonControl[] = [];
+
   constructor(private readonly controller: GameController) {
     super();
   }
@@ -102,7 +122,7 @@ export class SettingsScene extends Scene {
     debugToggle.label.color = gameSettings.debugInfoEnabled ? Color.fromHex("#08121c") : Color.fromHex("#edf4ff");
     const backButton = this.createButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + panelHeight * 0.28, buttonWidth * 1.5, buttonHeight, "Back");
 
-    const controls: ButtonControl[] = [
+    this.controls = [
       {
         ...minDecrease,
         onPress: () => {
@@ -157,23 +177,21 @@ export class SettingsScene extends Scene {
     this.add(minValue);
     this.add(maxValue);
 
-    for (const control of controls) {
+    for (const control of this.controls) {
       this.add(control.button);
       this.add(control.label);
     }
 
-    this.engine.input.pointers.primary.on("down", (event: PointerEvent) => {
-      if (event.button !== PointerButton.Left) {
-        return;
-      }
+    this.engine.input.pointers.primary.on("down", this.settingsPointerHandler);
+    this.inputEnabled = true;
+  }
 
-      for (const control of controls) {
-        if (this.isPointInsideButton(event.screenPos, control.button)) {
-          control.onPress();
-          return;
-        }
-      }
-    });
+  override onActivate(): void {
+    this.inputEnabled = true;
+  }
+
+  override onDeactivate(): void {
+    this.inputEnabled = false;
   }
 
   private createButton(centerX: number, centerY: number, width: number, height: number, text: string): Pick<ButtonControl, "button" | "label"> {

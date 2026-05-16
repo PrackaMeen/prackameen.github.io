@@ -1,4 +1,4 @@
-import { Actor, Color, Font, FontUnit, Label, Scene, TextAlign, type PointerEvent, vec } from "excalibur";
+import { Actor, Color, CoordPlane, Font, FontUnit, Label, Scene, TextAlign, type PointerEvent, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config";
 import type { GameController } from "../game-controller";
 
@@ -9,6 +9,16 @@ function clamp(value: number, minimum: number, maximum: number): number {
 export class MenuScene extends Scene {
   private readonly continueButton: Actor;
   private readonly continueText: Label;
+  private startButton!: Actor;
+  private settingsButton!: Actor;
+  private inputEnabled = false;
+  private menuPointerHandler = (event: PointerEvent): void => {
+    if (!this.inputEnabled) {
+      return;
+    }
+
+    this.handleMenuPointerDown(event.screenPos);
+  };
 
   constructor(private readonly controller: GameController) {
     super();
@@ -23,7 +33,9 @@ export class MenuScene extends Scene {
       pos: vec(GAME_WIDTH / 2, buttonCenterY - buttonHeight - buttonGap),
       width: buttonWidth,
       height: buttonHeight,
-      color: Color.fromHex("#7b8492")
+      color: Color.fromHex("#7b8492"),
+      coordPlane: CoordPlane.Screen,
+      z: 10
     });
 
     this.continueText = new Label({
@@ -31,7 +43,9 @@ export class MenuScene extends Scene {
       pos: vec(GAME_WIDTH / 2, buttonCenterY - buttonHeight - buttonGap - buttonLabelYOffset),
       font: new Font({ family: "Space Grotesk", size: clamp(GAME_WIDTH * 0.02, 16, 22), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
       color: Color.fromHex("#edf4ff"),
-      maxWidth: buttonWidth
+      maxWidth: buttonWidth,
+      coordPlane: CoordPlane.Screen,
+      z: 11
     });
   }
 
@@ -50,28 +64,36 @@ export class MenuScene extends Scene {
       pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2),
       width: panelWidth,
       height: panelHeight,
-      color: Color.fromHex("#0f1b34")
+      color: Color.fromHex("#0f1b34"),
+      coordPlane: CoordPlane.Screen,
+      z: 1
     });
 
     const title = new Label({
       text: "G.A.M.E",
       pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2 - panelHeight * 0.18),
       font: new Font({ family: "Space Grotesk", size: titleSize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#f7fbff")
+      color: Color.fromHex("#f7fbff"),
+      coordPlane: CoordPlane.Screen,
+      z: 2
     });
 
-    const startButton = new Actor({
+    this.startButton = new Actor({
       pos: vec(GAME_WIDTH / 2, buttonCenterY),
       width: buttonWidth,
       height: buttonHeight,
-      color: Color.fromHex("#7cf7a3")
+      color: Color.fromHex("#7cf7a3"),
+      coordPlane: CoordPlane.Screen,
+      z: 10
     });
 
-    const settingsButton = new Actor({
+    this.settingsButton = new Actor({
       pos: vec(GAME_WIDTH / 2, buttonCenterY + buttonHeight + buttonGap),
       width: buttonWidth,
       height: buttonHeight,
-      color: Color.fromHex("#1a2948")
+      color: Color.fromHex("#1a2948"),
+      coordPlane: CoordPlane.Screen,
+      z: 10
     });
 
     const continueTextYOffset = clamp(buttonHeight * 0.09, 4, 6);
@@ -80,7 +102,9 @@ export class MenuScene extends Scene {
       pos: vec(GAME_WIDTH / 2, buttonCenterY - buttonLabelYOffset),
       font: new Font({ family: "Space Grotesk", size: buttonTextSize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
       color: Color.fromHex("#081120"),
-      maxWidth: buttonWidth
+      maxWidth: buttonWidth,
+      coordPlane: CoordPlane.Screen,
+      z: 11
     });
 
     const continueText = this.continueText;
@@ -91,35 +115,32 @@ export class MenuScene extends Scene {
       pos: vec(GAME_WIDTH / 2, buttonCenterY + buttonHeight + buttonGap - buttonLabelYOffset),
       font: new Font({ family: "Space Grotesk", size: buttonTextSize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
       color: Color.fromHex("#edf4ff"),
-      maxWidth: buttonWidth
+      maxWidth: buttonWidth,
+      coordPlane: CoordPlane.Screen,
+      z: 11
     });
 
     this.add(panel);
     this.add(title);
     this.add(this.continueButton);
     this.add(this.continueText);
-    this.add(startButton);
-    this.add(settingsButton);
+    this.add(this.startButton);
+    this.add(this.settingsButton);
     this.add(buttonText);
     this.add(settingsText);
 
-    this.continueButton.on("pointerdown", () => {
-      if (!this.controller.canContinueDemo) {
-        return;
-      }
-
-      this.controller.continueDemo();
-    });
-
-    startButton.on("pointerdown", (event: PointerEvent) => {
-      this.controller.startNewGame();
-    });
-
-    settingsButton.on("pointerdown", () => {
-      this.controller.showSettings();
-    });
+    this.engine.input.pointers.primary.on("down", this.menuPointerHandler);
 
     this.updateContinueButtonState();
+    this.inputEnabled = true;
+  }
+
+  override onActivate(): void {
+    this.inputEnabled = true;
+  }
+
+  override onDeactivate(): void {
+    this.inputEnabled = false;
   }
 
   override onPreUpdate(): void {
@@ -131,5 +152,44 @@ export class MenuScene extends Scene {
     this.continueButton.color = canContinue ? Color.fromHex("#7cf7a3") : Color.fromHex("#7b8492");
     this.continueText.color = canContinue ? Color.fromHex("#081120") : Color.fromHex("#edf4ff");
     this.continueText.text = canContinue ? "Continue" : "Continue";
+  }
+
+  private logPointerClick(componentName: string): void {
+    console.log(`[menu-pointer] ${componentName}`);
+  }
+
+  private handleMenuPointerDown(screenPos: import("excalibur").Vector): void {
+    const targets = [
+      { name: "new-game", button: this.startButton, action: () => this.controller.startNewGame() },
+      { name: "settings", button: this.settingsButton, action: () => this.controller.showSettings() },
+      {
+        name: "continue",
+        button: this.continueButton,
+        action: () => {
+          if (this.controller.canContinueDemo) {
+            this.controller.continueDemo();
+          }
+        }
+      }
+    ];
+
+    for (const target of targets) {
+      if (this.isPointInsideButton(screenPos, target.button)) {
+        this.logPointerClick(target.name);
+        target.action();
+        return;
+      }
+    }
+  }
+
+  private isPointInsideButton(point: import("excalibur").Vector, button: Actor): boolean {
+    const halfWidth = button.width / 2;
+    const halfHeight = button.height / 2;
+    const left = button.pos.x - halfWidth;
+    const right = button.pos.x + halfWidth;
+    const top = button.pos.y - halfHeight;
+    const bottom = button.pos.y + halfHeight;
+
+    return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
   }
 }

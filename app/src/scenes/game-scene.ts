@@ -85,6 +85,10 @@ interface HeartControl {
   inactiveGraphic: Graphic;
 }
 
+interface DebugOverlayControl {
+  actor: Actor;
+}
+
 interface DemoSavedStateV1 {
   version: 1;
   player: {
@@ -217,6 +221,7 @@ export class DemoScene extends Scene {
   });
   private readonly maxPlayerHealth = 5;
   private playerHealth = this.maxPlayerHealth;
+  private gameOver = false;
   private readonly heartControls: HeartControl[] = [];
   private moveTargetPosition: Vector | null = null;
   private pendingTrailTilePosition: Vector | null = null;
@@ -246,6 +251,10 @@ export class DemoScene extends Scene {
   private readonly menuButton: SimpleButtonControl;
   private readonly inventoryButton: SimpleButtonControl;
   private readonly topBar: Actor;
+  private readonly tapTraceLabel: Label;
+  private readonly debugOverlayControls: DebugOverlayControl[] = [];
+  private readonly showMenuButton = true;
+  private readonly tileActionDeadZonePadding = clamp(GAME_HEIGHT * 0.03, 18, 28);
   private interactionMode: DemoMode = "action";
   private monsterVisualDebugMode = !gameSettings.debugInfoEnabled;
   private activeMonsterEncounter: MonsterDebugUnit | null = null;
@@ -270,6 +279,71 @@ export class DemoScene extends Scene {
   private blockedTurnTargetRotation = 0;
   private nextTrailTileIndex = 0;
   private resetRequested = false;
+  private readonly primaryPointerDownHandler = (event: PointerEvent): void => {
+    if (event.button !== PointerButton.Left) {
+      return;
+    }
+
+    this.logPointerClick("raw", event.screenPos, event.worldPos);
+    this.updateTapTrace(event.screenPos, event.worldPos);
+
+    if (this.handleMenuButtonPress(event.screenPos)) {
+      return;
+    }
+
+    if (this.handleInventoryButtonPress(event.screenPos)) {
+      return;
+    }
+
+    if (this.handleModeButtonPress(event.screenPos)) {
+      return;
+    }
+
+    if (this.handleTileActionButtonPress(event.screenPos)) {
+      return;
+    }
+
+    if (this.isMovementInputLocked()) {
+      return;
+    }
+
+    if (this.movementPhase === "waitingForOrientation") {
+      this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+      this.tileRotationSwipeDistance = 0;
+      this.tileRotationSwipeConsumed = false;
+      return;
+    }
+
+    if (this.interactionMode === "move" || this.interactionMode === "zoom") {
+      this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+      this.cameraZoomSwipeDistance = 0;
+      this.cameraZoomSwipeConsumed = false;
+      return;
+    }
+
+    const boxLeft = this.player.pos.x - this.playerSize / 2;
+    const boxRight = this.player.pos.x + this.playerSize / 2;
+    const boxTop = this.player.pos.y - this.playerSize / 2;
+    const boxBottom = this.player.pos.y + this.playerSize / 2;
+    const clickedBox = event.worldPos.x >= boxLeft && event.worldPos.x <= boxRight && event.worldPos.y >= boxTop && event.worldPos.y <= boxBottom;
+
+    if (!this.player.isSelected && clickedBox) {
+      this.player.select();
+      this.scoreLabel.text = "Box selected. Tap or click a target point.";
+      this.messageLabel.text = "Selected box is red. Tap/click again to move it.";
+      return;
+    }
+
+    if (this.player.isSelected) {
+      const targetPosition = vec(
+        snapToTileCenter(event.worldPos.x),
+        snapToTileCenter(event.worldPos.y)
+      );
+
+      this.moveTargetPosition = targetPosition;
+      this.beginTileDiscovery(targetPosition);
+    }
+  };
 
   constructor(controller: GameController, sprites: GameSprites) {
     super();
@@ -284,8 +358,16 @@ export class DemoScene extends Scene {
       coordPlane: CoordPlane.Screen,
       z: 90
     });
-    this.menuButton = this.createSimpleButton(clamp(GAME_WIDTH * 0.07, 24, 44), this.topBarItemY, clamp(GAME_WIDTH * 0.08, 56, 72), topBarButtonHeight, "Menu");
+    this.menuButton = this.createSimpleButton(clamp(GAME_WIDTH * 0.14, 80, 120), this.topBarItemY, clamp(GAME_WIDTH * 0.16, 96, 136), topBarButtonHeight, "go-to-menu");
     this.inventoryButton = this.createSimpleButton(GAME_WIDTH - clamp(GAME_WIDTH * 0.07, 24, 44), this.topBarItemY, clamp(GAME_WIDTH * 0.12, 84, 120), topBarButtonHeight, "Inventory");
+    this.tapTraceLabel = new Label({
+      text: "Tap trace: idle",
+      pos: vec(GAME_WIDTH / 2, this.topBarHeight + 10),
+      font: new Font({ family: "Space Grotesk", size: clamp(GAME_WIDTH * 0.012, 12, 16), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#ffd166"),
+      coordPlane: CoordPlane.Screen,
+      z: 102
+    });
   }
 
   public requestGameReset(): void {
@@ -407,6 +489,7 @@ export class DemoScene extends Scene {
     this.blockedTurnStartRotation = 0;
     this.blockedTurnTargetRotation = 0;
     this.nextTrailTileIndex = 0;
+    this.gameOver = false;
   }
 
   private createHeartHud(): void {
@@ -472,6 +555,21 @@ export class DemoScene extends Scene {
       heart.actor.graphics.use(filled ? heart.activeGraphic : heart.inactiveGraphic);
       heart.actor.graphics.opacity = filled ? 1 : 0.9;
     }
+
+    this.updateTopBarButtonState();
+  }
+
+  private updateTopBarButtonState(): void {
+    const canContinue = this.gameOver && gameSettings.debugInfoEnabled;
+
+    this.menuButton.button.color = Color.fromHex("#4c3220");
+    this.menuButton.label.color = Color.fromHex("#f3e7d8");
+
+    this.inventoryButton.label.text = canContinue ? "Continue" : "Inventory";
+    this.inventoryButton.button.color = canContinue ? Color.fromHex("#7cf7a3") : Color.fromHex("#2c1d14");
+    this.inventoryButton.label.color = canContinue ? Color.fromHex("#08121c") : Color.fromHex("#f3e7d8");
+    this.inventoryButton.button.graphics.opacity = canContinue ? 1 : 0.92;
+    this.inventoryButton.label.opacity = canContinue ? 1 : 0.92;
   }
 
   public exportDemoState(): string | null {
@@ -598,6 +696,7 @@ export class DemoScene extends Scene {
     this.player.rotation = snapshot.player.rotation;
     this.player.clearTargetPosition();
     this.playerHealth = clamp(snapshot.playerHealth ?? this.maxPlayerHealth, 0, this.maxPlayerHealth);
+    this.gameOver = this.playerHealth <= 0;
 
     if (snapshot.player.selected) {
       this.player.select();
@@ -632,6 +731,7 @@ export class DemoScene extends Scene {
     this.add(this.topBar);
     this.add(this.menuButton.button);
     this.add(this.menuButton.label);
+    this.add(this.tapTraceLabel);
     this.add(this.inventoryButton.button);
     this.add(this.inventoryButton.label);
 
@@ -672,6 +772,10 @@ export class DemoScene extends Scene {
       this.add(actionButton.label);
     }
 
+    if (gameSettings.debugInfoEnabled) {
+      this.createDebugOverlayControls();
+    }
+
     this.add(this.debugInfoLabel);
     this.createHeartHud();
 
@@ -685,6 +789,9 @@ export class DemoScene extends Scene {
       if (event.button !== PointerButton.Left) {
         return;
       }
+
+      this.logPointerClick("raw", event.screenPos, event.worldPos);
+      this.updateTapTrace(event.screenPos, event.worldPos);
 
       if (this.handleMenuButtonPress(event.screenPos)) {
         return;
@@ -990,6 +1097,41 @@ export class DemoScene extends Scene {
     ctx.debug.drawLine(start, end, { color: arrowColor, lineWidth: 4 });
     ctx.debug.drawLine(end, leftHead, { color: arrowColor, lineWidth: 4 });
     ctx.debug.drawLine(end, rightHead, { color: arrowColor, lineWidth: 4 });
+
+  }
+
+  private createDebugOverlayControls(): void {
+    if (this.debugOverlayControls.length > 0) {
+      return;
+    }
+
+    const overlays = [
+      { centerX: this.topBar.pos.x, centerY: this.topBar.pos.y, width: this.topBar.width, height: this.topBar.height, color: "#ffd166" },
+      { centerX: this.inventoryButton.button.pos.x, centerY: this.inventoryButton.button.pos.y, width: this.inventoryButton.button.width, height: this.inventoryButton.button.height, color: "#7cf7a3" },
+      ...this.modeButtons.map((modeButton) => ({ centerX: modeButton.button.pos.x, centerY: modeButton.button.pos.y, width: modeButton.button.width, height: modeButton.button.height, color: "#7aa8ff" })),
+      ...this.tileActionButtons.map((actionButton) => ({
+        centerX: actionButton.button.pos.x,
+        centerY: actionButton.button.pos.y,
+        width: actionButton.button.width,
+        height: actionButton.button.height,
+        color: this.movementPhase === "waitingForOrientation" ? "#7cf7a3" : "#8f9cac"
+      }))
+    ];
+
+    for (const overlay of overlays) {
+      const actor = new Actor({
+        pos: vec(overlay.centerX, overlay.centerY),
+        width: overlay.width,
+        height: overlay.height,
+        coordPlane: CoordPlane.Screen,
+        z: 200
+      });
+
+      actor.graphics.use(new Rectangle({ width: overlay.width, height: overlay.height, color: Color.fromHex(overlay.color) }));
+      actor.graphics.opacity = 0.18;
+      this.debugOverlayControls.push({ actor });
+      this.add(actor);
+    }
   }
 
   private drawTileMatrix(ctx: import("excalibur").ExcaliburGraphicsContext): void {
@@ -1086,6 +1228,7 @@ export class DemoScene extends Scene {
 
     for (const modeButton of this.modeButtons) {
       if (this.isPointInsideButton(screenPos, modeButton)) {
+        this.logPointerClick(`mode:${modeButton.mode}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
         this.setInteractionMode(modeButton.mode);
         return true;
       }
@@ -1095,7 +1238,12 @@ export class DemoScene extends Scene {
   }
 
   private handleMenuButtonPress(screenPos: Vector): boolean {
+    if (!this.showMenuButton) {
+      return false;
+    }
+
     if (this.isPointInsideButton(screenPos, this.menuButton)) {
+      this.logPointerClick("menu", screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
       this.controller.showMenu();
       return true;
     }
@@ -1105,6 +1253,17 @@ export class DemoScene extends Scene {
 
   private handleInventoryButtonPress(screenPos: Vector): boolean {
     if (this.isPointInsideButton(screenPos, this.inventoryButton)) {
+      this.logPointerClick(this.gameOver && gameSettings.debugInfoEnabled ? "continue" : "inventory", screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
+      if (this.gameOver && gameSettings.debugInfoEnabled) {
+        this.playerHealth = this.maxPlayerHealth;
+        this.gameOver = false;
+        this.updateHeartDisplay();
+        this.scoreLabel.text = "All lives restored.";
+        this.messageLabel.text = "Continue from the last game state.";
+        this.controller.saveDemoState();
+        return true;
+      }
+
       this.scoreLabel.text = "Inventory is not implemented yet.";
       this.messageLabel.text = "Inventory button tapped.";
       return true;
@@ -1113,13 +1272,34 @@ export class DemoScene extends Scene {
     return false;
   }
 
+  private updateTapTrace(screenPos: Vector, worldPos: Vector): void {
+    const hits = [
+      this.showMenuButton && this.isPointInsideButton(screenPos, this.menuButton) ? "menu" : null,
+      this.isPointInsideButton(screenPos, this.inventoryButton) ? "inventory" : null,
+      this.modeButtons.some((modeButton) => this.isPointInsideButton(screenPos, modeButton)) ? "mode" : null,
+      this.tileActionButtons.some((actionButton) => this.isPointInsideButton(screenPos, actionButton)) ? "action" : null
+    ].filter((hit): hit is string => hit !== null);
+
+    const hitText = hits.length > 0 ? hits.join(",") : "none";
+    this.tapTraceLabel.text = `Tap trace: s(${Math.round(screenPos.x)},${Math.round(screenPos.y)}) w(${Math.round(worldPos.x)},${Math.round(worldPos.y)}) -> ${hitText}`;
+  }
+
+  private logPointerClick(componentName: string, screenPos: Vector, worldPos: Vector): void {
+    console.log(`[pointer] ${componentName} screen=${Math.round(screenPos.x)},${Math.round(screenPos.y)} world=${Math.round(worldPos.x)},${Math.round(worldPos.y)}`);
+  }
+
   private handleTileActionButtonPress(screenPos: Vector): boolean {
-    if (this.movementPhase !== "waitingForOrientation") {
+    if (!this.isInsideTileActionRow(screenPos)) {
       return false;
+    }
+
+    if (this.movementPhase !== "waitingForOrientation") {
+      return true;
     }
 
     for (const actionButton of this.tileActionButtons) {
       if (this.isPointInsideButton(screenPos, actionButton)) {
+        this.logPointerClick(`tile:${actionButton.action}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
         if (actionButton.action === "rotate") {
           this.rotatePreviewTrailTile(1);
           return true;
@@ -1137,7 +1317,20 @@ export class DemoScene extends Scene {
       }
     }
 
-    return false;
+    return true;
+  }
+
+  private isInsideTileActionRow(screenPos: Vector): boolean {
+    if (this.tileActionButtons.length === 0) {
+      return false;
+    }
+
+    const left = Math.min(...this.tileActionButtons.map((button) => button.button.pos.x - button.button.width / 2));
+    const right = Math.max(...this.tileActionButtons.map((button) => button.button.pos.x + button.button.width / 2));
+    const top = Math.min(...this.tileActionButtons.map((button) => button.button.pos.y - button.button.height / 2));
+    const bottom = Math.max(...this.tileActionButtons.map((button) => button.button.pos.y + button.button.height / 2));
+
+    return screenPos.x >= left && screenPos.x <= right && screenPos.y >= top && screenPos.y <= bottom;
   }
 
   private rotatePreviewTrailTile(step: 1 | -1): void {
@@ -1526,7 +1719,8 @@ export class DemoScene extends Scene {
   }
 
   private isMovementInputLocked(): boolean {
-    return this.movementPhase === "movingToBorder"
+    return this.gameOver
+      || this.movementPhase === "movingToBorder"
       || this.movementPhase === "movingToTarget"
       || this.movementPhase === "attackingMonster"
       || this.movementPhase === "turningAfterMonsterDefeat"
@@ -1712,8 +1906,17 @@ export class DemoScene extends Scene {
     this.previewCommitTargetPosition = null;
     this.previewCommitElapsed = 0;
     this.movementPhase = "idle";
-    this.scoreLabel.text = "The box returned to the start tile.";
-    this.messageLabel.text = "The chamber monster pushed it back.";
+    if (this.playerHealth <= 0) {
+      this.gameOver = true;
+      this.scoreLabel.text = "No lives left.";
+      this.messageLabel.text = gameSettings.debugInfoEnabled
+        ? "Game over. Use Continue to restore all lives."
+        : "Game over. Return to the menu.";
+    } else {
+      this.scoreLabel.text = "The box returned to the start tile.";
+      this.messageLabel.text = "The chamber monster pushed it back.";
+    }
+    this.updateHeartDisplay();
     this.controller.saveDemoState();
   }
 
