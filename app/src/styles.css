@@ -41,14 +41,17 @@ body::before {
   width: 100vw;
   height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 2rem;
+  place-items: start start;
+  padding: 1rem 1rem 1rem 0;
+  border-radius: 28px;
+  overflow: hidden;
 }
 
 canvas {
   display: block;
-  width: min(100vw - 2rem, 1280px);
-  height: min(100vh - 2rem, 720px);
+  width: min(100vw - 1rem, 480px);
+  height: auto;
+  max-height: calc(100vh - 2rem);
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   border: 1px solid rgba(255, 255, 255, 0.12);

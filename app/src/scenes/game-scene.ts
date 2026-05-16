@@ -350,6 +350,7 @@ export class DemoScene extends Scene {
     this.controller = controller;
     this.sprites = sprites;
     const topBarButtonHeight = clamp(this.topBarHeight * 0.4, 24, 32);
+    const topBarSideInset = clamp(GAME_WIDTH * 0.015, 16, 24);
     this.topBar = new Actor({
       pos: vec(GAME_WIDTH / 2, this.topBarHeight / 2),
       width: GAME_WIDTH,
@@ -358,8 +359,10 @@ export class DemoScene extends Scene {
       coordPlane: CoordPlane.Screen,
       z: 90
     });
-    this.menuButton = this.createSimpleButton(clamp(GAME_WIDTH * 0.14, 80, 120), this.topBarItemY, clamp(GAME_WIDTH * 0.16, 96, 136), topBarButtonHeight, "go-to-menu");
-    this.inventoryButton = this.createSimpleButton(GAME_WIDTH - clamp(GAME_WIDTH * 0.07, 24, 44), this.topBarItemY, clamp(GAME_WIDTH * 0.12, 84, 120), topBarButtonHeight, "Inventory");
+    const menuButtonWidth = clamp(GAME_WIDTH * 0.16, 96, 136);
+    const inventoryButtonWidth = clamp(GAME_WIDTH * 0.08, 70, 92);
+    this.menuButton = this.createSimpleButton(topBarSideInset + menuButtonWidth / 2, this.topBarItemY, menuButtonWidth, topBarButtonHeight, "go-to-menu");
+    this.inventoryButton = this.createSimpleButton(GAME_WIDTH - topBarSideInset - inventoryButtonWidth / 2, this.topBarItemY, inventoryButtonWidth, topBarButtonHeight, "Inv");
     this.tapTraceLabel = new Label({
       text: "Tap trace: idle",
       pos: vec(GAME_WIDTH / 2, this.topBarHeight + 10),
@@ -565,7 +568,7 @@ export class DemoScene extends Scene {
     this.menuButton.button.color = Color.fromHex("#4c3220");
     this.menuButton.label.color = Color.fromHex("#f3e7d8");
 
-    this.inventoryButton.label.text = canContinue ? "Continue" : "Inventory";
+    this.inventoryButton.label.text = canContinue ? "Cont." : "Inv";
     this.inventoryButton.button.color = canContinue ? Color.fromHex("#7cf7a3") : Color.fromHex("#2c1d14");
     this.inventoryButton.label.color = canContinue ? Color.fromHex("#08121c") : Color.fromHex("#f3e7d8");
     this.inventoryButton.button.graphics.opacity = canContinue ? 1 : 0.92;
