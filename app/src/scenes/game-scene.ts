@@ -4,6 +4,7 @@ import type { GameSprites, TrailTileOrientation, TrailTileWalls } from "../game-
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
 import { TileValidationStateMachine } from "../tile-validation-state-machine";
+import { TileTapFlowStateMachine } from "../tile-tap-flow-state-machine";
 import { createScreenButtonTemplate, getCanvasPointerPosition, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -251,6 +252,7 @@ export class DemoScene extends Scene {
   private readonly tileActionButtons: TileActionButtonControl[] = [];
   private readonly menuButton: SimpleButtonControl;
   private readonly inventoryButton: SimpleButtonControl;
+  private readonly tileTapFlowStateMachine = new TileTapFlowStateMachine();
   private readonly topBar: Actor;
   private readonly bottomBar: Actor;
   private readonly tapTraceLabel: Label;
@@ -292,6 +294,7 @@ export class DemoScene extends Scene {
   private readonly handlePointerReceiverDown = (event: PointerEvent): void => {
     if (event.pointerType === PointerType.Touch) {
       this.activeTouchPointerIds.add(event.pointerId);
+      this.captureTouchPointer(event);
 
       if (!this.player.isSelected && this.shouldActivateTouchMove(event.screenPos, event.worldPos) && !this.touchMoveOverrideActive) {
         this.enableTouchMoveOverride(event.screenPos);
@@ -299,30 +302,107 @@ export class DemoScene extends Scene {
     }
   };
   private readonly handlePointerReceiverUp = (event: PointerEvent): void => {
+    this.handleTouchPointerEnded(event);
+  };
+  private readonly handleNativePointerEnded = (event: globalThis.PointerEvent): void => {
+    if (event.pointerType !== "touch") {
+      return;
+    }
+
+    this.handleNativeTouchPointerEnded(event.pointerId);
+  };
+  private readonly handleLostPointerCapture = (event: globalThis.PointerEvent): void => {
+    if (event.pointerType !== "touch") {
+      return;
+    }
+
+    this.handleNativeTouchPointerEnded(event.pointerId);
+  };
+  private readonly handleNativeTouchEnd = (event: globalThis.TouchEvent): void => {
+    for (const touch of Array.from(event.changedTouches)) {
+      this.activeTouchPointerIds.delete(touch.identifier);
+    }
+
+    if (event.touches.length === 0) {
+      this.resetTouchGestureState();
+      return;
+    }
+
+    this.syncTouchMoveOverrideState();
+    this.syncTouchZoomOverrideState();
+  };
+  private readonly handleNativeTouchCancel = (event: globalThis.TouchEvent): void => {
+    for (const touch of Array.from(event.changedTouches)) {
+      this.activeTouchPointerIds.delete(touch.identifier);
+    }
+
+    this.resetTouchGestureState();
+  };
+  private readonly handleWindowBlur = (): void => {
+    this.resetTouchGestureState();
+  };
+  private readonly handleDocumentVisibilityChange = (): void => {
+    if (document.visibilityState !== "visible") {
+      this.resetTouchGestureState();
+    }
+  };
+  private handleTouchPointerEnded(event: PointerEvent): void {
     if (event.pointerType === PointerType.Touch) {
       this.activeTouchPointerIds.delete(event.pointerId);
 
-      if (this.activeTouchPointerIds.size === 0) {
-        if (this.touchMoveOverrideActive) {
-          this.touchMoveOverrideActive = false;
-          this.touchMoveOverrideBaseMode = null;
-          if (this.interactionMode !== "action") {
-            this.setInteractionMode("action");
-          }
-        }
+      this.syncTouchMoveOverrideState();
+      this.syncTouchZoomOverrideState();
+    }
+  }
 
-        if (this.touchZoomOverrideActive) {
-          this.touchZoomOverrideActive = false;
-          this.touchZoomOverrideBaseMode = null;
-          this.touchZoomLastDistance = null;
-          this.touchZoomDistanceDelta = 0;
-          if (this.interactionMode !== "action") {
-            this.setInteractionMode("action");
-          }
-        }
+  private reconcileActiveTouchPointers(): void {
+    for (const pointerId of Array.from(this.activeTouchPointerIds)) {
+      if (!this.engine.input.pointers.currentFramePointerCoords.has(pointerId)) {
+        this.activeTouchPointerIds.delete(pointerId);
       }
     }
-  };
+  }
+
+  private handleNativeTouchPointerEnded(pointerId: number): void {
+    this.activeTouchPointerIds.delete(pointerId);
+
+    this.syncTouchMoveOverrideState();
+    this.syncTouchZoomOverrideState();
+  }
+
+  private resetTouchGestureState(): void {
+    this.activeTouchPointerIds.clear();
+    this.touchMoveOverrideActive = false;
+    this.touchMoveOverrideBaseMode = null;
+    this.touchZoomOverrideActive = false;
+    this.touchZoomOverrideBaseMode = null;
+    this.touchZoomLastDistance = null;
+    this.touchZoomDistanceDelta = 0;
+
+    if (this.interactionMode !== "action") {
+      this.setInteractionMode("action");
+    }
+
+    this.cameraDragLastScreenPos = null;
+    this.cameraZoomSwipeDistance = 0;
+    this.cameraZoomSwipeConsumed = false;
+    this.tileRotationSwipeDistance = 0;
+    this.tileRotationSwipeConsumed = false;
+  }
+
+  private captureTouchPointer(event: PointerEvent): void {
+    const target = this.engine.canvas;
+
+    if (typeof target.setPointerCapture !== "function") {
+      return;
+    }
+
+    try {
+      target.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore pointer capture failures when the browser has already moved the pointer elsewhere.
+    }
+  }
   private readonly primaryPointerDownHandler = (event: PointerEvent): void => {
     if (event.pointerType !== PointerType.Touch && event.button !== PointerButton.Left) {
       return;
@@ -333,11 +413,6 @@ export class DemoScene extends Scene {
     this.logPointerClick("raw", canvasScreenPos, event.worldPos);
     console.log(`[game-pointer] raw page=${Math.round(event.pagePos.x)},${Math.round(event.pagePos.y)} canvas=${Math.round(canvasScreenPos.x)},${Math.round(canvasScreenPos.y)} w=${Math.round(event.worldPos.x)},${Math.round(event.worldPos.y)}`);
     this.updateTapTrace(canvasScreenPos, event.worldPos);
-
-    if (event.pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2) {
-      this.enableTouchZoomOverride();
-      return;
-    }
 
     if (this.handleMenuButtonPress(canvasScreenPos)) {
       return;
@@ -355,7 +430,12 @@ export class DemoScene extends Scene {
       return;
     }
 
-    if (event.pointerType === PointerType.Touch && this.shouldActivateTouchMove(event.screenPos, event.worldPos)) {
+    if (event.pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2) {
+      this.enableTouchZoomOverride();
+      return;
+    }
+
+    if (event.pointerType === PointerType.Touch && !this.player.isSelected && this.shouldActivateTouchMove(event.screenPos, event.worldPos)) {
       this.enableTouchMoveOverride(event.screenPos);
       return;
     }
@@ -396,6 +476,46 @@ export class DemoScene extends Scene {
         snapToTileCenter(event.worldPos.x),
         snapToTileCenter(event.worldPos.y)
       );
+      const currentPosition = { x: this.player.pos.x, y: this.player.pos.y };
+      const currentHasPlacedTrailTile = this.getPlacedTrailTile(this.player.pos) !== null;
+      const targetHasPlacedTrailTile = this.getPlacedTrailTile(targetPosition) !== null;
+      const isAdjacent = this.getMoveWallKeys(this.player.pos, targetPosition) !== null;
+
+      const decision = this.tileTapFlowStateMachine.resolveSelectedTap({
+        currentPosition,
+        targetPosition: { x: targetPosition.x, y: targetPosition.y },
+        isAdjacent,
+        canMoveBetweenPositions: this.canMoveBetweenPositions(this.player.pos, targetPosition),
+        currentHasPlacedTrailTile,
+        targetHasPlacedTrailTile,
+        hasChamberMonster: this.chamberMonsters.has(tileKey(targetPosition))
+      });
+
+      if (decision.kind === "ignore") {
+        return;
+      }
+
+      if (decision.kind === "fightChamber") {
+        const monster = this.chamberMonsters.get(tileKey(targetPosition));
+
+        if (!monster) {
+          return;
+        }
+
+        this.pendingMonsterEncounter = monster;
+        this.moveTargetPosition = targetPosition;
+        this.beginTileDiscovery(targetPosition);
+        return;
+      }
+
+      if (decision.kind === "moveToPlacedTile") {
+        this.moveTargetPosition = targetPosition;
+        this.movementPhase = "movingToTarget";
+        this.player.setTargetPosition(targetPosition);
+        this.messageLabel.text = "Moving to an existing tile.";
+        this.scoreLabel.text = "Moving to a placed tile.";
+        return;
+      }
 
       this.moveTargetPosition = targetPosition;
       this.beginTileDiscovery(targetPosition);
@@ -948,6 +1068,7 @@ export class DemoScene extends Scene {
   }
 
   override onPreUpdate(engine: import("excalibur").Engine, elapsed: number): void {
+    this.reconcileActiveTouchPointers();
     this.updateDebugInfoLabel();
     this.updateTopBarButtonState();
     this.syncTouchMoveOverrideState();
@@ -1399,14 +1520,13 @@ export class DemoScene extends Scene {
 
   private beginTileDiscovery(targetPosition: Vector): void {
     const startPosition = vec(this.player.pos.x, this.player.pos.y);
-    const target = vec(targetPosition.x, targetPosition.y);
-    const pausePosition = this.computeBorderPosition(startPosition, target);
+    const pausePosition = this.computeBorderPosition(startPosition, targetPosition);
 
     this.movementStartPosition = startPosition;
-    this.moveTargetPosition = target;
+    this.moveTargetPosition = vec(targetPosition.x, targetPosition.y);
     this.movementPausePosition = pausePosition;
-    this.pendingTrailTilePosition = target;
-    this.pendingTrailTileOrientation = this.getOrientationFromVector(startPosition, target);
+    this.pendingTrailTilePosition = vec(targetPosition.x, targetPosition.y);
+    this.pendingTrailTileOrientation = this.getOrientationFromVector(startPosition, targetPosition);
     this.movementPhase = "movingToBorder";
     this.player.setTargetPosition(pausePosition, false);
     this.updateTileActionButtonStyles();
@@ -1425,6 +1545,20 @@ export class DemoScene extends Scene {
       this.updateModeButtonStyles();
       this.updateTileActionButtonStyles();
       return;
+    }
+
+    if (this.pendingTrailTilePosition) {
+      const occupiedMonster = this.chamberMonsters.get(tileKey(this.pendingTrailTilePosition));
+
+      if (occupiedMonster) {
+        this.pendingMonsterEncounter = occupiedMonster;
+        this.messageLabel.text = "Chamber occupied by a monster. The box attacks immediately.";
+        this.scoreLabel.text = "Fighting the chamber monster.";
+        this.hintLabel.text = `Orientation: ${this.getOrientationName(this.pendingTrailTileOrientation)}. Combat starts instead of preview.`;
+        this.updateModeButtonStyles();
+        this.updateTileActionButtonStyles();
+        return;
+      }
     }
 
     this.movementPhase = "waitingForOrientation";
@@ -1720,6 +1854,13 @@ export class DemoScene extends Scene {
     this.touchGestureTrackingInitialized = true;
     this.engine.input.pointers.on("down", this.handlePointerReceiverDown);
     this.engine.input.pointers.on("up", this.handlePointerReceiverUp);
+    window.addEventListener("pointerup", this.handleNativePointerEnded, true);
+    window.addEventListener("pointercancel", this.handleNativePointerEnded, true);
+    this.engine.canvas.addEventListener("lostpointercapture", this.handleLostPointerCapture, true);
+    window.addEventListener("touchend", this.handleNativeTouchEnd, true);
+    window.addEventListener("touchcancel", this.handleNativeTouchCancel, true);
+    window.addEventListener("blur", this.handleWindowBlur);
+    document.addEventListener("visibilitychange", this.handleDocumentVisibilityChange);
   }
 
   private enableTouchMoveOverride(screenPos: Vector): void {
@@ -2146,7 +2287,7 @@ export class DemoScene extends Scene {
 
   private startBlockedMovement(targetPosition: Vector, returnPosition?: Vector): void {
     this.clearPreviewTrailTile();
-    this.moveTargetPosition = targetPosition;
+    this.moveTargetPosition = vec(targetPosition.x, targetPosition.y);
     this.blockedReturnPosition = returnPosition ? vec(returnPosition.x, returnPosition.y) : this.movementStartPosition;
     this.blockedTurnElapsed = 0;
     this.blockedTurnStartRotation = this.player.rotation;
