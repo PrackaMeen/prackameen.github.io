@@ -40,6 +40,10 @@ const MAX_HUD_HEIGHT = 72;
 const HEART_SCALE_FACTOR = 0.38;
 const MIN_HEART_SIZE = 14;
 const MAX_HEART_SIZE = 22;
+const HEART_FRAME_COUNT = 4;
+const HEART_ANIMATION_FRAME_DURATIONS = {
+  heart0: 300
+} as const;
 // Match the top-bar HUD sizing in DemoScene so heart sprites render at the same size as their screen-space actors.
 const HUD_HEIGHT = clamp(GAME_HEIGHT * HUD_HEIGHT_RATIO, MIN_HUD_HEIGHT, MAX_HUD_HEIGHT);
 const HEART_HUD_SIZE = clamp(
@@ -84,10 +88,37 @@ function createSingleSprite(image: ImageSource, displaySize: number): Graphic {
   return sprite;
 }
 
+function createHorizontalStripAnimation(image: ImageSource, displaySize: number, frameCount: number, frameDuration = 120): AnimationGraphic {
+  const spriteWidth = Math.max(1, Math.floor(image.width / frameCount));
+  const spriteHeight = Math.max(1, image.height);
+  const spriteSheet = SpriteSheet.fromImageSource({
+    image,
+    grid: {
+      rows: 1,
+      columns: frameCount,
+      spriteWidth,
+      spriteHeight
+    }
+  });
+
+  return new Animation({
+    frames: Array.from({ length: frameCount }, (_, frameIndex) => {
+      const sprite = spriteSheet.getSprite(frameIndex, 0);
+      sprite.width = displaySize;
+      sprite.height = displaySize;
+      return {
+        graphic: sprite,
+        duration: frameDuration
+      };
+    }),
+    strategy: AnimationStrategy.Loop
+  });
+}
+
 export interface GameSprites {
   playerNormal: Graphic;
   playerSelected: Graphic;
-  heartActive: Graphic;
+  heartActive: AnimationGraphic;
   heartInactive: Graphic;
   monsters: MonsterVariant[];
   trailTiles: TrailTileVariant[];
@@ -273,7 +304,7 @@ export function createGameSprites(): GameSprites {
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
-    heartActive: createSingleSprite(heart0, HEART_HUD_SIZE),
+    heartActive: createHorizontalStripAnimation(heart0, HEART_HUD_SIZE, HEART_FRAME_COUNT, HEART_ANIMATION_FRAME_DURATIONS.heart0),
     heartInactive: createSingleSprite(heart1, HEART_HUD_SIZE),
     monsters: monsterTileSources.map(({ assetName, source }) => ({
       assetName,

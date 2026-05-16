@@ -1,6 +1,7 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, PointerButton, Scene, TextAlign, type PointerEvent, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH, gameSettings } from "../config";
 import type { GameController } from "../game-controller";
+import { createScreenButtonTemplate, getCanvasPointerPosition, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -13,6 +14,34 @@ interface ButtonControl {
 }
 
 export class SettingsScene extends Scene {
+  private inputEnabled = false;
+  private settingsPointerHandler = (event: PointerEvent): void => {
+    if (!this.inputEnabled) {
+      return;
+    }
+
+    if (event.button !== PointerButton.Left) {
+      return;
+    }
+
+    const screenPos = getCanvasPointerPosition(event, this.engine.canvas);
+
+    for (const control of this.controls) {
+      if (isPointInsideScreenButton(screenPos, {
+        button: control.button,
+        label: control.label,
+        width: control.button.width,
+        height: control.button.height,
+        hitboxOrigin: "center"
+      })) {
+        control.onPress();
+        return;
+      }
+    }
+  };
+
+  private controls: ButtonControl[] = [];
+
   constructor(private readonly controller: GameController) {
     super();
   }
@@ -102,7 +131,7 @@ export class SettingsScene extends Scene {
     debugToggle.label.color = gameSettings.debugInfoEnabled ? Color.fromHex("#08121c") : Color.fromHex("#edf4ff");
     const backButton = this.createButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + panelHeight * 0.28, buttonWidth * 1.5, buttonHeight, "Back");
 
-    const controls: ButtonControl[] = [
+    this.controls = [
       {
         ...minDecrease,
         onPress: () => {
@@ -157,58 +186,41 @@ export class SettingsScene extends Scene {
     this.add(minValue);
     this.add(maxValue);
 
-    for (const control of controls) {
+    for (const control of this.controls) {
       this.add(control.button);
       this.add(control.label);
     }
 
-    this.engine.input.pointers.primary.on("down", (event: PointerEvent) => {
-      if (event.button !== PointerButton.Left) {
-        return;
-      }
+    this.engine.input.pointers.primary.on("down", this.settingsPointerHandler);
+    this.inputEnabled = true;
+  }
 
-      for (const control of controls) {
-        if (this.isPointInsideButton(event.screenPos, control.button)) {
-          control.onPress();
-          return;
-        }
-      }
-    });
+  override onActivate(): void {
+    (globalThis as typeof globalThis & { __activeSceneName?: string }).__activeSceneName = "settings";
+    this.inputEnabled = true;
+  }
+
+  override onDeactivate(): void {
+    this.inputEnabled = false;
   }
 
   private createButton(centerX: number, centerY: number, width: number, height: number, text: string): Pick<ButtonControl, "button" | "label"> {
-    const buttonLabelYOffset = clamp(height * 0.09, 4, 6);
-
-    const button = new Actor({
-      pos: vec(centerX, centerY),
+    const template = createScreenButtonTemplate({
+      centerX,
+      centerY,
       width,
       height,
-      color: Color.fromHex("#1a2948"),
-      z: 100,
-      coordPlane: CoordPlane.Screen
-    });
-
-    const label = new Label({
       text,
-      pos: vec(centerX, centerY - buttonLabelYOffset),
-      font: new Font({ family: "Space Grotesk", size: clamp(height * 0.42, 14, 18), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#edf4ff"),
-      z: 101,
-      coordPlane: CoordPlane.Screen,
-      maxWidth: width
+      buttonColor: "#1a2948",
+      textColor: "#edf4ff",
+      fontFamily: "Space Grotesk",
+      fontSize: clamp(height * 0.42, 14, 18),
+      z: 100,
+      labelZ: 101,
+      maxWidth: width,
+      hitboxOrigin: "center"
     });
 
-    return { button, label };
-  }
-
-  private isPointInsideButton(point: { x: number; y: number }, button: Actor): boolean {
-    const halfWidth = button.width / 2;
-    const halfHeight = button.height / 2;
-    const left = button.pos.x - halfWidth;
-    const right = button.pos.x + halfWidth;
-    const top = button.pos.y - halfHeight;
-    const bottom = button.pos.y + halfHeight;
-
-    return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+    return { button: template.button, label: template.label };
   }
 }

@@ -6,12 +6,15 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e:setup": "playwright install msedge",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "excalibur": "^0.32.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^25.7.0",
     "typescript": "^6.0.3",
     "vite": "^5.4.21",

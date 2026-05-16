@@ -1,9 +1,11 @@
-import { Actor, Circle, Color, CoordPlane, Font, FontUnit, Label, PointerButton, Rectangle, Scene, TextAlign, type Graphic, type PointerEvent, type Vector, vec } from "excalibur";
+import { Actor, Circle, Color, CoordPlane, Font, FontUnit, Label, PointerButton, PointerType, Rectangle, Scene, TextAlign, type Graphic, type PointerEvent, type Vector, vec } from "excalibur";
 import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, gameSettings } from "../config";
 import type { GameSprites, TrailTileOrientation, TrailTileWalls } from "../game-assets";
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
 import { TileValidationStateMachine } from "../tile-validation-state-machine";
+import { TileTapFlowStateMachine } from "../tile-tap-flow-state-machine";
+import { createScreenButtonTemplate, getCanvasPointerPosition, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -83,6 +85,10 @@ interface HeartControl {
   index: number;
   activeGraphic: Graphic;
   inactiveGraphic: Graphic;
+}
+
+interface DebugOverlayControl {
+  actor: Actor;
 }
 
 interface DemoSavedStateV1 {
@@ -217,6 +223,7 @@ export class DemoScene extends Scene {
   });
   private readonly maxPlayerHealth = 5;
   private playerHealth = this.maxPlayerHealth;
+  private gameOver = false;
   private readonly heartControls: HeartControl[] = [];
   private moveTargetPosition: Vector | null = null;
   private pendingTrailTilePosition: Vector | null = null;
@@ -245,7 +252,13 @@ export class DemoScene extends Scene {
   private readonly tileActionButtons: TileActionButtonControl[] = [];
   private readonly menuButton: SimpleButtonControl;
   private readonly inventoryButton: SimpleButtonControl;
+  private readonly tileTapFlowStateMachine = new TileTapFlowStateMachine();
   private readonly topBar: Actor;
+  private readonly bottomBar: Actor;
+  private readonly tapTraceLabel: Label;
+  private readonly debugOverlayControls: DebugOverlayControl[] = [];
+  private readonly showMenuButton = true;
+  private readonly tileActionDeadZonePadding = clamp(GAME_HEIGHT * 0.03, 18, 28);
   private interactionMode: DemoMode = "action";
   private monsterVisualDebugMode = !gameSettings.debugInfoEnabled;
   private activeMonsterEncounter: MonsterDebugUnit | null = null;
@@ -270,12 +283,251 @@ export class DemoScene extends Scene {
   private blockedTurnTargetRotation = 0;
   private nextTrailTileIndex = 0;
   private resetRequested = false;
+  private readonly activeTouchPointerIds = new Set<number>();
+  private touchGestureTrackingInitialized = false;
+  private touchMoveOverrideActive = false;
+  private touchMoveOverrideBaseMode: DemoMode | null = null;
+  private touchZoomOverrideActive = false;
+  private touchZoomOverrideBaseMode: DemoMode | null = null;
+  private touchZoomLastDistance: number | null = null;
+  private touchZoomDistanceDelta = 0;
+  private readonly handlePointerReceiverDown = (event: PointerEvent): void => {
+    if (event.pointerType === PointerType.Touch) {
+      this.activeTouchPointerIds.add(event.pointerId);
+      this.captureTouchPointer(event);
+
+      if (!this.player.isSelected && this.shouldActivateTouchMove(event.screenPos, event.worldPos) && !this.touchMoveOverrideActive) {
+        this.enableTouchMoveOverride(event.screenPos);
+      }
+    }
+  };
+  private readonly handlePointerReceiverUp = (event: PointerEvent): void => {
+    this.handleTouchPointerEnded(event);
+  };
+  private readonly handleNativePointerEnded = (event: globalThis.PointerEvent): void => {
+    if (event.pointerType !== "touch") {
+      return;
+    }
+
+    this.handleNativeTouchPointerEnded(event.pointerId);
+  };
+  private readonly handleLostPointerCapture = (event: globalThis.PointerEvent): void => {
+    if (event.pointerType !== "touch") {
+      return;
+    }
+
+    this.handleNativeTouchPointerEnded(event.pointerId);
+  };
+  private readonly handleNativeTouchEnd = (event: globalThis.TouchEvent): void => {
+    for (const touch of Array.from(event.changedTouches)) {
+      this.activeTouchPointerIds.delete(touch.identifier);
+    }
+
+    if (event.touches.length === 0) {
+      this.resetTouchGestureState();
+      return;
+    }
+
+    this.syncTouchMoveOverrideState();
+    this.syncTouchZoomOverrideState();
+  };
+  private readonly handleNativeTouchCancel = (event: globalThis.TouchEvent): void => {
+    for (const touch of Array.from(event.changedTouches)) {
+      this.activeTouchPointerIds.delete(touch.identifier);
+    }
+
+    this.resetTouchGestureState();
+  };
+  private readonly handleWindowBlur = (): void => {
+    this.resetTouchGestureState();
+  };
+  private readonly handleDocumentVisibilityChange = (): void => {
+    if (document.visibilityState !== "visible") {
+      this.resetTouchGestureState();
+    }
+  };
+  private handleTouchPointerEnded(event: PointerEvent): void {
+    if (event.pointerType === PointerType.Touch) {
+      this.activeTouchPointerIds.delete(event.pointerId);
+
+      this.syncTouchMoveOverrideState();
+      this.syncTouchZoomOverrideState();
+    }
+  }
+
+  private reconcileActiveTouchPointers(): void {
+    for (const pointerId of Array.from(this.activeTouchPointerIds)) {
+      if (!this.engine.input.pointers.currentFramePointerCoords.has(pointerId)) {
+        this.activeTouchPointerIds.delete(pointerId);
+      }
+    }
+  }
+
+  private handleNativeTouchPointerEnded(pointerId: number): void {
+    this.activeTouchPointerIds.delete(pointerId);
+
+    this.syncTouchMoveOverrideState();
+    this.syncTouchZoomOverrideState();
+  }
+
+  private resetTouchGestureState(): void {
+    this.activeTouchPointerIds.clear();
+    this.touchMoveOverrideActive = false;
+    this.touchMoveOverrideBaseMode = null;
+    this.touchZoomOverrideActive = false;
+    this.touchZoomOverrideBaseMode = null;
+    this.touchZoomLastDistance = null;
+    this.touchZoomDistanceDelta = 0;
+
+    if (this.interactionMode !== "action") {
+      this.setInteractionMode("action");
+    }
+
+    this.cameraDragLastScreenPos = null;
+    this.cameraZoomSwipeDistance = 0;
+    this.cameraZoomSwipeConsumed = false;
+    this.tileRotationSwipeDistance = 0;
+    this.tileRotationSwipeConsumed = false;
+  }
+
+  private captureTouchPointer(event: PointerEvent): void {
+    const target = this.engine.canvas;
+
+    if (typeof target.setPointerCapture !== "function") {
+      return;
+    }
+
+    try {
+      target.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore pointer capture failures when the browser has already moved the pointer elsewhere.
+    }
+  }
+  private readonly primaryPointerDownHandler = (event: PointerEvent): void => {
+    if (event.pointerType !== PointerType.Touch && event.button !== PointerButton.Left) {
+      return;
+    }
+
+    const canvasScreenPos = getCanvasPointerPosition(event, this.engine.canvas);
+
+    this.logPointerClick("raw", canvasScreenPos, event.worldPos);
+    console.log(`[game-pointer] raw page=${Math.round(event.pagePos.x)},${Math.round(event.pagePos.y)} canvas=${Math.round(canvasScreenPos.x)},${Math.round(canvasScreenPos.y)} w=${Math.round(event.worldPos.x)},${Math.round(event.worldPos.y)}`);
+    this.updateTapTrace(canvasScreenPos, event.worldPos);
+
+    if (this.handleMenuButtonPress(canvasScreenPos)) {
+      return;
+    }
+
+    if (this.handleInventoryButtonPress(canvasScreenPos)) {
+      return;
+    }
+
+    if (this.handleModeButtonPress(canvasScreenPos, event.pointerType)) {
+      return;
+    }
+
+    if (this.handleTileActionButtonPress(canvasScreenPos)) {
+      return;
+    }
+
+    if (event.pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2) {
+      this.enableTouchZoomOverride();
+      return;
+    }
+
+    if (event.pointerType === PointerType.Touch && !this.player.isSelected && this.shouldActivateTouchMove(event.screenPos, event.worldPos)) {
+      this.enableTouchMoveOverride(event.screenPos);
+      return;
+    }
+
+    if (this.isMovementInputLocked()) {
+      return;
+    }
+
+    if (this.movementPhase === "waitingForOrientation") {
+      this.cameraDragLastScreenPos = vec(canvasScreenPos.x, canvasScreenPos.y);
+      this.tileRotationSwipeDistance = 0;
+      this.tileRotationSwipeConsumed = false;
+      return;
+    }
+
+    if (this.interactionMode === "move" || this.interactionMode === "zoom") {
+      this.cameraDragLastScreenPos = vec(canvasScreenPos.x, canvasScreenPos.y);
+      this.cameraZoomSwipeDistance = 0;
+      this.cameraZoomSwipeConsumed = false;
+      return;
+    }
+
+    const boxLeft = this.player.pos.x - this.playerSize / 2;
+    const boxRight = this.player.pos.x + this.playerSize / 2;
+    const boxTop = this.player.pos.y - this.playerSize / 2;
+    const boxBottom = this.player.pos.y + this.playerSize / 2;
+    const clickedBox = event.worldPos.x >= boxLeft && event.worldPos.x <= boxRight && event.worldPos.y >= boxTop && event.worldPos.y <= boxBottom;
+
+    if (!this.player.isSelected && clickedBox) {
+      this.player.select();
+      this.scoreLabel.text = "Box selected. Tap or click a target point.";
+      this.messageLabel.text = "Selected box is red. Tap/click again to move it.";
+      return;
+    }
+
+    if (this.player.isSelected) {
+      const targetPosition = vec(
+        snapToTileCenter(event.worldPos.x),
+        snapToTileCenter(event.worldPos.y)
+      );
+      const currentPosition = { x: this.player.pos.x, y: this.player.pos.y };
+      const currentHasPlacedTrailTile = this.getPlacedTrailTile(this.player.pos) !== null;
+      const targetHasPlacedTrailTile = this.getPlacedTrailTile(targetPosition) !== null;
+      const isAdjacent = this.getMoveWallKeys(this.player.pos, targetPosition) !== null;
+
+      const decision = this.tileTapFlowStateMachine.resolveSelectedTap({
+        currentPosition,
+        targetPosition: { x: targetPosition.x, y: targetPosition.y },
+        isAdjacent,
+        canMoveBetweenPositions: this.canMoveBetweenPositions(this.player.pos, targetPosition),
+        currentHasPlacedTrailTile,
+        targetHasPlacedTrailTile,
+        hasChamberMonster: this.chamberMonsters.has(tileKey(targetPosition))
+      });
+
+      if (decision.kind === "ignore") {
+        return;
+      }
+
+      if (decision.kind === "fightChamber") {
+        const monster = this.chamberMonsters.get(tileKey(targetPosition));
+
+        if (!monster) {
+          return;
+        }
+
+        this.pendingMonsterEncounter = monster;
+        this.moveTargetPosition = targetPosition;
+        this.beginTileDiscovery(targetPosition);
+        return;
+      }
+
+      if (decision.kind === "moveToPlacedTile") {
+        this.moveTargetPosition = targetPosition;
+        this.movementPhase = "movingToTarget";
+        this.player.setTargetPosition(targetPosition);
+        this.messageLabel.text = "Moving to an existing tile.";
+        this.scoreLabel.text = "Moving to a placed tile.";
+        return;
+      }
+
+      this.moveTargetPosition = targetPosition;
+      this.beginTileDiscovery(targetPosition);
+    }
+  };
 
   constructor(controller: GameController, sprites: GameSprites) {
     super();
     this.controller = controller;
     this.sprites = sprites;
     const topBarButtonHeight = clamp(this.topBarHeight * 0.4, 24, 32);
+    const topBarSideInset = clamp(GAME_WIDTH * 0.015, 16, 24);
     this.topBar = new Actor({
       pos: vec(GAME_WIDTH / 2, this.topBarHeight / 2),
       width: GAME_WIDTH,
@@ -284,8 +536,26 @@ export class DemoScene extends Scene {
       coordPlane: CoordPlane.Screen,
       z: 90
     });
-    this.menuButton = this.createSimpleButton(clamp(GAME_WIDTH * 0.07, 24, 44), this.topBarItemY, clamp(GAME_WIDTH * 0.08, 56, 72), topBarButtonHeight, "Menu");
-    this.inventoryButton = this.createSimpleButton(GAME_WIDTH - clamp(GAME_WIDTH * 0.07, 24, 44), this.topBarItemY, clamp(GAME_WIDTH * 0.12, 84, 120), topBarButtonHeight, "Inventory");
+    this.bottomBar = new Actor({
+      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT - this.topBarHeight / 2),
+      width: GAME_WIDTH,
+      height: this.topBarHeight,
+      color: Color.fromHex("#6a4322"),
+      coordPlane: CoordPlane.Screen,
+      z: 89
+    });
+    const menuButtonWidth = clamp(GAME_WIDTH * 0.16, 96, 136);
+    const inventoryButtonWidth = clamp(GAME_WIDTH * 0.08, 70, 92);
+    this.menuButton = this.createSimpleButton(topBarSideInset + menuButtonWidth / 2, this.topBarItemY, menuButtonWidth, topBarButtonHeight, "go-to-menu");
+    this.inventoryButton = this.createSimpleButton(GAME_WIDTH - topBarSideInset - inventoryButtonWidth / 2, this.topBarItemY, inventoryButtonWidth, topBarButtonHeight, "Inv");
+    this.tapTraceLabel = new Label({
+      text: "Tap trace: idle",
+      pos: vec(GAME_WIDTH / 2, this.topBarHeight + 10),
+      font: new Font({ family: "Space Grotesk", size: clamp(GAME_WIDTH * 0.012, 12, 16), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#ffd166"),
+      coordPlane: CoordPlane.Screen,
+      z: 102
+    });
   }
 
   public requestGameReset(): void {
@@ -293,6 +563,9 @@ export class DemoScene extends Scene {
   }
 
   override onActivate(): void {
+    (globalThis as typeof globalThis & { __activeSceneName?: string }).__activeSceneName = "demo";
+    this.initializeTouchGestureTracking();
+
     const pendingDemoState = this.controller.consumePendingDemoState();
 
     if (pendingDemoState) {
@@ -308,6 +581,16 @@ export class DemoScene extends Scene {
     this.performGameReset();
     this.resetRequested = false;
     this.controller.saveDemoState();
+  }
+
+  override onDeactivate(): void {
+    this.activeTouchPointerIds.clear();
+    this.touchMoveOverrideActive = false;
+    this.touchMoveOverrideBaseMode = null;
+    this.touchZoomOverrideActive = false;
+    this.touchZoomOverrideBaseMode = null;
+    this.touchZoomLastDistance = null;
+    this.touchZoomDistanceDelta = 0;
   }
 
   private performGameReset(): void {
@@ -407,6 +690,7 @@ export class DemoScene extends Scene {
     this.blockedTurnStartRotation = 0;
     this.blockedTurnTargetRotation = 0;
     this.nextTrailTileIndex = 0;
+    this.gameOver = false;
   }
 
   private createHeartHud(): void {
@@ -472,6 +756,22 @@ export class DemoScene extends Scene {
       heart.actor.graphics.use(filled ? heart.activeGraphic : heart.inactiveGraphic);
       heart.actor.graphics.opacity = filled ? 1 : 0.9;
     }
+
+    this.updateTopBarButtonState();
+  }
+
+  private updateTopBarButtonState(): void {
+    const canContinue = this.gameOver && gameSettings.debugInfoEnabled;
+
+    this.menuButton.button.color = Color.fromHex("#4c3220");
+    this.menuButton.label.color = Color.fromHex("#f3e7d8");
+
+    this.inventoryButton.label.text = canContinue ? "Cont." : "Inv";
+    this.inventoryButton.button.color = canContinue ? Color.fromHex("#7cf7a3") : Color.fromHex("#2c1d14");
+    this.inventoryButton.label.color = canContinue ? Color.fromHex("#08121c") : Color.fromHex("#f3e7d8");
+    this.inventoryButton.button.graphics.opacity = canContinue ? 1 : 0.92;
+    this.inventoryButton.label.opacity = canContinue ? 1 : 0.92;
+    this.tapTraceLabel.opacity = gameSettings.debugInfoEnabled ? 1 : 0;
   }
 
   public exportDemoState(): string | null {
@@ -598,6 +898,7 @@ export class DemoScene extends Scene {
     this.player.rotation = snapshot.player.rotation;
     this.player.clearTargetPosition();
     this.playerHealth = clamp(snapshot.playerHealth ?? this.maxPlayerHealth, 0, this.maxPlayerHealth);
+    this.gameOver = this.playerHealth <= 0;
 
     if (snapshot.player.selected) {
       this.player.select();
@@ -630,22 +931,23 @@ export class DemoScene extends Scene {
     this.add(this.player);
 
     this.add(this.topBar);
+    this.add(this.bottomBar);
     this.add(this.menuButton.button);
     this.add(this.menuButton.label);
+    this.add(this.tapTraceLabel);
     this.add(this.inventoryButton.button);
     this.add(this.inventoryButton.label);
 
-    const bottomInset = clamp(GAME_HEIGHT * 0.03, 18, 28);
     const buttonWidth = clamp(GAME_WIDTH * 0.12, 72, 110);
     const buttonHeight = clamp(GAME_HEIGHT * 0.055, 40, 54);
     const buttonGap = clamp(GAME_WIDTH * 0.02, 12, 18);
     const totalWidth = buttonWidth * 3 + buttonGap * 2;
     const centerX = GAME_WIDTH / 2;
-    const centerY = GAME_HEIGHT - bottomInset - buttonHeight / 2;
+    const modeRowCenterY = GAME_HEIGHT - this.topBarHeight - clamp(GAME_HEIGHT * 0.02, 10, 16) - buttonHeight / 2;
 
-    const actionButton = this.createModeButton("action", "A", centerX - totalWidth / 2 + buttonWidth / 2, centerY, buttonWidth, buttonHeight);
-    const moveButton = this.createModeButton("move", "M", centerX, centerY, buttonWidth, buttonHeight);
-    const zoomButton = this.createModeButton("zoom", "Z", centerX + totalWidth / 2 - buttonWidth / 2, centerY, buttonWidth, buttonHeight);
+    const actionButton = this.createModeButton("action", "A", centerX - totalWidth / 2 + buttonWidth / 2, modeRowCenterY, buttonWidth, buttonHeight);
+    const moveButton = this.createModeButton("move", "M", centerX, modeRowCenterY, buttonWidth, buttonHeight);
+    const zoomButton = this.createModeButton("zoom", "Z", centerX + totalWidth / 2 - buttonWidth / 2, modeRowCenterY, buttonWidth, buttonHeight);
 
     this.modeButtons.push(actionButton, moveButton, zoomButton);
 
@@ -659,7 +961,7 @@ export class DemoScene extends Scene {
     const tileActionGap = clamp(GAME_WIDTH * 0.015, 10, 14);
     const tileActionTotalWidth = tileActionButtonWidth * 3 + tileActionGap * 2;
     const tileActionCenterX = GAME_WIDTH / 2;
-    const tileActionCenterY = clamp(GAME_HEIGHT * 0.72, GAME_HEIGHT * 0.56, GAME_HEIGHT - bottomInset - tileActionButtonHeight / 2 - 12);
+    const tileActionCenterY = GAME_HEIGHT - this.topBarHeight / 2;
 
     const rotateButton = this.createTileActionButton("rotate", "Rotate", tileActionCenterX - tileActionTotalWidth / 2 + tileActionButtonWidth / 2, tileActionCenterY, tileActionButtonWidth, tileActionButtonHeight);
     const acceptButton = this.createTileActionButton("accept", "Accept", tileActionCenterX, tileActionCenterY, tileActionButtonWidth, tileActionButtonHeight);
@@ -672,6 +974,10 @@ export class DemoScene extends Scene {
       this.add(actionButton.label);
     }
 
+    if (gameSettings.debugInfoEnabled) {
+      this.createDebugOverlayControls();
+    }
+
     this.add(this.debugInfoLabel);
     this.createHeartHud();
 
@@ -681,116 +987,7 @@ export class DemoScene extends Scene {
 
     const primaryPointer = this.engine.input.pointers.primary;
 
-    primaryPointer.on("down", (event: PointerEvent) => {
-      if (event.button !== PointerButton.Left) {
-        return;
-      }
-
-      if (this.handleMenuButtonPress(event.screenPos)) {
-        return;
-      }
-
-      if (this.handleInventoryButtonPress(event.screenPos)) {
-        return;
-      }
-
-      if (this.handleModeButtonPress(event.screenPos)) {
-        return;
-      }
-
-      if (this.handleTileActionButtonPress(event.screenPos)) {
-        return;
-      }
-
-      if (this.isMovementInputLocked()) {
-        return;
-      }
-
-      if (this.movementPhase === "waitingForOrientation") {
-        this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
-        this.tileRotationSwipeDistance = 0;
-        this.tileRotationSwipeConsumed = false;
-        return;
-      }
-
-      if (this.interactionMode === "move" || this.interactionMode === "zoom") {
-        this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
-        this.cameraZoomSwipeDistance = 0;
-        this.cameraZoomSwipeConsumed = false;
-        return;
-      }
-
-      const boxLeft = this.player.pos.x - this.playerSize / 2;
-      const boxRight = this.player.pos.x + this.playerSize / 2;
-      const boxTop = this.player.pos.y - this.playerSize / 2;
-      const boxBottom = this.player.pos.y + this.playerSize / 2;
-      const clickedBox = event.worldPos.x >= boxLeft && event.worldPos.x <= boxRight && event.worldPos.y >= boxTop && event.worldPos.y <= boxBottom;
-
-      if (!this.player.isSelected && clickedBox) {
-        this.player.select();
-        this.scoreLabel.text = "Box selected. Tap or click a target point.";
-        this.messageLabel.text = "Selected box is red. Tap/click again to move it.";
-        return;
-      }
-
-      if (this.player.isSelected) {
-        const targetPosition = vec(
-          snapToTileCenter(event.worldPos.x),
-          snapToTileCenter(event.worldPos.y)
-        );
-
-        if (this.isOccupiedTrailTile(targetPosition)) {
-          const wallKeys = this.getMoveWallKeys(this.player.pos, targetPosition);
-
-          if (wallKeys && this.canMoveBetweenPositions(this.player.pos, targetPosition)) {
-            const monster = this.chamberMonsters.get(tileKey(targetPosition));
-
-            this.player.deselect();
-
-            if (monster) {
-              const startPosition = vec(this.player.pos.x, this.player.pos.y);
-              const pausePosition = this.computeBorderPosition(startPosition, targetPosition);
-
-              this.movementStartPosition = startPosition;
-              this.moveTargetPosition = targetPosition;
-              this.movementPausePosition = pausePosition;
-              this.pendingMonsterEncounter = monster;
-              this.movementPhase = "movingToBorder";
-              this.player.setTargetPosition(pausePosition, false);
-              this.scoreLabel.text = "Moving to the chamber border.";
-              this.messageLabel.text = "The box advances before the fight starts.";
-            } else {
-              this.moveTargetPosition = targetPosition;
-              this.movementPhase = "movingToTarget";
-              this.player.setTargetPosition(targetPosition);
-              this.scoreLabel.text = "Moving to the revealed tile.";
-              this.messageLabel.text = "Revealed tiles move directly through open walls.";
-            }
-          } else if (wallKeys) {
-            const returnPosition = vec(this.player.pos.x, this.player.pos.y);
-            this.player.deselect();
-            this.startBlockedMovement(targetPosition, returnPosition);
-            this.scoreLabel.text = "Movement blocked by walls.";
-            this.messageLabel.text = "The box turns back before the border.";
-          } else {
-            this.scoreLabel.text = "Choose an adjacent revealed tile.";
-            this.messageLabel.text = "Wall-aware movement only works between neighboring tiles.";
-          }
-          return;
-        }
-
-        if (!this.getMoveWallKeys(this.player.pos, targetPosition)) {
-          this.scoreLabel.text = "Choose a neighboring tile.";
-          this.messageLabel.text = "Only tiles with a shared border can start the flow.";
-          return;
-        }
-
-        this.beginTileDiscovery(targetPosition);
-        this.player.deselect();
-        this.scoreLabel.text = "Tile discovery started. Rotate, accept, or reject.";
-        this.messageLabel.text = "The box moves to the tile border and waits.";
-      }
-    });
+    primaryPointer.on("down", this.primaryPointerDownHandler);
 
     primaryPointer.on("move", (event: PointerEvent) => {
       if (!this.cameraDragLastScreenPos) {
@@ -826,6 +1023,11 @@ export class DemoScene extends Scene {
       }
 
       if (this.interactionMode === "zoom") {
+        if (event.pointerType === PointerType.Touch && this.activeTouchPointerIds.size < 2 && !this.touchZoomOverrideActive) {
+          this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+          return;
+        }
+
         const deltaY = event.screenPos.y - this.cameraDragLastScreenPos.y;
         this.cameraZoomSwipeDistance += deltaY;
 
@@ -866,7 +1068,11 @@ export class DemoScene extends Scene {
   }
 
   override onPreUpdate(engine: import("excalibur").Engine, elapsed: number): void {
+    this.reconcileActiveTouchPointers();
     this.updateDebugInfoLabel();
+    this.updateTopBarButtonState();
+    this.syncTouchMoveOverrideState();
+    this.syncTouchZoomOverrideState();
     this.syncChamberMonsterVisualMode();
     this.updatePreviewCommitAnimation(elapsed);
     this.updatePreviewOrientationAnimation(elapsed);
@@ -990,6 +1196,41 @@ export class DemoScene extends Scene {
     ctx.debug.drawLine(start, end, { color: arrowColor, lineWidth: 4 });
     ctx.debug.drawLine(end, leftHead, { color: arrowColor, lineWidth: 4 });
     ctx.debug.drawLine(end, rightHead, { color: arrowColor, lineWidth: 4 });
+
+  }
+
+  private createDebugOverlayControls(): void {
+    if (this.debugOverlayControls.length > 0) {
+      return;
+    }
+
+    const overlays = [
+      { centerX: this.topBar.pos.x, centerY: this.topBar.pos.y, width: this.topBar.width, height: this.topBar.height, color: "#ffd166" },
+      { centerX: this.inventoryButton.button.pos.x, centerY: this.inventoryButton.button.pos.y, width: this.inventoryButton.button.width, height: this.inventoryButton.button.height, color: "#7cf7a3" },
+      ...this.modeButtons.map((modeButton) => ({ centerX: modeButton.button.pos.x, centerY: modeButton.button.pos.y, width: modeButton.button.width, height: modeButton.button.height, color: "#7aa8ff" })),
+      ...this.tileActionButtons.map((actionButton) => ({
+        centerX: actionButton.button.pos.x,
+        centerY: actionButton.button.pos.y,
+        width: actionButton.button.width,
+        height: actionButton.button.height,
+        color: this.movementPhase === "waitingForOrientation" ? "#7cf7a3" : "#8f9cac"
+      }))
+    ];
+
+    for (const overlay of overlays) {
+      const actor = new Actor({
+        pos: vec(overlay.centerX, overlay.centerY),
+        width: overlay.width,
+        height: overlay.height,
+        coordPlane: CoordPlane.Screen,
+        z: 200
+      });
+
+      actor.graphics.use(new Rectangle({ width: overlay.width, height: overlay.height, color: Color.fromHex(overlay.color) }));
+      actor.graphics.opacity = 0.18;
+      this.debugOverlayControls.push({ actor });
+      this.add(actor);
+    }
   }
 
   private drawTileMatrix(ctx: import("excalibur").ExcaliburGraphicsContext): void {
@@ -1014,79 +1255,88 @@ export class DemoScene extends Scene {
   }
 
   private createModeButton(mode: DemoMode, text: string, centerX: number, centerY: number, width: number, height: number): ModeButtonControl {
-    const button = new Actor({
-      pos: vec(centerX, centerY),
+    const template = createScreenButtonTemplate({
+      centerX,
+      centerY,
       width,
       height,
-      color: Color.fromHex("#1a2948"),
-      coordPlane: CoordPlane.Screen,
-      z: 100
-    });
-
-    const label = new Label({
       text,
-      pos: vec(centerX, centerY),
-      font: new Font({ family: "Space Grotesk", size: clamp(height * 0.42, 14, 18), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#edf4ff"),
-      coordPlane: CoordPlane.Screen,
-      z: 101
+      buttonColor: "#1a2948",
+      textColor: "#edf4ff",
+      fontFamily: "Space Grotesk",
+      fontSize: clamp(height * 0.42, 14, 18),
+      z: 100,
+      labelZ: 101,
+      hitboxOrigin: "center"
     });
 
-    return { mode, button, label, width, height };
+    return { mode, button: template.button, label: template.label, width, height };
   }
 
   private createSimpleButton(centerX: number, centerY: number, width: number, height: number, text: string): SimpleButtonControl {
-    const button = new Actor({
-      pos: vec(centerX, centerY),
+    const template = createScreenButtonTemplate({
+      centerX,
+      centerY,
       width,
       height,
-      color: Color.fromHex("#1a2948"),
-      coordPlane: CoordPlane.Screen,
-      z: 100
-    });
-
-    const label = new Label({
       text,
-      pos: vec(centerX, centerY),
-      font: new Font({ family: "Space Grotesk", size: clamp(height * 0.42, 14, 18), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#edf4ff"),
-      coordPlane: CoordPlane.Screen,
-      z: 101
+      buttonColor: "#1a2948",
+      textColor: "#edf4ff",
+      fontFamily: "Space Grotesk",
+      fontSize: clamp(height * 0.42, 14, 18),
+      z: 100,
+      labelZ: 101,
+      hitboxOrigin: "center"
     });
 
-    return { button, label, width, height };
+    return { button: template.button, label: template.label, width, height };
   }
 
   private createTileActionButton(action: TileActionType, text: string, centerX: number, centerY: number, width: number, height: number): TileActionButtonControl {
-    const button = new Actor({
-      pos: vec(centerX, centerY),
+    const template = createScreenButtonTemplate({
+      centerX,
+      centerY,
       width,
       height,
-      color: Color.fromHex("#263759"),
-      coordPlane: CoordPlane.Screen,
-      z: 100
-    });
-
-    const label = new Label({
       text,
-      pos: vec(centerX, centerY),
-      font: new Font({ family: "Space Grotesk", size: clamp(height * 0.38, 13, 17), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#d6e2ff"),
-      coordPlane: CoordPlane.Screen,
-      z: 101
+      buttonColor: "#263759",
+      textColor: "#d6e2ff",
+      fontFamily: "Space Grotesk",
+      fontSize: clamp(height * 0.38, 13, 17),
+      z: 100,
+      labelZ: 101,
+      hitboxOrigin: "center"
     });
 
-    return { action, button, label, width, height };
+    return { action, button: template.button, label: template.label, width, height };
   }
 
-  private handleModeButtonPress(screenPos: Vector): boolean {
+  private handleModeButtonPress(screenPos: Vector, pointerType: PointerType): boolean {
+    if (!gameSettings.debugInfoEnabled) {
+      return false;
+    }
+
     if (this.movementPhase === "waitingForOrientation") {
       return false;
     }
 
+    const isTwoFingerTouch = pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2;
+
     for (const modeButton of this.modeButtons) {
-      if (this.isPointInsideButton(screenPos, modeButton)) {
+      if (pointerType === PointerType.Touch && modeButton.mode !== "move") {
+        continue;
+      }
+
+      if (this.isPointInsideButton(screenPos, modeButton) && (!isTwoFingerTouch || modeButton.mode === "move")) {
+        this.logPointerClick(`mode:${modeButton.mode}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
         this.setInteractionMode(modeButton.mode);
+
+        if (pointerType === PointerType.Touch && modeButton.mode === "zoom") {
+          this.cameraDragLastScreenPos = vec(screenPos.x, screenPos.y);
+          this.cameraZoomSwipeDistance = 0;
+          this.cameraZoomSwipeConsumed = false;
+        }
+
         return true;
       }
     }
@@ -1095,7 +1345,12 @@ export class DemoScene extends Scene {
   }
 
   private handleMenuButtonPress(screenPos: Vector): boolean {
+    if (!this.showMenuButton) {
+      return false;
+    }
+
     if (this.isPointInsideButton(screenPos, this.menuButton)) {
+      this.logPointerClick("menu", screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
       this.controller.showMenu();
       return true;
     }
@@ -1105,6 +1360,17 @@ export class DemoScene extends Scene {
 
   private handleInventoryButtonPress(screenPos: Vector): boolean {
     if (this.isPointInsideButton(screenPos, this.inventoryButton)) {
+      this.logPointerClick(this.gameOver && gameSettings.debugInfoEnabled ? "continue" : "inventory", screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
+      if (this.gameOver && gameSettings.debugInfoEnabled) {
+        this.playerHealth = this.maxPlayerHealth;
+        this.gameOver = false;
+        this.updateHeartDisplay();
+        this.scoreLabel.text = "All lives restored.";
+        this.messageLabel.text = "Continue from the last game state.";
+        this.controller.saveDemoState();
+        return true;
+      }
+
       this.scoreLabel.text = "Inventory is not implemented yet.";
       this.messageLabel.text = "Inventory button tapped.";
       return true;
@@ -1113,13 +1379,34 @@ export class DemoScene extends Scene {
     return false;
   }
 
+  private updateTapTrace(screenPos: Vector, worldPos: Vector): void {
+    const hits = [
+      this.showMenuButton && this.isPointInsideButton(screenPos, this.menuButton) ? "menu" : null,
+      this.isPointInsideButton(screenPos, this.inventoryButton) ? "inventory" : null,
+      this.modeButtons.some((modeButton) => this.isPointInsideButton(screenPos, modeButton)) ? "mode" : null,
+      this.tileActionButtons.some((actionButton) => this.isPointInsideButton(screenPos, actionButton)) ? "action" : null
+    ].filter((hit): hit is string => hit !== null);
+
+    const hitText = hits.length > 0 ? hits.join(",") : "none";
+    this.tapTraceLabel.text = `Tap trace: s(${Math.round(screenPos.x)},${Math.round(screenPos.y)}) w(${Math.round(worldPos.x)},${Math.round(worldPos.y)}) -> ${hitText}`;
+  }
+
+  private logPointerClick(componentName: string, screenPos: Vector, worldPos: Vector): void {
+    console.log(`[pointer] ${componentName} screen=${Math.round(screenPos.x)},${Math.round(screenPos.y)} world=${Math.round(worldPos.x)},${Math.round(worldPos.y)}`);
+  }
+
   private handleTileActionButtonPress(screenPos: Vector): boolean {
-    if (this.movementPhase !== "waitingForOrientation") {
+    if (!this.isInsideTileActionRow(screenPos)) {
       return false;
+    }
+
+    if (this.movementPhase !== "waitingForOrientation") {
+      return true;
     }
 
     for (const actionButton of this.tileActionButtons) {
       if (this.isPointInsideButton(screenPos, actionButton)) {
+        this.logPointerClick(`tile:${actionButton.action}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
         if (actionButton.action === "rotate") {
           this.rotatePreviewTrailTile(1);
           return true;
@@ -1137,7 +1424,42 @@ export class DemoScene extends Scene {
       }
     }
 
-    return false;
+    return true;
+  }
+
+  private primeTouchCameraDrag(screenPos: Vector): void {
+    this.cameraDragLastScreenPos = vec(screenPos.x, screenPos.y);
+    this.cameraZoomSwipeDistance = 0;
+    this.cameraZoomSwipeConsumed = false;
+  }
+
+  private shouldActivateTouchMove(screenPos: Vector, worldPos: Vector): boolean {
+    if (this.movementPhase === "waitingForOrientation" || this.previewTrailTile) {
+      return false;
+    }
+
+    if (screenPos.y <= this.topBarHeight || screenPos.y >= GAME_HEIGHT - this.topBarHeight) {
+      return false;
+    }
+
+    const boxLeft = this.player.pos.x - this.playerSize / 2;
+    const boxRight = this.player.pos.x + this.playerSize / 2;
+    const boxTop = this.player.pos.y - this.playerSize / 2;
+    const boxBottom = this.player.pos.y + this.playerSize / 2;
+
+    return !(worldPos.x >= boxLeft && worldPos.x <= boxRight && worldPos.y >= boxTop && worldPos.y <= boxBottom);
+  }
+
+  private isInsideTileActionRow(screenPos: Vector): boolean {
+    if (this.tileActionButtons.length === 0) {
+      return false;
+    }
+
+    const left = Math.min(...this.tileActionButtons.map((button) => button.button.pos.x - button.button.width / 2));
+    const right = Math.max(...this.tileActionButtons.map((button) => button.button.pos.x + button.button.width / 2));
+    const top = Math.min(...this.tileActionButtons.map((button) => button.button.pos.y - button.button.height / 2));
+    const bottom = Math.max(...this.tileActionButtons.map((button) => button.button.pos.y + button.button.height / 2));
+    return screenPos.x >= left && screenPos.x <= right && screenPos.y >= top && screenPos.y <= bottom;
   }
 
   private rotatePreviewTrailTile(step: 1 | -1): void {
@@ -1187,26 +1509,24 @@ export class DemoScene extends Scene {
   }
 
   private isPointInsideButton(point: Vector, button: ModeButtonControl | TileActionButtonControl | SimpleButtonControl): boolean {
-    const halfWidth = button.width / 2;
-    const halfHeight = button.height / 2;
-    const left = button.button.pos.x - halfWidth;
-    const right = button.button.pos.x + halfWidth;
-    const top = button.button.pos.y - halfHeight;
-    const bottom = button.button.pos.y + halfHeight;
-
-    return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+    return isPointInsideScreenButton(point, {
+      button: button.button,
+      label: button.label,
+      width: button.width,
+      height: button.height,
+      hitboxOrigin: "center"
+    });
   }
 
   private beginTileDiscovery(targetPosition: Vector): void {
     const startPosition = vec(this.player.pos.x, this.player.pos.y);
-    const target = vec(targetPosition.x, targetPosition.y);
-    const pausePosition = this.computeBorderPosition(startPosition, target);
+    const pausePosition = this.computeBorderPosition(startPosition, targetPosition);
 
     this.movementStartPosition = startPosition;
-    this.moveTargetPosition = target;
+    this.moveTargetPosition = vec(targetPosition.x, targetPosition.y);
     this.movementPausePosition = pausePosition;
-    this.pendingTrailTilePosition = target;
-    this.pendingTrailTileOrientation = this.getOrientationFromVector(startPosition, target);
+    this.pendingTrailTilePosition = vec(targetPosition.x, targetPosition.y);
+    this.pendingTrailTileOrientation = this.getOrientationFromVector(startPosition, targetPosition);
     this.movementPhase = "movingToBorder";
     this.player.setTargetPosition(pausePosition, false);
     this.updateTileActionButtonStyles();
@@ -1225,6 +1545,20 @@ export class DemoScene extends Scene {
       this.updateModeButtonStyles();
       this.updateTileActionButtonStyles();
       return;
+    }
+
+    if (this.pendingTrailTilePosition) {
+      const occupiedMonster = this.chamberMonsters.get(tileKey(this.pendingTrailTilePosition));
+
+      if (occupiedMonster) {
+        this.pendingMonsterEncounter = occupiedMonster;
+        this.messageLabel.text = "Chamber occupied by a monster. The box attacks immediately.";
+        this.scoreLabel.text = "Fighting the chamber monster.";
+        this.hintLabel.text = `Orientation: ${this.getOrientationName(this.pendingTrailTileOrientation)}. Combat starts instead of preview.`;
+        this.updateModeButtonStyles();
+        this.updateTileActionButtonStyles();
+        return;
+      }
     }
 
     this.movementPhase = "waitingForOrientation";
@@ -1477,9 +1811,12 @@ export class DemoScene extends Scene {
   }
 
   private setInteractionMode(mode: DemoMode): void {
+    const preservePreviewState = this.movementPhase === "waitingForOrientation";
     this.interactionMode = mode;
     this.cameraDragLastScreenPos = null;
-    this.moveTargetPosition = null;
+    if (!preservePreviewState) {
+      this.moveTargetPosition = null;
+    }
     this.cameraZoomSwipeDistance = 0;
     this.cameraZoomSwipeConsumed = false;
     this.player.clearTargetPosition();
@@ -1509,11 +1846,150 @@ export class DemoScene extends Scene {
     this.updateModeButtonStyles();
   }
 
+  private initializeTouchGestureTracking(): void {
+    if (this.touchGestureTrackingInitialized) {
+      return;
+    }
+
+    this.touchGestureTrackingInitialized = true;
+    this.engine.input.pointers.on("down", this.handlePointerReceiverDown);
+    this.engine.input.pointers.on("up", this.handlePointerReceiverUp);
+    window.addEventListener("pointerup", this.handleNativePointerEnded, true);
+    window.addEventListener("pointercancel", this.handleNativePointerEnded, true);
+    this.engine.canvas.addEventListener("lostpointercapture", this.handleLostPointerCapture, true);
+    window.addEventListener("touchend", this.handleNativeTouchEnd, true);
+    window.addEventListener("touchcancel", this.handleNativeTouchCancel, true);
+    window.addEventListener("blur", this.handleWindowBlur);
+    document.addEventListener("visibilitychange", this.handleDocumentVisibilityChange);
+  }
+
+  private enableTouchMoveOverride(screenPos: Vector): void {
+    if (this.touchMoveOverrideActive) {
+      return;
+    }
+
+    this.touchMoveOverrideBaseMode = "action";
+    this.touchMoveOverrideActive = true;
+
+    if (this.interactionMode !== "move") {
+      this.setInteractionMode("move");
+    }
+
+    this.primeTouchCameraDrag(screenPos);
+  }
+
+  private enableTouchZoomOverride(): void {
+    if (this.touchZoomOverrideActive) {
+      return;
+    }
+
+    this.touchZoomOverrideBaseMode = "action";
+    this.touchZoomOverrideActive = true;
+    this.touchZoomLastDistance = null;
+    this.touchZoomDistanceDelta = 0;
+
+    if (this.interactionMode !== "zoom") {
+      this.setInteractionMode("zoom");
+    }
+  }
+
+  private syncTouchZoomOverrideState(): void {
+    if (this.activeTouchPointerIds.size >= 2) {
+      this.enableTouchZoomOverride();
+      this.applyTouchPinchZoom();
+      return;
+    }
+
+    if (!this.touchZoomOverrideActive) {
+      return;
+    }
+
+    const restoreMode = "action";
+    this.touchZoomOverrideActive = false;
+    this.touchZoomOverrideBaseMode = null;
+    this.touchZoomLastDistance = null;
+    this.touchZoomDistanceDelta = 0;
+
+    if (this.interactionMode !== restoreMode) {
+      this.setInteractionMode(restoreMode);
+    }
+  }
+
+  private syncTouchMoveOverrideState(): void {
+    if (this.activeTouchPointerIds.size >= 1) {
+      return;
+    }
+
+    if (!this.touchMoveOverrideActive) {
+      return;
+    }
+
+    const restoreMode = this.touchMoveOverrideBaseMode ?? "action";
+    this.touchMoveOverrideActive = false;
+    this.touchMoveOverrideBaseMode = null;
+
+    if (this.interactionMode !== restoreMode) {
+      this.setInteractionMode(restoreMode);
+    }
+  }
+
+  private applyTouchPinchZoom(): void {
+    const touchIds = Array.from(this.activeTouchPointerIds);
+
+    if (touchIds.length < 2) {
+      return;
+    }
+
+    const firstTouch = this.engine.input.pointers.currentFramePointerCoords.get(touchIds[0]);
+    const secondTouch = this.engine.input.pointers.currentFramePointerCoords.get(touchIds[1]);
+
+    if (!firstTouch || !secondTouch) {
+      return;
+    }
+
+    const currentDistance = Math.hypot(
+      firstTouch.screenPos.x - secondTouch.screenPos.x,
+      firstTouch.screenPos.y - secondTouch.screenPos.y
+    );
+
+    if (this.touchZoomLastDistance === null) {
+      this.touchZoomLastDistance = currentDistance;
+      return;
+    }
+
+    this.touchZoomDistanceDelta += currentDistance - this.touchZoomLastDistance;
+    this.touchZoomLastDistance = currentDistance;
+
+    const zoomThreshold = gameSettings.cameraZoomDragThreshold;
+    if (Math.abs(this.touchZoomDistanceDelta) < zoomThreshold) {
+      return;
+    }
+
+    const zoomSteps = Math.trunc(Math.abs(this.touchZoomDistanceDelta) / zoomThreshold) * (this.touchZoomDistanceDelta > 0 ? 1 : -1);
+    const nextZoomLevels = this.getAllowedZoomLevels();
+    const nextIndex = clamp(this.cameraZoomLevelIndex + zoomSteps, 0, nextZoomLevels.length - 1);
+
+    if (nextIndex !== this.cameraZoomLevelIndex) {
+      this.cameraZoomLevelIndex = nextIndex;
+      this.camera.zoom = nextZoomLevels[nextIndex];
+    }
+
+    this.touchZoomDistanceDelta -= zoomSteps * zoomThreshold;
+  }
+
   private updateModeButtonStyles(): void {
+    const visible = gameSettings.debugInfoEnabled;
     const isPreviewing = this.movementPhase === "waitingForOrientation";
 
     for (const modeButton of this.modeButtons) {
       const isActive = modeButton.mode === this.interactionMode;
+      modeButton.button.graphics.opacity = visible ? 1 : 0;
+      modeButton.label.opacity = visible ? 1 : 0;
+
+      if (!visible) {
+        continue;
+      }
+
       if (isPreviewing) {
         modeButton.button.color = isActive ? Color.fromHex("#4f7a57") : Color.fromHex("#152236");
         modeButton.label.color = isActive ? Color.fromHex("#c8d7ce") : Color.fromHex("#8f9cac");
@@ -1526,7 +2002,8 @@ export class DemoScene extends Scene {
   }
 
   private isMovementInputLocked(): boolean {
-    return this.movementPhase === "movingToBorder"
+    return this.gameOver
+      || this.movementPhase === "movingToBorder"
       || this.movementPhase === "movingToTarget"
       || this.movementPhase === "attackingMonster"
       || this.movementPhase === "turningAfterMonsterDefeat"
@@ -1712,8 +2189,17 @@ export class DemoScene extends Scene {
     this.previewCommitTargetPosition = null;
     this.previewCommitElapsed = 0;
     this.movementPhase = "idle";
-    this.scoreLabel.text = "The box returned to the start tile.";
-    this.messageLabel.text = "The chamber monster pushed it back.";
+    if (this.playerHealth <= 0) {
+      this.gameOver = true;
+      this.scoreLabel.text = "No lives left.";
+      this.messageLabel.text = gameSettings.debugInfoEnabled
+        ? "Game over. Use Continue to restore all lives."
+        : "Game over. Return to the menu.";
+    } else {
+      this.scoreLabel.text = "The box returned to the start tile.";
+      this.messageLabel.text = "The chamber monster pushed it back.";
+    }
+    this.updateHeartDisplay();
     this.controller.saveDemoState();
   }
 
@@ -1801,7 +2287,7 @@ export class DemoScene extends Scene {
 
   private startBlockedMovement(targetPosition: Vector, returnPosition?: Vector): void {
     this.clearPreviewTrailTile();
-    this.moveTargetPosition = targetPosition;
+    this.moveTargetPosition = vec(targetPosition.x, targetPosition.y);
     this.blockedReturnPosition = returnPosition ? vec(returnPosition.x, returnPosition.y) : this.movementStartPosition;
     this.blockedTurnElapsed = 0;
     this.blockedTurnStartRotation = this.player.rotation;
