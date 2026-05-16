@@ -282,6 +282,8 @@ export class DemoScene extends Scene {
   private resetRequested = false;
   private readonly activeTouchPointerIds = new Set<number>();
   private touchGestureTrackingInitialized = false;
+  private touchMoveOverrideActive = false;
+  private touchMoveOverrideBaseMode: DemoMode | null = null;
   private touchZoomOverrideActive = false;
   private touchZoomOverrideBaseMode: DemoMode | null = null;
   private touchZoomLastDistance: number | null = null;
@@ -289,11 +291,35 @@ export class DemoScene extends Scene {
   private readonly handlePointerReceiverDown = (event: PointerEvent): void => {
     if (event.pointerType === PointerType.Touch) {
       this.activeTouchPointerIds.add(event.pointerId);
+
+      if (this.shouldActivateTouchMove(event.screenPos, event.worldPos) && !this.touchMoveOverrideActive) {
+        this.enableTouchMoveOverride(event.screenPos);
+      }
     }
   };
   private readonly handlePointerReceiverUp = (event: PointerEvent): void => {
     if (event.pointerType === PointerType.Touch) {
       this.activeTouchPointerIds.delete(event.pointerId);
+
+      if (this.activeTouchPointerIds.size === 0) {
+        if (this.touchMoveOverrideActive) {
+          this.touchMoveOverrideActive = false;
+          this.touchMoveOverrideBaseMode = null;
+          if (this.interactionMode !== "action") {
+            this.setInteractionMode("action");
+          }
+        }
+
+        if (this.touchZoomOverrideActive) {
+          this.touchZoomOverrideActive = false;
+          this.touchZoomOverrideBaseMode = null;
+          this.touchZoomLastDistance = null;
+          this.touchZoomDistanceDelta = 0;
+          if (this.interactionMode !== "action") {
+            this.setInteractionMode("action");
+          }
+        }
+      }
     }
   };
   private readonly primaryPointerDownHandler = (event: PointerEvent): void => {
@@ -322,6 +348,11 @@ export class DemoScene extends Scene {
     }
 
     if (this.handleTileActionButtonPress(event.screenPos)) {
+      return;
+    }
+
+    if (event.pointerType === PointerType.Touch && this.shouldActivateTouchMove(event.screenPos, event.worldPos)) {
+      this.enableTouchMoveOverride(event.screenPos);
       return;
     }
 
@@ -429,6 +460,8 @@ export class DemoScene extends Scene {
 
   override onDeactivate(): void {
     this.activeTouchPointerIds.clear();
+    this.touchMoveOverrideActive = false;
+    this.touchMoveOverrideBaseMode = null;
     this.touchZoomOverrideActive = false;
     this.touchZoomOverrideBaseMode = null;
     this.touchZoomLastDistance = null;
@@ -1019,6 +1052,7 @@ export class DemoScene extends Scene {
   override onPreUpdate(engine: import("excalibur").Engine, elapsed: number): void {
     this.updateDebugInfoLabel();
     this.updateTopBarButtonState();
+    this.syncTouchMoveOverrideState();
     this.syncTouchZoomOverrideState();
     this.syncChamberMonsterVisualMode();
     this.updatePreviewCommitAnimation(elapsed);
@@ -1373,6 +1407,25 @@ export class DemoScene extends Scene {
     }
 
     return true;
+  }
+
+  private primeTouchCameraDrag(screenPos: Vector): void {
+    this.cameraDragLastScreenPos = vec(screenPos.x, screenPos.y);
+    this.cameraZoomSwipeDistance = 0;
+    this.cameraZoomSwipeConsumed = false;
+  }
+
+  private shouldActivateTouchMove(screenPos: Vector, worldPos: Vector): boolean {
+    if (screenPos.y <= this.topBarHeight || screenPos.y >= GAME_HEIGHT - this.topBarHeight) {
+      return false;
+    }
+
+    const boxLeft = this.player.pos.x - this.playerSize / 2;
+    const boxRight = this.player.pos.x + this.playerSize / 2;
+    const boxTop = this.player.pos.y - this.playerSize / 2;
+    const boxBottom = this.player.pos.y + this.playerSize / 2;
+
+    return !(worldPos.x >= boxLeft && worldPos.x <= boxRight && worldPos.y >= boxTop && worldPos.y <= boxBottom);
   }
 
   private isInsideTileActionRow(screenPos: Vector): boolean {
@@ -1767,12 +1820,27 @@ export class DemoScene extends Scene {
     this.engine.input.pointers.on("up", this.handlePointerReceiverUp);
   }
 
+  private enableTouchMoveOverride(screenPos: Vector): void {
+    if (this.touchMoveOverrideActive) {
+      return;
+    }
+
+    this.touchMoveOverrideBaseMode = "action";
+    this.touchMoveOverrideActive = true;
+
+    if (this.interactionMode !== "move") {
+      this.setInteractionMode("move");
+    }
+
+    this.primeTouchCameraDrag(screenPos);
+  }
+
   private enableTouchZoomOverride(): void {
     if (this.touchZoomOverrideActive) {
       return;
     }
 
-    this.touchZoomOverrideBaseMode = this.interactionMode;
+    this.touchZoomOverrideBaseMode = "action";
     this.touchZoomOverrideActive = true;
     this.touchZoomLastDistance = null;
     this.touchZoomDistanceDelta = 0;
@@ -1793,11 +1861,29 @@ export class DemoScene extends Scene {
       return;
     }
 
-    const restoreMode = this.touchZoomOverrideBaseMode ?? "action";
+    const restoreMode = this.activeTouchPointerIds.size >= 1 && this.touchMoveOverrideActive ? "move" : (this.touchZoomOverrideBaseMode ?? "action");
     this.touchZoomOverrideActive = false;
     this.touchZoomOverrideBaseMode = null;
     this.touchZoomLastDistance = null;
     this.touchZoomDistanceDelta = 0;
+
+    if (this.interactionMode !== restoreMode) {
+      this.setInteractionMode(restoreMode);
+    }
+  }
+
+  private syncTouchMoveOverrideState(): void {
+    if (this.activeTouchPointerIds.size >= 1) {
+      return;
+    }
+
+    if (!this.touchMoveOverrideActive) {
+      return;
+    }
+
+    const restoreMode = this.touchMoveOverrideBaseMode ?? "action";
+    this.touchMoveOverrideActive = false;
+    this.touchMoveOverrideBaseMode = null;
 
     if (this.interactionMode !== restoreMode) {
       this.setInteractionMode(restoreMode);
