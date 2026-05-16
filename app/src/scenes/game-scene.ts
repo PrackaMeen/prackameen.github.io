@@ -570,6 +570,7 @@ export class DemoScene extends Scene {
     this.inventoryButton.label.color = canContinue ? Color.fromHex("#08121c") : Color.fromHex("#f3e7d8");
     this.inventoryButton.button.graphics.opacity = canContinue ? 1 : 0.92;
     this.inventoryButton.label.opacity = canContinue ? 1 : 0.92;
+    this.tapTraceLabel.opacity = gameSettings.debugInfoEnabled ? 1 : 0;
   }
 
   public exportDemoState(): string | null {
@@ -974,6 +975,7 @@ export class DemoScene extends Scene {
 
   override onPreUpdate(engine: import("excalibur").Engine, elapsed: number): void {
     this.updateDebugInfoLabel();
+    this.updateTopBarButtonState();
     this.syncChamberMonsterVisualMode();
     this.updatePreviewCommitAnimation(elapsed);
     this.updatePreviewOrientationAnimation(elapsed);
