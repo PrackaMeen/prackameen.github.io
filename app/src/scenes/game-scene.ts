@@ -251,6 +251,7 @@ export class DemoScene extends Scene {
   private readonly menuButton: SimpleButtonControl;
   private readonly inventoryButton: SimpleButtonControl;
   private readonly topBar: Actor;
+  private readonly bottomBar: Actor;
   private readonly tapTraceLabel: Label;
   private readonly debugOverlayControls: DebugOverlayControl[] = [];
   private readonly showMenuButton = true;
@@ -358,6 +359,14 @@ export class DemoScene extends Scene {
       color: Color.fromHex("#6a4322"),
       coordPlane: CoordPlane.Screen,
       z: 90
+    });
+    this.bottomBar = new Actor({
+      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT - this.topBarHeight / 2),
+      width: GAME_WIDTH,
+      height: this.topBarHeight,
+      color: Color.fromHex("#6a4322"),
+      coordPlane: CoordPlane.Screen,
+      z: 89
     });
     const menuButtonWidth = clamp(GAME_WIDTH * 0.16, 96, 136);
     const inventoryButtonWidth = clamp(GAME_WIDTH * 0.08, 70, 92);
@@ -733,23 +742,23 @@ export class DemoScene extends Scene {
     this.add(this.player);
 
     this.add(this.topBar);
+    this.add(this.bottomBar);
     this.add(this.menuButton.button);
     this.add(this.menuButton.label);
     this.add(this.tapTraceLabel);
     this.add(this.inventoryButton.button);
     this.add(this.inventoryButton.label);
 
-    const bottomInset = clamp(GAME_HEIGHT * 0.03, 18, 28);
     const buttonWidth = clamp(GAME_WIDTH * 0.12, 72, 110);
     const buttonHeight = clamp(GAME_HEIGHT * 0.055, 40, 54);
     const buttonGap = clamp(GAME_WIDTH * 0.02, 12, 18);
     const totalWidth = buttonWidth * 3 + buttonGap * 2;
     const centerX = GAME_WIDTH / 2;
-    const centerY = GAME_HEIGHT - bottomInset - buttonHeight / 2;
+    const modeRowCenterY = GAME_HEIGHT - this.topBarHeight - clamp(GAME_HEIGHT * 0.02, 10, 16) - buttonHeight / 2;
 
-    const actionButton = this.createModeButton("action", "A", centerX - totalWidth / 2 + buttonWidth / 2, centerY, buttonWidth, buttonHeight);
-    const moveButton = this.createModeButton("move", "M", centerX, centerY, buttonWidth, buttonHeight);
-    const zoomButton = this.createModeButton("zoom", "Z", centerX + totalWidth / 2 - buttonWidth / 2, centerY, buttonWidth, buttonHeight);
+    const actionButton = this.createModeButton("action", "A", centerX - totalWidth / 2 + buttonWidth / 2, modeRowCenterY, buttonWidth, buttonHeight);
+    const moveButton = this.createModeButton("move", "M", centerX, modeRowCenterY, buttonWidth, buttonHeight);
+    const zoomButton = this.createModeButton("zoom", "Z", centerX + totalWidth / 2 - buttonWidth / 2, modeRowCenterY, buttonWidth, buttonHeight);
 
     this.modeButtons.push(actionButton, moveButton, zoomButton);
 
@@ -763,7 +772,7 @@ export class DemoScene extends Scene {
     const tileActionGap = clamp(GAME_WIDTH * 0.015, 10, 14);
     const tileActionTotalWidth = tileActionButtonWidth * 3 + tileActionGap * 2;
     const tileActionCenterX = GAME_WIDTH / 2;
-    const tileActionCenterY = clamp(GAME_HEIGHT * 0.72, GAME_HEIGHT * 0.56, GAME_HEIGHT - bottomInset - tileActionButtonHeight / 2 - 12);
+    const tileActionCenterY = GAME_HEIGHT - this.topBarHeight / 2;
 
     const rotateButton = this.createTileActionButton("rotate", "Rotate", tileActionCenterX - tileActionTotalWidth / 2 + tileActionButtonWidth / 2, tileActionCenterY, tileActionButtonWidth, tileActionButtonHeight);
     const acceptButton = this.createTileActionButton("accept", "Accept", tileActionCenterX, tileActionCenterY, tileActionButtonWidth, tileActionButtonHeight);
