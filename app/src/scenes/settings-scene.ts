@@ -1,6 +1,7 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, PointerButton, Scene, TextAlign, type PointerEvent, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH, gameSettings } from "../config";
 import type { GameController } from "../game-controller";
+import { createScreenButtonTemplate, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -24,7 +25,13 @@ export class SettingsScene extends Scene {
     }
 
     for (const control of this.controls) {
-      if (this.isPointInsideButton(event.screenPos, control.button)) {
+      if (isPointInsideScreenButton(event.screenPos, {
+        button: control.button,
+        label: control.label,
+        width: control.button.width,
+        height: control.button.height,
+        hitboxOrigin: "bottom"
+      })) {
         control.onPress();
         return;
       }
@@ -187,6 +194,7 @@ export class SettingsScene extends Scene {
   }
 
   override onActivate(): void {
+    (globalThis as typeof globalThis & { __activeSceneName?: string }).__activeSceneName = "settings";
     this.inputEnabled = true;
   }
 
@@ -195,38 +203,22 @@ export class SettingsScene extends Scene {
   }
 
   private createButton(centerX: number, centerY: number, width: number, height: number, text: string): Pick<ButtonControl, "button" | "label"> {
-    const buttonLabelYOffset = clamp(height * 0.09, 4, 6);
-
-    const button = new Actor({
-      pos: vec(centerX, centerY),
+    const template = createScreenButtonTemplate({
+      centerX,
+      centerY,
       width,
       height,
-      color: Color.fromHex("#1a2948"),
-      z: 100,
-      coordPlane: CoordPlane.Screen
-    });
-
-    const label = new Label({
       text,
-      pos: vec(centerX, centerY - buttonLabelYOffset),
-      font: new Font({ family: "Space Grotesk", size: clamp(height * 0.42, 14, 18), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#edf4ff"),
-      z: 101,
-      coordPlane: CoordPlane.Screen,
-      maxWidth: width
+      buttonColor: "#1a2948",
+      textColor: "#edf4ff",
+      fontFamily: "Space Grotesk",
+      fontSize: clamp(height * 0.42, 14, 18),
+      z: 100,
+      labelZ: 101,
+      maxWidth: width,
+      hitboxOrigin: "bottom"
     });
 
-    return { button, label };
-  }
-
-  private isPointInsideButton(point: { x: number; y: number }, button: Actor): boolean {
-    const halfWidth = button.width / 2;
-    const halfHeight = button.height / 2;
-    const left = button.pos.x - halfWidth;
-    const right = button.pos.x + halfWidth;
-    const top = button.pos.y - halfHeight;
-    const bottom = button.pos.y + halfHeight;
-
-    return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+    return { button: template.button, label: template.label };
   }
 }

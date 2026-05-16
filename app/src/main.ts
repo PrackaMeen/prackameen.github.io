@@ -1,4 +1,4 @@
-import { Color, Engine, PointerScope } from "excalibur";
+import { Color, DisplayMode, Engine, Flags, PointerScope } from "excalibur";
 import { GAME_HEIGHT, GAME_TITLE, GAME_WIDTH } from "./config";
 import { createGameSprites, loadGameAssets } from "./game-assets";
 import { GameController } from "./game-controller";
@@ -8,7 +8,11 @@ import { SettingsScene } from "./scenes/settings-scene";
 import "./styles.css";
 
 void (async () => {
-  await loadGameAssets();
+  const rendererMode = new URLSearchParams(window.location.search).get("renderer");
+
+  if (rendererMode === "2d") {
+    Flags.enable("use-canvas-context");
+  }
 
   const engine = new Engine({
     width: GAME_WIDTH,
@@ -19,8 +23,18 @@ void (async () => {
     pixelArt: true,
     suppressHiDPIScaling: true,
     pointerScope: PointerScope.Canvas,
-    grabWindowFocus: false
+    grabWindowFocus: false,
+    displayMode: rendererMode === "2d" ? DisplayMode.Fixed : undefined
   });
+
+  if (rendererMode === "2d") {
+    engine.canvas.style.width = `${GAME_WIDTH}px`;
+    engine.canvas.style.height = `${GAME_HEIGHT}px`;
+    engine.canvas.style.maxWidth = `${GAME_WIDTH}px`;
+    engine.canvas.style.maxHeight = `${GAME_HEIGHT}px`;
+  }
+
+  await loadGameAssets();
 
   const sprites = createGameSprites();
   const controller = new GameController(engine);

@@ -4,6 +4,7 @@ import type { GameSprites, TrailTileOrientation, TrailTileWalls } from "../game-
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
 import { TileValidationStateMachine } from "../tile-validation-state-machine";
+import { createScreenButtonTemplate, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -16,6 +17,9 @@ function snapToTileCenter(value: number): number {
 function tileKey(position: Vector): string {
   return `${Math.round(position.x / TILE_SIZE)}:${Math.round(position.y / TILE_SIZE)}`;
 }
+
+const GAME_CSS_Y_OFFSET = 28;
+const GAME_TILE_CSS_Y_OFFSET = 36;
 
 type DemoMode = "action" | "move" | "zoom";
 type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "attackingMonster" | "turningAfterMonsterDefeat" | "returningAfterMonsterDefeat" | "movingBlockedToWall" | "turningBlocked" | "returningBlocked" | "returningToStart";
@@ -328,6 +332,7 @@ export class DemoScene extends Scene {
     }
 
     this.logPointerClick("raw", event.screenPos, event.worldPos);
+    console.log(`[game-pointer] raw s=${Math.round(event.screenPos.x)},${Math.round(event.screenPos.y)} w=${Math.round(event.worldPos.x)},${Math.round(event.worldPos.y)} canvas=${Math.round(this.engine.canvas.getBoundingClientRect().left)},${Math.round(this.engine.canvas.getBoundingClientRect().top)}`);
     this.updateTapTrace(event.screenPos, event.worldPos);
 
     if (event.pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2) {
@@ -439,6 +444,7 @@ export class DemoScene extends Scene {
   }
 
   override onActivate(): void {
+    (globalThis as typeof globalThis & { __activeSceneName?: string }).__activeSceneName = "demo";
     this.initializeTouchGestureTracking();
 
     const pendingDemoState = this.controller.consumePendingDemoState();
@@ -1248,69 +1254,60 @@ export class DemoScene extends Scene {
   }
 
   private createModeButton(mode: DemoMode, text: string, centerX: number, centerY: number, width: number, height: number): ModeButtonControl {
-    const button = new Actor({
-      pos: vec(centerX, centerY),
+    const template = createScreenButtonTemplate({
+      centerX,
+      centerY,
       width,
       height,
-      color: Color.fromHex("#1a2948"),
-      coordPlane: CoordPlane.Screen,
-      z: 100
-    });
-
-    const label = new Label({
       text,
-      pos: vec(centerX, centerY),
-      font: new Font({ family: "Space Grotesk", size: clamp(height * 0.42, 14, 18), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#edf4ff"),
-      coordPlane: CoordPlane.Screen,
-      z: 101
+      buttonColor: "#1a2948",
+      textColor: "#edf4ff",
+      fontFamily: "Space Grotesk",
+      fontSize: clamp(height * 0.42, 14, 18),
+      z: 100,
+      labelZ: 101,
+      hitboxOrigin: "center"
     });
 
-    return { mode, button, label, width, height };
+    return { mode, button: template.button, label: template.label, width, height };
   }
 
   private createSimpleButton(centerX: number, centerY: number, width: number, height: number, text: string): SimpleButtonControl {
-    const button = new Actor({
-      pos: vec(centerX, centerY),
+    const template = createScreenButtonTemplate({
+      centerX,
+      centerY,
       width,
       height,
-      color: Color.fromHex("#1a2948"),
-      coordPlane: CoordPlane.Screen,
-      z: 100
-    });
-
-    const label = new Label({
       text,
-      pos: vec(centerX, centerY),
-      font: new Font({ family: "Space Grotesk", size: clamp(height * 0.42, 14, 18), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#edf4ff"),
-      coordPlane: CoordPlane.Screen,
-      z: 101
+      buttonColor: "#1a2948",
+      textColor: "#edf4ff",
+      fontFamily: "Space Grotesk",
+      fontSize: clamp(height * 0.42, 14, 18),
+      z: 100,
+      labelZ: 101,
+      hitboxOrigin: "center"
     });
 
-    return { button, label, width, height };
+    return { button: template.button, label: template.label, width, height };
   }
 
   private createTileActionButton(action: TileActionType, text: string, centerX: number, centerY: number, width: number, height: number): TileActionButtonControl {
-    const button = new Actor({
-      pos: vec(centerX, centerY),
+    const template = createScreenButtonTemplate({
+      centerX,
+      centerY,
       width,
       height,
-      color: Color.fromHex("#263759"),
-      coordPlane: CoordPlane.Screen,
-      z: 100
-    });
-
-    const label = new Label({
       text,
-      pos: vec(centerX, centerY),
-      font: new Font({ family: "Space Grotesk", size: clamp(height * 0.38, 13, 17), unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#d6e2ff"),
-      coordPlane: CoordPlane.Screen,
-      z: 101
+      buttonColor: "#263759",
+      textColor: "#d6e2ff",
+      fontFamily: "Space Grotesk",
+      fontSize: clamp(height * 0.38, 13, 17),
+      z: 100,
+      labelZ: 101,
+      hitboxOrigin: "center"
     });
 
-    return { action, button, label, width, height };
+    return { action, button: template.button, label: template.label, width, height };
   }
 
   private handleModeButtonPress(screenPos: Vector, pointerType: PointerType): boolean {
@@ -1322,6 +1319,8 @@ export class DemoScene extends Scene {
       return false;
     }
 
+    const adjustedScreenPos = vec(screenPos.x, screenPos.y + GAME_CSS_Y_OFFSET);
+
     const isTwoFingerTouch = pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2;
 
     for (const modeButton of this.modeButtons) {
@@ -1329,12 +1328,12 @@ export class DemoScene extends Scene {
         continue;
       }
 
-      if (this.isPointInsideButton(screenPos, modeButton) && (!isTwoFingerTouch || modeButton.mode === "move")) {
-        this.logPointerClick(`mode:${modeButton.mode}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
+      if (this.isPointInsideButton(adjustedScreenPos, modeButton) && (!isTwoFingerTouch || modeButton.mode === "move")) {
+        this.logPointerClick(`mode:${modeButton.mode}`, adjustedScreenPos, this.engine.screen.screenToWorldCoordinates(adjustedScreenPos));
         this.setInteractionMode(modeButton.mode);
 
         if (pointerType === PointerType.Touch && modeButton.mode === "zoom") {
-          this.cameraDragLastScreenPos = vec(screenPos.x, screenPos.y);
+          this.cameraDragLastScreenPos = vec(adjustedScreenPos.x, adjustedScreenPos.y);
           this.cameraZoomSwipeDistance = 0;
           this.cameraZoomSwipeConsumed = false;
         }
@@ -1398,7 +1397,9 @@ export class DemoScene extends Scene {
   }
 
   private handleTileActionButtonPress(screenPos: Vector): boolean {
-    if (!this.isInsideTileActionRow(screenPos)) {
+    const adjustedScreenPos = vec(screenPos.x, screenPos.y + GAME_TILE_CSS_Y_OFFSET);
+
+    if (!this.isInsideTileActionRow(adjustedScreenPos)) {
       return false;
     }
 
@@ -1407,8 +1408,8 @@ export class DemoScene extends Scene {
     }
 
     for (const actionButton of this.tileActionButtons) {
-      if (this.isPointInsideButton(screenPos, actionButton)) {
-        this.logPointerClick(`tile:${actionButton.action}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
+      if (this.isPointInsideButton(adjustedScreenPos, actionButton)) {
+        this.logPointerClick(`tile:${actionButton.action}`, adjustedScreenPos, this.engine.screen.screenToWorldCoordinates(adjustedScreenPos));
         if (actionButton.action === "rotate") {
           this.rotatePreviewTrailTile(1);
           return true;
@@ -1461,7 +1462,6 @@ export class DemoScene extends Scene {
     const right = Math.max(...this.tileActionButtons.map((button) => button.button.pos.x + button.button.width / 2));
     const top = Math.min(...this.tileActionButtons.map((button) => button.button.pos.y - button.button.height / 2));
     const bottom = Math.max(...this.tileActionButtons.map((button) => button.button.pos.y + button.button.height / 2));
-
     return screenPos.x >= left && screenPos.x <= right && screenPos.y >= top && screenPos.y <= bottom;
   }
 
@@ -1512,14 +1512,13 @@ export class DemoScene extends Scene {
   }
 
   private isPointInsideButton(point: Vector, button: ModeButtonControl | TileActionButtonControl | SimpleButtonControl): boolean {
-    const halfWidth = button.width / 2;
-    const halfHeight = button.height / 2;
-    const left = button.button.pos.x - halfWidth;
-    const right = button.button.pos.x + halfWidth;
-    const top = button.button.pos.y - halfHeight;
-    const bottom = button.button.pos.y + halfHeight;
-
-    return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+    return isPointInsideScreenButton(point, {
+      button: button.button,
+      label: button.label,
+      width: button.width,
+      height: button.height,
+      hitboxOrigin: "center"
+    });
   }
 
   private beginTileDiscovery(targetPosition: Vector): void {
