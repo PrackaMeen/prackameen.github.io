@@ -1,4 +1,4 @@
-import { Actor, Circle, Color, CoordPlane, Font, FontUnit, Label, PointerButton, Rectangle, Scene, TextAlign, type Graphic, type PointerEvent, type Vector, vec } from "excalibur";
+import { Actor, Circle, Color, CoordPlane, Font, FontUnit, Label, PointerButton, PointerType, Rectangle, Scene, TextAlign, type Graphic, type PointerEvent, type Vector, vec } from "excalibur";
 import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, gameSettings } from "../config";
 import type { GameSprites, TrailTileOrientation, TrailTileWalls } from "../game-assets";
 import type { GameController } from "../game-controller";
@@ -280,13 +280,34 @@ export class DemoScene extends Scene {
   private blockedTurnTargetRotation = 0;
   private nextTrailTileIndex = 0;
   private resetRequested = false;
+  private readonly activeTouchPointerIds = new Set<number>();
+  private touchGestureTrackingInitialized = false;
+  private touchZoomOverrideActive = false;
+  private touchZoomOverrideBaseMode: DemoMode | null = null;
+  private touchZoomLastDistance: number | null = null;
+  private touchZoomDistanceDelta = 0;
+  private readonly handlePointerReceiverDown = (event: PointerEvent): void => {
+    if (event.pointerType === PointerType.Touch) {
+      this.activeTouchPointerIds.add(event.pointerId);
+    }
+  };
+  private readonly handlePointerReceiverUp = (event: PointerEvent): void => {
+    if (event.pointerType === PointerType.Touch) {
+      this.activeTouchPointerIds.delete(event.pointerId);
+    }
+  };
   private readonly primaryPointerDownHandler = (event: PointerEvent): void => {
-    if (event.button !== PointerButton.Left) {
+    if (event.pointerType !== PointerType.Touch && event.button !== PointerButton.Left) {
       return;
     }
 
     this.logPointerClick("raw", event.screenPos, event.worldPos);
     this.updateTapTrace(event.screenPos, event.worldPos);
+
+    if (event.pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2) {
+      this.enableTouchZoomOverride();
+      return;
+    }
 
     if (this.handleMenuButtonPress(event.screenPos)) {
       return;
@@ -296,7 +317,7 @@ export class DemoScene extends Scene {
       return;
     }
 
-    if (this.handleModeButtonPress(event.screenPos)) {
+    if (this.handleModeButtonPress(event.screenPos, event.pointerType)) {
       return;
     }
 
@@ -387,6 +408,8 @@ export class DemoScene extends Scene {
   }
 
   override onActivate(): void {
+    this.initializeTouchGestureTracking();
+
     const pendingDemoState = this.controller.consumePendingDemoState();
 
     if (pendingDemoState) {
@@ -402,6 +425,14 @@ export class DemoScene extends Scene {
     this.performGameReset();
     this.resetRequested = false;
     this.controller.saveDemoState();
+  }
+
+  override onDeactivate(): void {
+    this.activeTouchPointerIds.clear();
+    this.touchZoomOverrideActive = false;
+    this.touchZoomOverrideBaseMode = null;
+    this.touchZoomLastDistance = null;
+    this.touchZoomDistanceDelta = 0;
   }
 
   private performGameReset(): void {
@@ -814,7 +845,7 @@ export class DemoScene extends Scene {
         return;
       }
 
-      if (this.handleModeButtonPress(event.screenPos)) {
+      if (this.handleModeButtonPress(event.screenPos, event.pointerType)) {
         return;
       }
 
@@ -988,6 +1019,7 @@ export class DemoScene extends Scene {
   override onPreUpdate(engine: import("excalibur").Engine, elapsed: number): void {
     this.updateDebugInfoLabel();
     this.updateTopBarButtonState();
+    this.syncTouchZoomOverrideState();
     this.syncChamberMonsterVisualMode();
     this.updatePreviewCommitAnimation(elapsed);
     this.updatePreviewOrientationAnimation(elapsed);
@@ -1235,15 +1267,24 @@ export class DemoScene extends Scene {
     return { action, button, label, width, height };
   }
 
-  private handleModeButtonPress(screenPos: Vector): boolean {
+  private handleModeButtonPress(screenPos: Vector, pointerType: PointerType): boolean {
     if (this.movementPhase === "waitingForOrientation") {
       return false;
     }
 
+    const isTwoFingerTouch = pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2;
+
     for (const modeButton of this.modeButtons) {
-      if (this.isPointInsideButton(screenPos, modeButton)) {
+      if (this.isPointInsideButton(screenPos, modeButton) && (!isTwoFingerTouch || modeButton.mode === "move")) {
         this.logPointerClick(`mode:${modeButton.mode}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
         this.setInteractionMode(modeButton.mode);
+
+        if (pointerType === PointerType.Touch && modeButton.mode === "zoom") {
+          this.cameraDragLastScreenPos = vec(screenPos.x, screenPos.y);
+          this.cameraZoomSwipeDistance = 0;
+          this.cameraZoomSwipeConsumed = false;
+        }
+
         return true;
       }
     }
@@ -1714,6 +1755,97 @@ export class DemoScene extends Scene {
     }
 
     this.updateModeButtonStyles();
+  }
+
+  private initializeTouchGestureTracking(): void {
+    if (this.touchGestureTrackingInitialized) {
+      return;
+    }
+
+    this.touchGestureTrackingInitialized = true;
+    this.engine.input.pointers.on("down", this.handlePointerReceiverDown);
+    this.engine.input.pointers.on("up", this.handlePointerReceiverUp);
+  }
+
+  private enableTouchZoomOverride(): void {
+    if (this.touchZoomOverrideActive) {
+      return;
+    }
+
+    this.touchZoomOverrideBaseMode = this.interactionMode;
+    this.touchZoomOverrideActive = true;
+    this.touchZoomLastDistance = null;
+    this.touchZoomDistanceDelta = 0;
+
+    if (this.interactionMode !== "zoom") {
+      this.setInteractionMode("zoom");
+    }
+  }
+
+  private syncTouchZoomOverrideState(): void {
+    if (this.activeTouchPointerIds.size >= 2) {
+      this.enableTouchZoomOverride();
+      this.applyTouchPinchZoom();
+      return;
+    }
+
+    if (!this.touchZoomOverrideActive) {
+      return;
+    }
+
+    const restoreMode = this.touchZoomOverrideBaseMode ?? "action";
+    this.touchZoomOverrideActive = false;
+    this.touchZoomOverrideBaseMode = null;
+    this.touchZoomLastDistance = null;
+    this.touchZoomDistanceDelta = 0;
+
+    if (this.interactionMode !== restoreMode) {
+      this.setInteractionMode(restoreMode);
+    }
+  }
+
+  private applyTouchPinchZoom(): void {
+    const touchIds = Array.from(this.activeTouchPointerIds);
+
+    if (touchIds.length < 2) {
+      return;
+    }
+
+    const firstTouch = this.engine.input.pointers.currentFramePointerCoords.get(touchIds[0]);
+    const secondTouch = this.engine.input.pointers.currentFramePointerCoords.get(touchIds[1]);
+
+    if (!firstTouch || !secondTouch) {
+      return;
+    }
+
+    const currentDistance = Math.hypot(
+      firstTouch.screenPos.x - secondTouch.screenPos.x,
+      firstTouch.screenPos.y - secondTouch.screenPos.y
+    );
+
+    if (this.touchZoomLastDistance === null) {
+      this.touchZoomLastDistance = currentDistance;
+      return;
+    }
+
+    this.touchZoomDistanceDelta += currentDistance - this.touchZoomLastDistance;
+    this.touchZoomLastDistance = currentDistance;
+
+    const zoomThreshold = gameSettings.cameraZoomDragThreshold;
+    if (Math.abs(this.touchZoomDistanceDelta) < zoomThreshold) {
+      return;
+    }
+
+    const zoomSteps = Math.trunc(Math.abs(this.touchZoomDistanceDelta) / zoomThreshold) * (this.touchZoomDistanceDelta > 0 ? 1 : -1);
+    const nextZoomLevels = this.getAllowedZoomLevels();
+    const nextIndex = clamp(this.cameraZoomLevelIndex + zoomSteps, 0, nextZoomLevels.length - 1);
+
+    if (nextIndex !== this.cameraZoomLevelIndex) {
+      this.cameraZoomLevelIndex = nextIndex;
+      this.camera.zoom = nextZoomLevels[nextIndex];
+    }
+
+    this.touchZoomDistanceDelta -= zoomSteps * zoomThreshold;
   }
 
   private updateModeButtonStyles(): void {
