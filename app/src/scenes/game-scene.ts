@@ -4,7 +4,7 @@ import type { GameSprites, TrailTileOrientation, TrailTileWalls } from "../game-
 import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
 import { TileValidationStateMachine } from "../tile-validation-state-machine";
-import { createScreenButtonTemplate, isPointInsideScreenButton } from "../ui/screen-button-template";
+import { createScreenButtonTemplate, getCanvasPointerPosition, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -17,9 +17,6 @@ function snapToTileCenter(value: number): number {
 function tileKey(position: Vector): string {
   return `${Math.round(position.x / TILE_SIZE)}:${Math.round(position.y / TILE_SIZE)}`;
 }
-
-const GAME_CSS_Y_OFFSET = 28;
-const GAME_TILE_CSS_Y_OFFSET = 36;
 
 type DemoMode = "action" | "move" | "zoom";
 type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "attackingMonster" | "turningAfterMonsterDefeat" | "returningAfterMonsterDefeat" | "movingBlockedToWall" | "turningBlocked" | "returningBlocked" | "returningToStart";
@@ -331,28 +328,30 @@ export class DemoScene extends Scene {
       return;
     }
 
-    this.logPointerClick("raw", event.screenPos, event.worldPos);
-    console.log(`[game-pointer] raw s=${Math.round(event.screenPos.x)},${Math.round(event.screenPos.y)} w=${Math.round(event.worldPos.x)},${Math.round(event.worldPos.y)} canvas=${Math.round(this.engine.canvas.getBoundingClientRect().left)},${Math.round(this.engine.canvas.getBoundingClientRect().top)}`);
-    this.updateTapTrace(event.screenPos, event.worldPos);
+    const canvasScreenPos = getCanvasPointerPosition(event, this.engine.canvas);
+
+    this.logPointerClick("raw", canvasScreenPos, event.worldPos);
+    console.log(`[game-pointer] raw page=${Math.round(event.pagePos.x)},${Math.round(event.pagePos.y)} canvas=${Math.round(canvasScreenPos.x)},${Math.round(canvasScreenPos.y)} w=${Math.round(event.worldPos.x)},${Math.round(event.worldPos.y)}`);
+    this.updateTapTrace(canvasScreenPos, event.worldPos);
 
     if (event.pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2) {
       this.enableTouchZoomOverride();
       return;
     }
 
-    if (this.handleMenuButtonPress(event.screenPos)) {
+    if (this.handleMenuButtonPress(canvasScreenPos)) {
       return;
     }
 
-    if (this.handleInventoryButtonPress(event.screenPos)) {
+    if (this.handleInventoryButtonPress(canvasScreenPos)) {
       return;
     }
 
-    if (this.handleModeButtonPress(event.screenPos, event.pointerType)) {
+    if (this.handleModeButtonPress(canvasScreenPos, event.pointerType)) {
       return;
     }
 
-    if (this.handleTileActionButtonPress(event.screenPos)) {
+    if (this.handleTileActionButtonPress(canvasScreenPos)) {
       return;
     }
 
@@ -366,14 +365,14 @@ export class DemoScene extends Scene {
     }
 
     if (this.movementPhase === "waitingForOrientation") {
-      this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+      this.cameraDragLastScreenPos = vec(canvasScreenPos.x, canvasScreenPos.y);
       this.tileRotationSwipeDistance = 0;
       this.tileRotationSwipeConsumed = false;
       return;
     }
 
     if (this.interactionMode === "move" || this.interactionMode === "zoom") {
-      this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
+      this.cameraDragLastScreenPos = vec(canvasScreenPos.x, canvasScreenPos.y);
       this.cameraZoomSwipeDistance = 0;
       this.cameraZoomSwipeConsumed = false;
       return;
@@ -868,126 +867,7 @@ export class DemoScene extends Scene {
 
     const primaryPointer = this.engine.input.pointers.primary;
 
-    primaryPointer.on("down", (event: PointerEvent) => {
-      if (event.button !== PointerButton.Left) {
-        return;
-      }
-
-      this.logPointerClick("raw", event.screenPos, event.worldPos);
-      this.updateTapTrace(event.screenPos, event.worldPos);
-
-      if (this.handleMenuButtonPress(event.screenPos)) {
-        return;
-      }
-
-      if (this.handleInventoryButtonPress(event.screenPos)) {
-        return;
-      }
-
-      if (this.handleModeButtonPress(event.screenPos, event.pointerType)) {
-        return;
-      }
-
-      if (this.handleTileActionButtonPress(event.screenPos)) {
-        return;
-      }
-
-      if (this.isMovementInputLocked()) {
-        return;
-      }
-
-      if (this.movementPhase === "waitingForOrientation") {
-        this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
-        this.tileRotationSwipeDistance = 0;
-        this.tileRotationSwipeConsumed = false;
-        return;
-      }
-
-      if (this.interactionMode === "move" || this.interactionMode === "zoom") {
-        this.cameraDragLastScreenPos = vec(event.screenPos.x, event.screenPos.y);
-        this.cameraZoomSwipeDistance = 0;
-        this.cameraZoomSwipeConsumed = false;
-        return;
-      }
-
-      const boxLeft = this.player.pos.x - this.playerSize / 2;
-      const boxRight = this.player.pos.x + this.playerSize / 2;
-      const boxTop = this.player.pos.y - this.playerSize / 2;
-      const boxBottom = this.player.pos.y + this.playerSize / 2;
-      const clickedBox = event.worldPos.x >= boxLeft && event.worldPos.x <= boxRight && event.worldPos.y >= boxTop && event.worldPos.y <= boxBottom;
-
-      if (clickedBox) {
-        if (this.player.isSelected) {
-          this.player.deselect();
-          this.scoreLabel.text = "Box deselected.";
-          this.messageLabel.text = "Tap the box again to select it.";
-        } else {
-          this.player.select();
-          this.scoreLabel.text = "Box selected. Tap or click a target point.";
-          this.messageLabel.text = "Selected box is red. Tap/click again to move it.";
-        }
-
-        return;
-      }
-
-      if (this.player.isSelected) {
-        const targetPosition = vec(
-          snapToTileCenter(event.worldPos.x),
-          snapToTileCenter(event.worldPos.y)
-        );
-
-        if (this.isOccupiedTrailTile(targetPosition)) {
-          const wallKeys = this.getMoveWallKeys(this.player.pos, targetPosition);
-
-          if (wallKeys && this.canMoveBetweenPositions(this.player.pos, targetPosition)) {
-            const monster = this.chamberMonsters.get(tileKey(targetPosition));
-
-            this.player.deselect();
-
-            if (monster) {
-              const startPosition = vec(this.player.pos.x, this.player.pos.y);
-              const pausePosition = this.computeBorderPosition(startPosition, targetPosition);
-
-              this.movementStartPosition = startPosition;
-              this.moveTargetPosition = targetPosition;
-              this.movementPausePosition = pausePosition;
-              this.pendingMonsterEncounter = monster;
-              this.movementPhase = "movingToBorder";
-              this.player.setTargetPosition(pausePosition, false);
-              this.scoreLabel.text = "Moving to the chamber border.";
-              this.messageLabel.text = "The box advances before the fight starts.";
-            } else {
-              this.moveTargetPosition = targetPosition;
-              this.movementPhase = "movingToTarget";
-              this.player.setTargetPosition(targetPosition);
-              this.scoreLabel.text = "Moving to the revealed tile.";
-              this.messageLabel.text = "Revealed tiles move directly through open walls.";
-            }
-          } else if (wallKeys) {
-            const returnPosition = vec(this.player.pos.x, this.player.pos.y);
-            this.player.deselect();
-            this.startBlockedMovement(targetPosition, returnPosition);
-            this.scoreLabel.text = "Movement blocked by walls.";
-            this.messageLabel.text = "The box turns back before the border.";
-          } else {
-            this.scoreLabel.text = "Choose an adjacent revealed tile.";
-            this.messageLabel.text = "Wall-aware movement only works between neighboring tiles.";
-          }
-          return;
-        }
-
-        if (!this.getMoveWallKeys(this.player.pos, targetPosition)) {
-          this.scoreLabel.text = "Choose a neighboring tile.";
-          this.messageLabel.text = "Only tiles with a shared border can start the flow.";
-          return;
-        }
-
-        this.beginTileDiscovery(targetPosition);
-        this.player.deselect();
-        this.scoreLabel.text = "Tile discovery started. Rotate, accept, or reject.";
-        this.messageLabel.text = "The box moves to the tile border and waits.";
-      }
-    });
+    primaryPointer.on("down", this.primaryPointerDownHandler);
 
     primaryPointer.on("move", (event: PointerEvent) => {
       if (!this.cameraDragLastScreenPos) {
@@ -1319,8 +1199,6 @@ export class DemoScene extends Scene {
       return false;
     }
 
-    const adjustedScreenPos = vec(screenPos.x, screenPos.y + GAME_CSS_Y_OFFSET);
-
     const isTwoFingerTouch = pointerType === PointerType.Touch && this.activeTouchPointerIds.size >= 2;
 
     for (const modeButton of this.modeButtons) {
@@ -1328,12 +1206,12 @@ export class DemoScene extends Scene {
         continue;
       }
 
-      if (this.isPointInsideButton(adjustedScreenPos, modeButton) && (!isTwoFingerTouch || modeButton.mode === "move")) {
-        this.logPointerClick(`mode:${modeButton.mode}`, adjustedScreenPos, this.engine.screen.screenToWorldCoordinates(adjustedScreenPos));
+      if (this.isPointInsideButton(screenPos, modeButton) && (!isTwoFingerTouch || modeButton.mode === "move")) {
+        this.logPointerClick(`mode:${modeButton.mode}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
         this.setInteractionMode(modeButton.mode);
 
         if (pointerType === PointerType.Touch && modeButton.mode === "zoom") {
-          this.cameraDragLastScreenPos = vec(adjustedScreenPos.x, adjustedScreenPos.y);
+          this.cameraDragLastScreenPos = vec(screenPos.x, screenPos.y);
           this.cameraZoomSwipeDistance = 0;
           this.cameraZoomSwipeConsumed = false;
         }
@@ -1397,9 +1275,7 @@ export class DemoScene extends Scene {
   }
 
   private handleTileActionButtonPress(screenPos: Vector): boolean {
-    const adjustedScreenPos = vec(screenPos.x, screenPos.y + GAME_TILE_CSS_Y_OFFSET);
-
-    if (!this.isInsideTileActionRow(adjustedScreenPos)) {
+    if (!this.isInsideTileActionRow(screenPos)) {
       return false;
     }
 
@@ -1408,8 +1284,8 @@ export class DemoScene extends Scene {
     }
 
     for (const actionButton of this.tileActionButtons) {
-      if (this.isPointInsideButton(adjustedScreenPos, actionButton)) {
-        this.logPointerClick(`tile:${actionButton.action}`, adjustedScreenPos, this.engine.screen.screenToWorldCoordinates(adjustedScreenPos));
+      if (this.isPointInsideButton(screenPos, actionButton)) {
+        this.logPointerClick(`tile:${actionButton.action}`, screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
         if (actionButton.action === "rotate") {
           this.rotatePreviewTrailTile(1);
           return true;

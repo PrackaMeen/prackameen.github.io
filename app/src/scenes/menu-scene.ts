@@ -1,13 +1,11 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, Scene, TextAlign, type PointerEvent, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config";
 import type { GameController } from "../game-controller";
-import { createScreenButtonTemplate, getScreenButtonBounds, isPointInsideScreenButton } from "../ui/screen-button-template";
+import { createScreenButtonTemplate, getCanvasPointerPosition, getScreenButtonBounds, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
 }
-
-const MENU_CSS_Y_OFFSET = 20;
 
 export class MenuScene extends Scene {
   private continueButton!: Actor;
@@ -20,7 +18,7 @@ export class MenuScene extends Scene {
       return;
     }
 
-    this.handleMenuPointerDown(event.screenPos);
+    this.handleMenuPointerDown(event);
   };
 
   constructor(private readonly controller: GameController) {
@@ -157,14 +155,15 @@ export class MenuScene extends Scene {
     console.log(`[menu-pointer] ${componentName}`);
   }
 
-  private handleMenuPointerDown(screenPos: import("excalibur").Vector): void {
+  private handleMenuPointerDown(event: PointerEvent): void {
+    const screenPos = getCanvasPointerPosition(event, this.engine.canvas);
+
     (globalThis as typeof globalThis & {
       __lastMenuPointer?: { x: number; y: number };
       __lastMenuHitTarget?: string | null;
     }).__lastMenuPointer = { x: screenPos.x, y: screenPos.y };
 
-    console.log(`[menu-pointer] raw s=${Math.round(screenPos.x)},${Math.round(screenPos.y)} canvas=${Math.round(this.engine.canvas.getBoundingClientRect().left)},${Math.round(this.engine.canvas.getBoundingClientRect().top)}`);
-    const adjustedScreenPos = vec(screenPos.x, screenPos.y + MENU_CSS_Y_OFFSET);
+    console.log(`[menu-pointer] raw page=${Math.round(event.pagePos.x)},${Math.round(event.pagePos.y)} canvas=${Math.round(screenPos.x)},${Math.round(screenPos.y)}`);
 
     const targets = [
       { name: "new-game", button: this.startButton, action: () => this.controller.startNewGame() },
@@ -189,7 +188,7 @@ export class MenuScene extends Scene {
         hitboxOrigin: "center" as const
       };
 
-      const isInside = isPointInsideScreenButton(adjustedScreenPos, targetButton);
+      const isInside = isPointInsideScreenButton(screenPos, targetButton);
 
       if (isInside) {
         (globalThis as typeof globalThis & { __lastMenuHitTarget?: string | null }).__lastMenuHitTarget = target.name;

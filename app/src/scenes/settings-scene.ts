@@ -1,7 +1,7 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, PointerButton, Scene, TextAlign, type PointerEvent, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH, gameSettings } from "../config";
 import type { GameController } from "../game-controller";
-import { createScreenButtonTemplate, isPointInsideScreenButton } from "../ui/screen-button-template";
+import { createScreenButtonTemplate, getCanvasPointerPosition, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -24,13 +24,15 @@ export class SettingsScene extends Scene {
       return;
     }
 
+    const screenPos = getCanvasPointerPosition(event, this.engine.canvas);
+
     for (const control of this.controls) {
-      if (isPointInsideScreenButton(event.screenPos, {
+      if (isPointInsideScreenButton(screenPos, {
         button: control.button,
         label: control.label,
         width: control.button.width,
         height: control.button.height,
-        hitboxOrigin: "bottom"
+        hitboxOrigin: "center"
       })) {
         control.onPress();
         return;
@@ -216,7 +218,7 @@ export class SettingsScene extends Scene {
       z: 100,
       labelZ: 101,
       maxWidth: width,
-      hitboxOrigin: "bottom"
+      hitboxOrigin: "center"
     });
 
     return { button: template.button, label: template.label };

@@ -60,6 +60,17 @@ export function createScreenButtonTemplate(options: ScreenButtonTemplateOptions)
   };
 }
 
+export function getCanvasPointerPosition(pointer: { pagePos: Vector }, canvas: HTMLCanvasElement): Vector {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  return vec(
+    (pointer.pagePos.x - rect.left) * scaleX,
+    (pointer.pagePos.y - rect.top) * scaleY
+  );
+}
+
 export function isPointInsideScreenButton(point: Vector, button: ScreenButtonTemplate): boolean {
   const halfWidth = button.width / 2;
   const left = button.button.pos.x - halfWidth;
