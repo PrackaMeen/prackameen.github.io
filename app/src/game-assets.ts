@@ -1,5 +1,21 @@
 import { Animation, AnimationStrategy, ImageSource, SpriteSheet, type Animation as AnimationGraphic, type Graphic } from "excalibur";
-import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "./config";
+import {
+  CHAR_SIZE,
+  GAME_HEIGHT,
+  GAME_WIDTH,
+  HEART_ANIMATION_FRAME_DURATION,
+  HEART_FRAME_COUNT,
+  HEART_SCALE_FACTOR,
+  HEART_SIZE_MAX,
+  HEART_SIZE_MIN,
+  HUD_HEIGHT_MAX,
+  HUD_HEIGHT_MIN,
+  HUD_HEIGHT_RATIO,
+  TILE_SIZE,
+  TREASURE_ANIMATION_FRAME_COUNT,
+  TREASURE_ANIMATION_FRAME_DURATION,
+  TREASURE_SIZE
+} from "./config";
 import trailTileCollisionCsv from "./data/trail-tile-collision-metadata.csv?raw";
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -35,22 +51,12 @@ const monster5 = new ImageSource(spriteSheetUrl("Monster5/Monster5.png"));
 const treasure0 = new ImageSource(spriteSheetUrl("Treasure0/Treasure0.png"));
 const heart0 = new ImageSource(spriteSheetUrl("Hearth0/Hearth0.png"));
 const heart1 = new ImageSource(spriteSheetUrl("Hearth1/Hearth1.png"));
-const HUD_HEIGHT_RATIO = 0.08;
-const MIN_HUD_HEIGHT = 54;
-const MAX_HUD_HEIGHT = 72;
-const HEART_SCALE_FACTOR = 0.38;
-const MIN_HEART_SIZE = 14;
-const MAX_HEART_SIZE = 22;
-const HEART_FRAME_COUNT = 4;
-const HEART_ANIMATION_FRAME_DURATIONS = {
-  heart0: 300
-} as const;
 // Match the top-bar HUD sizing in DemoScene so heart sprites render at the same size as their screen-space actors.
-const HUD_HEIGHT = clamp(GAME_HEIGHT * HUD_HEIGHT_RATIO, MIN_HUD_HEIGHT, MAX_HUD_HEIGHT);
+const HUD_HEIGHT = clamp(GAME_HEIGHT * HUD_HEIGHT_RATIO, HUD_HEIGHT_MIN, HUD_HEIGHT_MAX);
 const HEART_HUD_SIZE = clamp(
   HUD_HEIGHT * HEART_SCALE_FACTOR,
-  MIN_HEART_SIZE,
-  MAX_HEART_SIZE
+  HEART_SIZE_MIN,
+  HEART_SIZE_MAX
 );
 
 function createGridAnimation(image: ImageSource, displaySize: number, orientationRow = 0, frameDuration = 140): AnimationGraphic {
@@ -307,13 +313,13 @@ export function createGameSprites(): GameSprites {
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
-    heartActive: createHorizontalStripAnimation(heart0, HEART_HUD_SIZE, HEART_FRAME_COUNT, HEART_ANIMATION_FRAME_DURATIONS.heart0),
+    heartActive: createHorizontalStripAnimation(heart0, HEART_HUD_SIZE, HEART_FRAME_COUNT, HEART_ANIMATION_FRAME_DURATION),
     heartInactive: createSingleSprite(heart1, HEART_HUD_SIZE),
     monsters: monsterTileSources.map(({ assetName, source }) => ({
       assetName,
       graphic: createSingleSprite(source, CHAR_SIZE)
     })),
-    treasure: createHorizontalStripAnimation(treasure0, CHAR_SIZE, 4, 120),
+    treasure: createHorizontalStripAnimation(treasure0, TREASURE_SIZE, TREASURE_ANIMATION_FRAME_COUNT, TREASURE_ANIMATION_FRAME_DURATION),
     trailTiles: trailTileSources.map(({ assetName, source }) => ({
       assetName,
       orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(source, TILE_SIZE, orientationRow)),

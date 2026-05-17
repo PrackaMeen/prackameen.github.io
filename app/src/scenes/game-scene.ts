@@ -87,6 +87,12 @@ interface DemoSavedMonster {
   monsterIndex: number;
 }
 
+interface DemoSavedTreasureDrop {
+  x: number;
+  y: number;
+  monsterIndex: number;
+}
+
 interface HeartControl {
   actor: Actor;
   index: number;
@@ -98,8 +104,8 @@ interface DebugOverlayControl {
   actor: Actor;
 }
 
-interface DemoSavedStateV1 {
-  version: 1;
+interface DemoSavedStateV2 {
+  version: 2;
   player: {
     x: number;
     y: number;
@@ -115,6 +121,7 @@ interface DemoSavedStateV1 {
   nextTrailTileIndex: number;
   trailTiles: DemoSavedTrailTile[];
   monsters: DemoSavedMonster[];
+  treasureDrops: DemoSavedTreasureDrop[];
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -151,17 +158,32 @@ function isDemoSavedMonster(value: unknown): value is DemoSavedMonster {
     && monsterIndex >= 0;
 }
 
-function isDemoSavedState(value: unknown): value is DemoSavedStateV1 {
+function isDemoSavedTreasureDrop(value: unknown): value is DemoSavedTreasureDrop {
   if (!value || typeof value !== "object") {
     return false;
   }
 
-  const snapshot = value as Partial<DemoSavedStateV1>;
+  const treasureDrop = value as Partial<DemoSavedTreasureDrop>;
+  const monsterIndex = treasureDrop.monsterIndex;
+
+  return isFiniteNumber(treasureDrop.x)
+    && isFiniteNumber(treasureDrop.y)
+    && monsterIndex !== undefined
+    && Number.isInteger(monsterIndex)
+    && monsterIndex >= 0;
+}
+
+function isDemoSavedState(value: unknown): value is DemoSavedStateV2 {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const snapshot = value as Partial<DemoSavedStateV2>;
   const player = snapshot.player;
   const camera = snapshot.camera;
   const nextTrailTileIndex = snapshot.nextTrailTileIndex;
 
-  return snapshot.version === 1
+  return snapshot.version === 2
     && player !== null
     && player !== undefined
     && typeof player === "object"
@@ -182,7 +204,9 @@ function isDemoSavedState(value: unknown): value is DemoSavedStateV1 {
     && Array.isArray(snapshot.trailTiles)
     && snapshot.trailTiles.every((tile) => isDemoSavedTrailTile(tile))
     && Array.isArray(snapshot.monsters)
-    && snapshot.monsters.every((monster) => isDemoSavedMonster(monster));
+    && snapshot.monsters.every((monster) => isDemoSavedMonster(monster))
+    && Array.isArray(snapshot.treasureDrops)
+    && snapshot.treasureDrops.every((treasureDrop) => isDemoSavedTreasureDrop(treasureDrop));
 }
 
 export class DemoScene extends Scene {
@@ -819,8 +843,18 @@ export class DemoScene extends Scene {
       });
     }
 
-    const snapshot: DemoSavedStateV1 = {
-      version: 1,
+    const treasureDrops: DemoSavedTreasureDrop[] = [];
+
+    for (const treasureDrop of this.treasureDrops.values()) {
+      treasureDrops.push({
+        x: treasureDrop.actor.pos.x,
+        y: treasureDrop.actor.pos.y,
+        monsterIndex: this.getTreasureSourceMonsterIndex(treasureDrop.treasureKey)
+      });
+    }
+
+    const snapshot: DemoSavedStateV2 = {
+      version: 2,
       player: {
         x: this.player.pos.x,
         y: this.player.pos.y,
@@ -835,7 +869,8 @@ export class DemoScene extends Scene {
       },
       nextTrailTileIndex: this.nextTrailTileIndex,
       trailTiles,
-      monsters
+      monsters,
+      treasureDrops
     };
 
     return JSON.stringify(snapshot);
@@ -905,6 +940,10 @@ export class DemoScene extends Scene {
       this.add(monsterUnit.actor);
       this.add(monsterUnit.label);
       this.applyChamberMonsterVisualMode(monsterUnit, gameSettings.debugInfoEnabled);
+    }
+
+    for (const treasureDrop of snapshot.treasureDrops) {
+      this.spawnTreasureDrop(vec(treasureDrop.x, treasureDrop.y), treasureDrop.monsterIndex);
     }
 
     this.player.pos = vec(snapshot.player.x, snapshot.player.y);
@@ -2242,6 +2281,25 @@ export class DemoScene extends Scene {
 
     this.treasureDrops.set(tilePositionKey, { actor, treasureKey: treasureDrop.treasureKey, tilePositionKey });
     this.add(actor);
+  }
+
+  private getTreasureSourceMonsterIndex(treasureKey: string): number {
+    switch (treasureKey) {
+      case "coin":
+        return 0;
+      case "gem":
+        return 1;
+      case "relic":
+        return 2;
+      case "charm":
+        return 3;
+      case "orb":
+        return 4;
+      case "crown":
+        return 5;
+      default:
+        return 0;
+    }
   }
 
   private isPlayerVictoriousAgainstMonster(monsterIndex: number): boolean {
