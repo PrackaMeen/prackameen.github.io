@@ -6,6 +6,7 @@ export class GameController {
   private demoResetter: (() => void) | null = null;
   private demoStateSerializer: (() => string | null) | null = null;
   private pendingDemoState: string | null = null;
+  private inventoryReturnScene: string = "demo";
 
   constructor(private readonly engine: Engine) {}
 
@@ -51,6 +52,15 @@ export class GameController {
 
   showSettings(): void {
     this.engine.goToScene("settings");
+  }
+
+  showInventory(returnScene: string = "demo"): void {
+    this.inventoryReturnScene = returnScene;
+    this.engine.goToScene("inventory");
+  }
+
+  returnFromInventory(): void {
+    this.engine.goToScene(this.inventoryReturnScene);
   }
 
   startNewGame(): void {

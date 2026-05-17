@@ -1426,8 +1426,7 @@ export class DemoScene extends Scene {
         return true;
       }
 
-      this.scoreLabel.text = "Inventory is not implemented yet.";
-      this.messageLabel.text = "Inventory button tapped.";
+      this.controller.showInventory("demo");
       return true;
     }
 

@@ -3,6 +3,7 @@ import { GAME_HEIGHT, GAME_TITLE, GAME_WIDTH } from "./config";
 import { createGameSprites, loadGameAssets } from "./game-assets";
 import { GameController } from "./game-controller";
 import { DemoScene } from "./scenes/game-scene";
+import { InventoryScene } from "./scenes/inventory-scene";
 import { MenuScene } from "./scenes/menu-scene";
 import { SettingsScene } from "./scenes/settings-scene";
 import "./styles.css";
@@ -39,12 +40,14 @@ void (async () => {
   const sprites = createGameSprites();
   const controller = new GameController(engine);
   const demoScene = new DemoScene(controller, sprites);
+  const inventoryScene = new InventoryScene(controller);
 
   controller.registerDemoStateSerializer(() => demoScene.exportDemoState());
 
   engine.addScene("menu", new MenuScene(controller));
   engine.addScene("settings", new SettingsScene(controller));
   engine.addScene("demo", demoScene);
+  engine.addScene("inventory", inventoryScene);
   controller.registerDemoResetter(() => demoScene.requestGameReset());
   engine.goToScene("menu");
 
