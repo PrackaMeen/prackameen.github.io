@@ -32,6 +32,7 @@ const monster2 = new ImageSource(spriteSheetUrl("Monster2/Monster2.png"));
 const monster3 = new ImageSource(spriteSheetUrl("Monster3/Monster3.png"));
 const monster4 = new ImageSource(spriteSheetUrl("Monster4/Monster4.png"));
 const monster5 = new ImageSource(spriteSheetUrl("Monster5/Monster5.png"));
+const treasure0 = new ImageSource(spriteSheetUrl("Treasure0/Treasure0.png"));
 const heart0 = new ImageSource(spriteSheetUrl("Hearth0/Hearth0.png"));
 const heart1 = new ImageSource(spriteSheetUrl("Hearth1/Hearth1.png"));
 const HUD_HEIGHT_RATIO = 0.08;
@@ -121,6 +122,7 @@ export interface GameSprites {
   heartActive: AnimationGraphic;
   heartInactive: Graphic;
   monsters: MonsterVariant[];
+  treasure: AnimationGraphic;
   trailTiles: TrailTileVariant[];
   backdrop: AnimationGraphic;
 }
@@ -270,6 +272,7 @@ export const gameAssetSources = {
   monster3,
   monster4,
   monster5,
+  treasure0,
   heart0,
   heart1,
 };
@@ -310,6 +313,7 @@ export function createGameSprites(): GameSprites {
       assetName,
       graphic: createSingleSprite(source, CHAR_SIZE)
     })),
+    treasure: createHorizontalStripAnimation(treasure0, CHAR_SIZE, 4, 120),
     trailTiles: trailTileSources.map(({ assetName, source }) => ({
       assetName,
       orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(source, TILE_SIZE, orientationRow)),

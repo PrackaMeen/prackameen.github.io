@@ -5,6 +5,7 @@ import type { GameController } from "../game-controller";
 import { BoxActor } from "../actors/box-actor";
 import { TileValidationStateMachine } from "../tile-validation-state-machine";
 import { TileTapFlowStateMachine } from "../tile-tap-flow-state-machine";
+import { MonsterTreasureDropStateMachine } from "../monster-treasure-drop-state-machine";
 import { createScreenButtonTemplate, getCanvasPointerPosition, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -65,6 +66,12 @@ interface MonsterDebugUnit {
   tilePositionKey: string;
   offsetX: number;
   offsetY: number;
+}
+
+interface TreasureDropUnit {
+  actor: Actor;
+  treasureKey: string;
+  tilePositionKey: string;
 }
 
 interface DemoSavedTrailTile {
@@ -247,6 +254,8 @@ export class DemoScene extends Scene {
   private readonly trailTilePlacements = new Map<string, TrailTilePlacement>();
   private readonly tileValidation = new TileValidationStateMachine();
   private readonly chamberMonsters = new Map<string, MonsterDebugUnit>();
+  private readonly treasureDropStateMachine = new MonsterTreasureDropStateMachine();
+  private readonly treasureDrops = new Map<string, TreasureDropUnit>();
   private readonly trailTileActors: Actor[] = [];
   private readonly modeButtons: ModeButtonControl[] = [];
   private readonly tileActionButtons: TileActionButtonControl[] = [];
@@ -662,6 +671,10 @@ export class DemoScene extends Scene {
     this.occupiedTrailTiles.clear();
     this.trailTilePlacements.clear();
     this.chamberMonsters.clear();
+    for (const treasureDrop of this.treasureDrops.values()) {
+      treasureDrop.actor.kill();
+    }
+    this.treasureDrops.clear();
     this.clearPreviewTrailTile();
 
     this.moveTargetPosition = null;
@@ -2136,7 +2149,9 @@ export class DemoScene extends Scene {
     }
 
     if (this.isPlayerVictoriousAgainstMonster(monster.monsterIndex)) {
+      const monsterPosition = vec(monster.actor.pos.x, monster.actor.pos.y);
       this.removeChamberMonster(monster);
+      this.spawnTreasureDrop(monsterPosition, monster.monsterIndex);
       this.activeMonsterEncounter = null;
       this.lastMonsterEncounterWinner = "char";
       this.messageLabel.text = "The monster is defeated. The box keeps moving forward.";
@@ -2207,6 +2222,26 @@ export class DemoScene extends Scene {
     this.chamberMonsters.delete(monster.tilePositionKey);
     monster.actor.kill();
     monster.label.kill();
+  }
+
+  private spawnTreasureDrop(position: Vector, monsterIndex: number): void {
+    const treasureDrop = this.treasureDropStateMachine.resolveTreasureDrop(monsterIndex);
+    const tilePositionKey = tileKey(position);
+
+    if (this.treasureDrops.has(tilePositionKey)) {
+      return;
+    }
+
+    const actor = new Actor({
+      pos: vec(position.x, position.y),
+      width: this.playerSize * 0.8,
+      height: this.playerSize * 0.8,
+      z: 0.5
+    });
+    actor.graphics.use(this.sprites.treasure.clone());
+
+    this.treasureDrops.set(tilePositionKey, { actor, treasureKey: treasureDrop.treasureKey, tilePositionKey });
+    this.add(actor);
   }
 
   private isPlayerVictoriousAgainstMonster(monsterIndex: number): boolean {
