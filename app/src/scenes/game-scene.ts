@@ -22,8 +22,9 @@ function tileKey(position: Vector): string {
 
 type DemoMode = "action" | "move" | "zoom";
 type MovementPhase = "idle" | "movingToBorder" | "waitingForOrientation" | "movingToTarget" | "attackingMonster" | "turningAfterMonsterDefeat" | "returningAfterMonsterDefeat" | "movingBlockedToWall" | "turningBlocked" | "returningBlocked" | "returningToStart";
+type TileActionMode = "hidden" | "discovery" | "treasure";
 
-type TileActionType = "rotate" | "accept" | "reject";
+type TileActionType = "rotate" | "accept" | "reject" | "pick" | "leave";
 type TileWallKey = keyof TrailTileWalls;
 
 interface TrailTilePlacement {
@@ -280,6 +281,8 @@ export class DemoScene extends Scene {
   private readonly chamberMonsters = new Map<string, MonsterDebugUnit>();
   private readonly treasureDropStateMachine = new MonsterTreasureDropStateMachine();
   private readonly treasureDrops = new Map<string, TreasureDropUnit>();
+  private tileActionMode: TileActionMode = "hidden";
+  private pendingTreasureDrop: TreasureDropUnit | null = null;
   private readonly trailTileActors: Actor[] = [];
   private readonly modeButtons: ModeButtonControl[] = [];
   private readonly tileActionButtons: TileActionButtonControl[] = [];
@@ -1448,11 +1451,11 @@ export class DemoScene extends Scene {
   }
 
   private handleTileActionButtonPress(screenPos: Vector): boolean {
-    if (!this.isInsideTileActionRow(screenPos)) {
+    if (this.tileActionMode === "hidden") {
       return false;
     }
 
-    if (this.movementPhase !== "waitingForOrientation") {
+    if (!this.isInsideTileActionRow(screenPos)) {
       return true;
     }
 
@@ -1473,10 +1476,108 @@ export class DemoScene extends Scene {
           this.rejectTileDiscovery();
           return true;
         }
+
+        if (actionButton.action === "pick") {
+          this.pickTreasureDrop();
+          return true;
+        }
+
+        if (actionButton.action === "leave") {
+          this.leaveTreasureDrop();
+          return true;
+        }
       }
     }
 
     return true;
+  }
+
+  private layoutTileActionButtons(): void {
+    const buttonWidth = clamp(GAME_WIDTH * 0.11, 84, 120);
+    const buttonGap = clamp(GAME_WIDTH * 0.015, 10, 14);
+    const centerX = GAME_WIDTH / 2;
+    const centerY = GAME_HEIGHT - this.topBarHeight / 2;
+
+    const visibleButtons: Array<{ action: TileActionType; text: string; buttonColor: string; labelColor: string; x: number }> = this.tileActionMode === "treasure"
+      ? [
+          { action: "pick", text: "Pick", buttonColor: "#7cf7a3", labelColor: "#08121c", x: centerX - (buttonWidth + buttonGap) / 2 },
+          { action: "leave", text: "Leave", buttonColor: "#52657d", labelColor: "#edf4ff", x: centerX + (buttonWidth + buttonGap) / 2 }
+        ]
+      : this.tileActionMode === "discovery"
+        ? [
+            { action: "rotate", text: "Rotate", buttonColor: "#3a4e7b", labelColor: "#edf4ff", x: centerX - (buttonWidth * 3 + buttonGap * 2) / 2 + buttonWidth / 2 },
+            { action: "accept", text: "Accept", buttonColor: "#7cf7a3", labelColor: "#08121c", x: centerX },
+            { action: "reject", text: "Reject", buttonColor: "#ff7b7b", labelColor: "#08121c", x: centerX + (buttonWidth * 3 + buttonGap * 2) / 2 - buttonWidth / 2 }
+          ]
+        : [];
+
+    for (let index = 0; index < this.tileActionButtons.length; index++) {
+      const actionButton = this.tileActionButtons[index];
+      const visibleButton = visibleButtons[index];
+
+      if (!visibleButton) {
+        actionButton.action = "reject";
+        actionButton.button.pos = vec(-1000, -1000);
+        actionButton.label.pos = vec(-1000, -1000);
+        actionButton.button.graphics.opacity = 0;
+        actionButton.label.graphics.opacity = 0;
+        continue;
+      }
+
+      actionButton.action = visibleButton.action;
+      actionButton.button.pos = vec(visibleButton.x, centerY);
+      actionButton.label.pos = vec(visibleButton.x, centerY);
+      actionButton.button.graphics.opacity = 1;
+      actionButton.label.graphics.opacity = 1;
+      actionButton.button.color = Color.fromHex(visibleButton.buttonColor);
+      actionButton.label.color = Color.fromHex(visibleButton.labelColor);
+      actionButton.label.text = visibleButton.text;
+    }
+  }
+
+  private setTileActionMode(mode: TileActionMode): void {
+    if (this.tileActionMode === mode) {
+      return;
+    }
+
+    this.tileActionMode = mode;
+    this.layoutTileActionButtons();
+  }
+
+  private showTreasurePickupPrompt(treasureDrop: TreasureDropUnit): void {
+    this.pendingTreasureDrop = treasureDrop;
+    this.setTileActionMode("treasure");
+    this.messageLabel.text = "Treasure found. Pick it up or leave it here.";
+    this.scoreLabel.text = "Treasure awaits your choice.";
+  }
+
+  private pickTreasureDrop(): void {
+    if (!this.pendingTreasureDrop) {
+      return;
+    }
+
+    const treasureDrop = this.pendingTreasureDrop;
+    this.pendingTreasureDrop = null;
+    this.treasureDrops.delete(treasureDrop.tilePositionKey);
+    treasureDrop.actor.kill();
+    this.setTileActionMode("hidden");
+    this.messageLabel.text = "Treasure collected.";
+    this.scoreLabel.text = "The treasure disappears from the tile.";
+    this.controller.saveDemoState();
+    this.refreshButtonStyles();
+  }
+
+  private leaveTreasureDrop(): void {
+    if (!this.pendingTreasureDrop) {
+      return;
+    }
+
+    this.pendingTreasureDrop = null;
+    this.setTileActionMode("hidden");
+    this.messageLabel.text = "Treasure left behind.";
+    this.scoreLabel.text = "The treasure stays on the tile.";
+    this.controller.saveDemoState();
+    this.refreshButtonStyles();
   }
 
   private primeTouchCameraDrag(screenPos: Vector): void {
@@ -1580,6 +1681,7 @@ export class DemoScene extends Scene {
     this.pendingTrailTilePosition = vec(targetPosition.x, targetPosition.y);
     this.pendingTrailTileOrientation = this.getOrientationFromVector(startPosition, targetPosition);
     this.movementPhase = "movingToBorder";
+    this.setTileActionMode("hidden");
     this.player.setTargetPosition(pausePosition, false);
     this.updateTileActionButtonStyles();
     this.hintLabel.text = `Orientation: ${this.getOrientationName(this.pendingTrailTileOrientation)}.`;
@@ -1614,6 +1716,7 @@ export class DemoScene extends Scene {
     }
 
     this.movementPhase = "waitingForOrientation";
+    this.setTileActionMode("discovery");
     this.player.clearTargetPosition();
     this.pendingTrailTileOrientation = allowedPendingTrailTileOrientations[0];
 
@@ -1646,11 +1749,13 @@ export class DemoScene extends Scene {
       this.maybeShowChamberMonster(this.pendingTrailTilePosition, nextTrailVariant.assetName);
       this.messageLabel.text = "Chamber accepted. Monster encounter started.";
       this.scoreLabel.text = "Fighting the chamber monster.";
+      this.setTileActionMode("hidden");
       this.refreshButtonStyles();
       return;
     }
 
     this.movementPhase = "movingToTarget";
+    this.setTileActionMode("hidden");
     this.player.setTargetPosition(this.moveTargetPosition);
     this.messageLabel.text = "Tile accepted. Continuing to destination.";
     this.scoreLabel.text = "Moving to the discovered tile.";
@@ -1663,6 +1768,7 @@ export class DemoScene extends Scene {
     }
 
     this.movementPhase = "returningToStart";
+    this.setTileActionMode("hidden");
     this.clearPreviewTrailTile();
     this.player.setTargetPosition(this.movementStartPosition);
     this.messageLabel.text = "Tile rejected. Returning to start.";
@@ -1688,6 +1794,7 @@ export class DemoScene extends Scene {
     this.cameraDragLastScreenPos = null;
     this.cameraZoomSwipeDistance = 0;
     this.cameraZoomSwipeConsumed = false;
+    this.setTileActionMode("hidden");
 
     if (accepted) {
       this.messageLabel.text = "Tile discovered and added.";
@@ -1716,6 +1823,14 @@ export class DemoScene extends Scene {
     this.cameraDragLastScreenPos = null;
     this.cameraZoomSwipeDistance = 0;
     this.cameraZoomSwipeConsumed = false;
+    const treasureDrop = this.treasureDrops.get(tileKey(this.player.pos));
+
+    if (treasureDrop) {
+      this.showTreasurePickupPrompt(treasureDrop);
+    } else {
+      this.setTileActionMode("hidden");
+    }
+
     this.controller.saveDemoState();
     this.refreshButtonStyles();
   }
@@ -1764,24 +1879,41 @@ export class DemoScene extends Scene {
   }
 
   private updateTileActionButtonStyles(): void {
-    const isWaiting = this.movementPhase === "waitingForOrientation";
+    this.layoutTileActionButtons();
 
-    for (const actionButton of this.tileActionButtons) {
-      if (!isWaiting) {
+    if (this.tileActionMode === "hidden") {
+      for (const actionButton of this.tileActionButtons) {
         actionButton.button.color = Color.fromHex("#263759");
         actionButton.label.color = Color.fromHex("#7f8ea8");
-        continue;
       }
 
-      if (actionButton.action === "rotate") {
-        actionButton.button.color = Color.fromHex("#3a4e7b");
-        actionButton.label.color = Color.fromHex("#edf4ff");
-      } else if (actionButton.action === "accept") {
+      return;
+    }
+
+    if (this.tileActionMode === "discovery") {
+      for (const actionButton of this.tileActionButtons) {
+        if (actionButton.action === "rotate") {
+          actionButton.button.color = Color.fromHex("#3a4e7b");
+          actionButton.label.color = Color.fromHex("#edf4ff");
+        } else if (actionButton.action === "accept") {
+          actionButton.button.color = Color.fromHex("#7cf7a3");
+          actionButton.label.color = Color.fromHex("#08121c");
+        } else if (actionButton.action === "reject") {
+          actionButton.button.color = Color.fromHex("#ff7b7b");
+          actionButton.label.color = Color.fromHex("#08121c");
+        }
+      }
+
+      return;
+    }
+
+    for (const actionButton of this.tileActionButtons) {
+      if (actionButton.action === "pick") {
         actionButton.button.color = Color.fromHex("#7cf7a3");
         actionButton.label.color = Color.fromHex("#08121c");
-      } else {
-        actionButton.button.color = Color.fromHex("#ff7b7b");
-        actionButton.label.color = Color.fromHex("#08121c");
+      } else if (actionButton.action === "leave") {
+        actionButton.button.color = Color.fromHex("#52657d");
+        actionButton.label.color = Color.fromHex("#edf4ff");
       }
     }
   }
