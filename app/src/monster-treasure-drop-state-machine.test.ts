@@ -6,6 +6,12 @@ describe("MonsterTreasureDropStateMachine", () => {
     const machine = new MonsterTreasureDropStateMachine();
 
     expect(machine.resolveTreasureDrop(0)).toEqual({
+      monsterId: "rat",
+      dropId: "coin",
+      monsterIndex: 0,
+      hp: 1,
+      monsterSpriteAnimationId: "monster0",
+      dropSpriteAnimationId: "treasure0",
       treasureKey: "coin",
       displayName: "Coin",
       symbol: "C",
@@ -13,6 +19,12 @@ describe("MonsterTreasureDropStateMachine", () => {
     });
 
     expect(machine.resolveTreasureDrop(3)).toEqual({
+      monsterId: "slime",
+      dropId: "charm",
+      monsterIndex: 3,
+      hp: 4,
+      monsterSpriteAnimationId: "monster3",
+      dropSpriteAnimationId: "treasure0",
       treasureKey: "charm",
       displayName: "Charm",
       symbol: "H",
@@ -24,10 +36,24 @@ describe("MonsterTreasureDropStateMachine", () => {
     const machine = new MonsterTreasureDropStateMachine();
 
     expect(machine.resolveTreasureDrop(999)).toEqual({
+      monsterId: "unknown",
+      dropId: "treasure",
+      monsterIndex: -1,
+      hp: 0,
+      monsterSpriteAnimationId: "monster0",
+      dropSpriteAnimationId: "treasure0",
       treasureKey: "treasure",
       displayName: "Treasure",
       symbol: "T",
       colorHex: "#ffd166"
     });
+  });
+
+  it("resolves monster indices from treasure keys using the csv cross table", () => {
+    const machine = new MonsterTreasureDropStateMachine();
+
+    expect(machine.resolveMonsterIndexForTreasureKey("coin")).toBe(0);
+    expect(machine.resolveMonsterIndexForTreasureKey("crown")).toBe(5);
+    expect(machine.resolveMonsterIndexForTreasureKey("missing")).toBe(0);
   });
 });

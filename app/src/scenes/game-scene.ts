@@ -2408,29 +2408,16 @@ export class DemoScene extends Scene {
       height: this.playerSize * 0.8,
       z: 0.5
     });
-    actor.graphics.use(this.sprites.treasure.clone());
+    const treasureGraphic = this.sprites.treasureAnimationsById[treasureDrop.dropSpriteAnimationId] ?? this.sprites.treasure;
+
+    actor.graphics.use(treasureGraphic.clone());
 
     this.treasureDrops.set(tilePositionKey, { actor, treasureKey: treasureDrop.treasureKey, tilePositionKey });
     this.add(actor);
   }
 
   private getTreasureSourceMonsterIndex(treasureKey: string): number {
-    switch (treasureKey) {
-      case "coin":
-        return 0;
-      case "gem":
-        return 1;
-      case "relic":
-        return 2;
-      case "charm":
-        return 3;
-      case "orb":
-        return 4;
-      case "crown":
-        return 5;
-      default:
-        return 0;
-    }
+    return this.treasureDropStateMachine.resolveMonsterIndexForTreasureKey(treasureKey);
   }
 
   private isPlayerVictoriousAgainstMonster(monsterIndex: number): boolean {

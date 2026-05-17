@@ -1,0 +1,7 @@
+id,display-name,hp,sprite-animation-id
+rat,Rat,1,monster0
+bat,Bat,2,monster1
+spider,Spider,3,monster2
+slime,Slime,4,monster3
+goblin,Goblin,5,monster4
+orc,Orc,6,monster5

@@ -1,0 +1,7 @@
+monster-id,drop-id,monster-sprite-animation-id,drop-sprite-animation-id
+rat,coin,monster0,treasure0
+bat,gem,monster1,treasure0
+spider,relic,monster2,treasure0
+slime,charm,monster3,treasure0
+goblin,orb,monster4,treasure0
+orc,crown,monster5,treasure0
