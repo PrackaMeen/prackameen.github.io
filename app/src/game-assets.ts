@@ -16,6 +16,7 @@ import {
   TREASURE_ANIMATION_FRAME_DURATION,
   TREASURE_SIZE
 } from "./config";
+import { assetCatalog, monsterSpriteAnimationIds, treasureSpriteAnimationIds } from "./asset-catalog";
 import { dropTable, monsterTable } from "./game-data";
 import trailTileCollisionCsv from "./data/trail-tile-collision-metadata.csv?raw";
 
@@ -31,38 +32,39 @@ function spriteSheetUrl(path: string): string {
   return new URL(`../spritesheets/${path}`, import.meta.url).toString();
 }
 
-const char0 = new ImageSource(assetUrl("chars/Char0_2.png"));
-const char1 = new ImageSource(assetUrl("chars/Char1_2.png"));
-const road0 = new ImageSource(spriteSheetUrl("Road0/Road0.png"));
-const road1 = new ImageSource(spriteSheetUrl("Road1/Road1.png"));
-const road2 = new ImageSource(spriteSheetUrl("Road2/Road2.png"));
-const road3 = new ImageSource(spriteSheetUrl("Road3/Road3.png"));
-const road4 = new ImageSource(spriteSheetUrl("Road4/Road4.png"));
-const chamber0 = new ImageSource(spriteSheetUrl("Chamber0/Chamber0.png"));
-const chamber1 = new ImageSource(spriteSheetUrl("Chamber1/Chamber1.png"));
-const chamber2 = new ImageSource(spriteSheetUrl("Chamber2/Chamber2.png"));
-const chamber3 = new ImageSource(spriteSheetUrl("Chamber3/Chamber3.png"));
-const chamber4 = new ImageSource(spriteSheetUrl("Chamber4/Chamber4.png"));
-const monster0 = new ImageSource(spriteSheetUrl("Monster0/Monster0.png"));
-const monster1 = new ImageSource(spriteSheetUrl("Monster1/Monster1.png"));
-const monster2 = new ImageSource(spriteSheetUrl("Monster2/Monster2.png"));
-const monster3 = new ImageSource(spriteSheetUrl("Monster3/Monster3.png"));
-const monster4 = new ImageSource(spriteSheetUrl("Monster4/Monster4.png"));
-const monster5 = new ImageSource(spriteSheetUrl("Monster5/Monster5.png"));
-const treasure0 = new ImageSource(spriteSheetUrl("Treasure0/Treasure0.png"));
-const heart0 = new ImageSource(spriteSheetUrl("Hearth0/Hearth0.png"));
-const heart1 = new ImageSource(spriteSheetUrl("Hearth1/Hearth1.png"));
-const monsterSpriteSources: Record<string, ImageSource> = {
-  monster0,
-  monster1,
-  monster2,
-  monster3,
-  monster4,
-  monster5
-};
-const treasureSpriteSources: Record<string, ImageSource> = {
-  treasure0
-};
+function buildImageSourceMap(entries: typeof assetCatalog): Record<string, ImageSource> {
+  return Object.fromEntries(
+    entries.map((entry) => [
+      entry.assetName,
+      new ImageSource(entry.sourceKind === "asset" ? assetUrl(entry.path) : spriteSheetUrl(entry.path))
+    ])
+  );
+}
+
+const imageSources = buildImageSourceMap(assetCatalog);
+const char0 = imageSources.char0;
+const char1 = imageSources.char1;
+const heart0 = imageSources.heart0;
+const heart1 = imageSources.heart1;
+const treasureSpriteSources = Object.fromEntries(
+  treasureSpriteAnimationIds.map((spriteAnimationId) => [spriteAnimationId, imageSources[spriteAnimationId]])
+) as Record<string, ImageSource>;
+
+const monsterSpriteSources = Object.fromEntries(
+  monsterSpriteAnimationIds.map((spriteAnimationId) => [spriteAnimationId, imageSources[spriteAnimationId]])
+) as Record<string, ImageSource>;
+
+const trailTileSources = assetCatalog
+  .filter((entry) => entry.category === "trailTile")
+  .map((entry) => {
+    const source = imageSources[entry.assetName];
+
+    if (!source) {
+      throw new Error(`Missing trail tile sprite source for configured asset ${entry.assetName}.`);
+    }
+
+    return { assetName: entry.assetName, source, spriteSheetRows: entry.spriteSheetRows ?? 4 };
+  });
 // Match the top-bar HUD sizing in DemoScene so heart sprites render at the same size as their screen-space actors.
 const HUD_HEIGHT = clamp(GAME_HEIGHT * HUD_HEIGHT_RATIO, HUD_HEIGHT_MIN, HUD_HEIGHT_MAX);
 const HEART_HUD_SIZE = clamp(
@@ -71,8 +73,7 @@ const HEART_HUD_SIZE = clamp(
   HEART_SIZE_MAX
 );
 
-function createGridAnimation(image: ImageSource, displaySize: number, orientationRow = 0, frameDuration = 140): AnimationGraphic {
-  const orientationCount = 4;
+function createGridAnimation(image: ImageSource, displaySize: number, orientationRow = 0, frameDuration = 140, orientationCount = 4): AnimationGraphic {
   const spriteSize = Math.max(1, Math.floor(image.height / orientationCount));
   const frameCount = Math.max(1, Math.floor(image.width / spriteSize));
   const normalizedRow = Math.max(0, Math.min(orientationRow, orientationCount - 1));
@@ -272,29 +273,7 @@ function getTrailTileCollisionByAsset(assetName: string): TrailTileWalls[] {
 
 const trailTileCollisionLookup = buildTrailTileCollisionLookup(parseTrailTileCollisionCsv(trailTileCollisionCsv));
 
-export const gameAssetSources = {
-  char0,
-  char1,
-  road0,
-  road1,
-  road2,
-  road3,
-  road4,
-  chamber0,
-  chamber1,
-  chamber2,
-  chamber3,
-  chamber4,
-  monster0,
-  monster1,
-  monster2,
-  monster3,
-  monster4,
-  monster5,
-  treasure0,
-  heart0,
-  heart1,
-};
+export const gameAssetSources = imageSources;
 
 export async function loadGameAssets(): Promise<void> {
   await Promise.all(Object.values(gameAssetSources).map((asset) => asset.load()));
@@ -326,32 +305,19 @@ export function createGameSprites(): GameSprites {
     })
   );
 
-  const trailTileSources = [
-    { assetName: "road0", source: road0 },
-    { assetName: "road1", source: road1 },
-    { assetName: "road2", source: road2 },
-    { assetName: "road3", source: road3 },
-    { assetName: "road4", source: road4 },
-    { assetName: "chamber0", source: chamber0 },
-    { assetName: "chamber1", source: chamber1 },
-    { assetName: "chamber2", source: chamber2 },
-    { assetName: "chamber3", source: chamber3 },
-    { assetName: "chamber4", source: chamber4 }
-  ];
-
   return {
     playerNormal: createSingleSprite(char1, CHAR_SIZE),
     playerSelected: createSingleSprite(char0, CHAR_SIZE),
     heartActive: createHorizontalStripAnimation(heart0, HEART_HUD_SIZE, HEART_FRAME_COUNT, HEART_ANIMATION_FRAME_DURATION),
     heartInactive: createSingleSprite(heart1, HEART_HUD_SIZE),
     monsters: monsterVariants,
-    treasure: treasureAnimationsById.treasure0 ?? createHorizontalStripAnimation(treasure0, TREASURE_SIZE, TREASURE_ANIMATION_FRAME_COUNT, TREASURE_ANIMATION_FRAME_DURATION),
+    treasure: treasureAnimationsById.treasure0 ?? createHorizontalStripAnimation(imageSources.treasure0, TREASURE_SIZE, TREASURE_ANIMATION_FRAME_COUNT, TREASURE_ANIMATION_FRAME_DURATION),
     treasureAnimationsById,
-    trailTiles: trailTileSources.map(({ assetName, source }) => ({
+    trailTiles: trailTileSources.map(({ assetName, source, spriteSheetRows }) => ({
       assetName,
-      orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(source, TILE_SIZE, orientationRow)),
+      orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(source, TILE_SIZE, orientationRow, 140, spriteSheetRows)),
       collisionByOrientation: getTrailTileCollisionByAsset(assetName)
     })),
-    backdrop: createGridAnimation(chamber4, TILE_SIZE, 0, 180)
+    backdrop: createGridAnimation(imageSources.chamber4, TILE_SIZE, 0, 180)
   };
 }
