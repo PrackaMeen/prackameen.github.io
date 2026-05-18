@@ -1,3 +1,5 @@
+import { USED_TRAIL_TILE_ASSET_NAMES } from "./config";
+
 export type AssetSourceKind = "asset" | "spriteSheet";
 
 export type AssetCategory = "character" | "trailTile" | "monster" | "treasure" | "hud";
@@ -35,6 +37,10 @@ export const assetCatalog: AssetCatalogEntry[] = [
   { assetName: "heart1", sourceKind: "spriteSheet", path: "Hearth1/Hearth1.png", category: "hud" }
 ];
 
-export const trailTileAssetNames = assetCatalog.filter((asset) => asset.category === "trailTile").map((asset) => asset.assetName);
+const usedTrailTileAssetNameSet = new Set<string>(USED_TRAIL_TILE_ASSET_NAMES);
+
+export const trailTileAssetNames = assetCatalog
+  .filter((asset) => asset.category === "trailTile" && usedTrailTileAssetNameSet.has(asset.assetName))
+  .map((asset) => asset.assetName);
 export const monsterSpriteAnimationIds = assetCatalog.filter((asset) => asset.category === "monster").map((asset) => asset.assetName);
 export const treasureSpriteAnimationIds = assetCatalog.filter((asset) => asset.category === "treasure").map((asset) => asset.assetName);

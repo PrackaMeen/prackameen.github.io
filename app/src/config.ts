@@ -21,6 +21,20 @@ export const HEART_SIZE_MAX = 22;
 export const HEART_FRAME_COUNT = 4;
 export const HEART_ANIMATION_FRAME_DURATION = 300;
 
+export const USED_TRAIL_TILE_ASSET_NAMES = [
+	// "road0",
+	// "road1",
+	// "road2",
+	// "road3",
+	// "road4",
+	"fountain4",
+	// "chamber0",
+	// "chamber1",
+	// "chamber2",
+	// "chamber3",
+	// "chamber4"
+] as const;
+
 export const gameSettings = {
 	cameraZoomMin: 0.5,
 	cameraZoomMax: 2,

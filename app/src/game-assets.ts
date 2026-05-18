@@ -16,7 +16,7 @@ import {
   TREASURE_ANIMATION_FRAME_DURATION,
   TREASURE_SIZE
 } from "./config";
-import { assetCatalog, monsterSpriteAnimationIds, treasureSpriteAnimationIds } from "./asset-catalog";
+import { assetCatalog, monsterSpriteAnimationIds, trailTileAssetNames, treasureSpriteAnimationIds } from "./asset-catalog";
 import { dropTable, monsterTable } from "./game-data";
 import trailTileCollisionCsv from "./data/trail-tile-collision-metadata.csv?raw";
 
@@ -55,7 +55,7 @@ const monsterSpriteSources = Object.fromEntries(
 ) as Record<string, ImageSource>;
 
 const trailTileSources = assetCatalog
-  .filter((entry) => entry.category === "trailTile")
+  .filter((entry) => entry.category === "trailTile" && trailTileAssetNames.includes(entry.assetName))
   .map((entry) => {
     const source = imageSources[entry.assetName];
 
@@ -63,7 +63,11 @@ const trailTileSources = assetCatalog
       throw new Error(`Missing trail tile sprite source for configured asset ${entry.assetName}.`);
     }
 
-    return { assetName: entry.assetName, source, spriteSheetRows: entry.spriteSheetRows ?? 4 };
+    return {
+      assetName: entry.assetName,
+      source,
+      spriteSheetRows: entry.spriteSheetRows ?? 4
+    };
   });
 // Match the top-bar HUD sizing in DemoScene so heart sprites render at the same size as their screen-space actors.
 const HUD_HEIGHT = clamp(GAME_HEIGHT * HUD_HEIGHT_RATIO, HUD_HEIGHT_MIN, HUD_HEIGHT_MAX);
