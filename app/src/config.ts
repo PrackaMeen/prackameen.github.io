@@ -8,7 +8,7 @@ export const GAME_WIDTH = viewportWidth;
 export const GAME_HEIGHT = viewportHeight;
 export const GAME_TITLE = "PrackaMeen Arcade Lab";
 export const TILE_SIZE = 128;
-export const CHAR_SIZE = 64;
+export const CHAR_SIZE = 128;
 export const TREASURE_SIZE = CHAR_SIZE * 0.5;
 export const TREASURE_ANIMATION_FRAME_COUNT = 4;
 export const TREASURE_ANIMATION_FRAME_DURATION = 200;
@@ -36,9 +36,9 @@ export const USED_TRAIL_TILE_ASSET_NAMES = [
 ] as const;
 
 export const gameSettings = {
-	cameraZoomMin: 0.5,
-	cameraZoomMax: 2,
-	cameraZoomLevels: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
+	cameraZoomMin: 0.25,
+	cameraZoomMax: 4,
+	cameraZoomLevels: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 4],
 	cameraZoomDragThreshold: 18,
 	debugInfoEnabled: true
 };

@@ -1,4 +1,4 @@
-import { Animation, AnimationStrategy, ImageSource, SpriteSheet, type Animation as AnimationGraphic, type Graphic } from "excalibur";
+import { Animation, AnimationStrategy, Color, ImageSource, Sprite, SpriteSheet, type Animation as AnimationGraphic, type Graphic } from "excalibur";
 import {
   CHAR_SIZE,
   GAME_HEIGHT,
@@ -106,10 +106,41 @@ function createGridAnimation(image: ImageSource, displaySize: number, orientatio
 }
 
 function createSingleSprite(image: ImageSource, displaySize: number): Graphic {
-  const sprite = image.toSprite();
-  sprite.width = displaySize;
-  sprite.height = displaySize;
-  return sprite;
+  return Sprite.from(image, {
+    destSize: { width: displaySize, height: displaySize }
+  });
+}
+
+function createTintedSingleSprite(image: ImageSource, displaySize: number, tint: Color): Graphic {
+  return Sprite.from(image, {
+    destSize: { width: displaySize, height: displaySize },
+    tint
+  });
+}
+
+function createCharacterOrientationGraphics(image: ImageSource, displaySize: number, tint?: Color): Graphic[] {
+  const spriteHeight = Math.max(1, Math.floor(image.height / 4));
+  const spriteSheet = SpriteSheet.fromImageSource({
+    image,
+    grid: {
+      rows: 4,
+      columns: 1,
+      spriteWidth: image.width,
+      spriteHeight
+    }
+  });
+
+  return [0, 1, 2, 3].map((rowIndex) => {
+    const sprite = spriteSheet.getSprite(0, rowIndex).clone();
+    sprite.width = displaySize;
+    sprite.height = displaySize;
+
+    if (tint) {
+      sprite.tint = tint;
+    }
+
+    return sprite;
+  });
 }
 
 function createHorizontalStripAnimation(image: ImageSource, displaySize: number, frameCount: number, frameDuration = 120): AnimationGraphic {
@@ -140,8 +171,8 @@ function createHorizontalStripAnimation(image: ImageSource, displaySize: number,
 }
 
 export interface GameSprites {
-  playerNormal: Graphic;
-  playerSelected: Graphic;
+  playerNormalByOrientation: Graphic[];
+  playerSelectedByOrientation: Graphic[];
   heartActive: AnimationGraphic;
   heartInactive: Graphic;
   monsters: MonsterVariant[];
@@ -310,8 +341,8 @@ export function createGameSprites(): GameSprites {
   );
 
   return {
-    playerNormal: createSingleSprite(char1, CHAR_SIZE),
-    playerSelected: createSingleSprite(char0, CHAR_SIZE),
+    playerNormalByOrientation: createCharacterOrientationGraphics(char0, CHAR_SIZE),
+    playerSelectedByOrientation: createCharacterOrientationGraphics(char0, CHAR_SIZE, Color.fromHex("#4aa3ff")),
     heartActive: createHorizontalStripAnimation(heart0, HEART_HUD_SIZE, HEART_FRAME_COUNT, HEART_ANIMATION_FRAME_DURATION),
     heartInactive: createSingleSprite(heart1, HEART_HUD_SIZE),
     monsters: monsterVariants,

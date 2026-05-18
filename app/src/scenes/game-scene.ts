@@ -33,6 +33,8 @@ interface TrailTilePlacement {
   walls: TrailTileWalls;
 }
 
+type CharacterFacingOrientation = 0 | 1 | 2 | 3;
+
 interface ModeButtonControl {
   mode: DemoMode;
   button: Actor;
@@ -950,7 +952,7 @@ export class DemoScene extends Scene {
     }
 
     this.player.pos = vec(snapshot.player.x, snapshot.player.y);
-    this.player.rotation = snapshot.player.rotation;
+    this.player.setFacingOrientation(this.getFacingOrientationFromRotation(snapshot.player.rotation));
     this.player.clearTargetPosition();
     this.playerHealth = clamp(snapshot.playerHealth ?? this.maxPlayerHealth, 0, this.maxPlayerHealth);
     this.gameOver = this.playerHealth <= 0;
@@ -980,7 +982,7 @@ export class DemoScene extends Scene {
   }
 
   override onInitialize(): void {
-    this.player.setStateGraphics(this.sprites.playerNormal, this.sprites.playerSelected);
+    this.player.setStateGraphics(this.sprites.playerNormalByOrientation, this.sprites.playerSelectedByOrientation);
 
     this.showTrailTile(this.player.pos, 0);
     this.add(this.player);
@@ -1155,15 +1157,7 @@ export class DemoScene extends Scene {
     }
 
     if (this.movementPhase === "turningAfterMonsterDefeat") {
-      this.monsterDefeatTurnElapsed = Math.min(this.monsterDefeatTurnElapsed + elapsed, this.monsterDefeatTurnDuration);
-      const progress = this.monsterDefeatTurnDuration <= 0 ? 1 : this.monsterDefeatTurnElapsed / this.monsterDefeatTurnDuration;
-      const easedProgress = 1 - Math.pow(1 - progress, 3);
-      this.player.rotation = this.monsterDefeatTurnStartRotation + (this.monsterDefeatTurnTargetRotation - this.monsterDefeatTurnStartRotation) * easedProgress;
-
-      if (progress >= 1) {
-        this.beginMonsterDefeatReturnMovement();
-      }
-
+      this.beginMonsterDefeatReturnMovement();
       return;
     }
 
@@ -1187,14 +1181,7 @@ export class DemoScene extends Scene {
     }
 
     if (this.movementPhase === "turningBlocked") {
-      this.blockedTurnElapsed = Math.min(this.blockedTurnElapsed + elapsed, this.blockedTurnDuration);
-      const progress = this.blockedTurnDuration <= 0 ? 1 : this.blockedTurnElapsed / this.blockedTurnDuration;
-      const easedProgress = 1 - Math.pow(1 - progress, 3);
-      this.player.rotation = this.blockedTurnStartRotation + (this.blockedTurnTargetRotation - this.blockedTurnStartRotation) * easedProgress;
-
-      if (progress >= 1) {
-        this.beginBlockedReturnMovement();
-      }
+      this.beginBlockedReturnMovement();
       return;
     }
 
@@ -2348,10 +2335,12 @@ export class DemoScene extends Scene {
   }
 
   private beginMonsterDefeatTurn(): void {
-    this.movementPhase = "turningAfterMonsterDefeat";
-    this.monsterDefeatTurnElapsed = 0;
-    this.monsterDefeatTurnStartRotation = this.player.rotation;
-    this.monsterDefeatTurnTargetRotation = this.player.rotation + Math.PI;
+    const returnOrientation = this.getOppositeFacingOrientation(
+      this.getFacingOrientationFromVector(this.movementStartPosition ?? this.player.pos, this.moveTargetPosition ?? this.player.pos)
+    );
+
+    this.player.setFacingOrientation(returnOrientation);
+    this.beginMonsterDefeatReturnMovement();
   }
 
   private beginMonsterDefeatReturnMovement(): void {
@@ -2496,13 +2485,30 @@ export class DemoScene extends Scene {
     return this.tileValidation.canTraverseBetweenWalls(fromWalls, toWalls, wallKeys);
   }
 
+  private getFacingOrientationFromVector(from: Vector, to: Vector): CharacterFacingOrientation {
+    const deltaX = to.x - from.x;
+    const deltaY = to.y - from.y;
+
+    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+      return deltaX >= 0 ? 1 : 3;
+    }
+
+    return deltaY >= 0 ? 2 : 0;
+  }
+
+  private getOppositeFacingOrientation(orientation: CharacterFacingOrientation): CharacterFacingOrientation {
+    return ((orientation + 2) % 4) as CharacterFacingOrientation;
+  }
+
+  private getFacingOrientationFromRotation(rotation: number): CharacterFacingOrientation {
+    const normalizedRotation = ((rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    return (Math.round(normalizedRotation / (Math.PI / 2)) % 4) as CharacterFacingOrientation;
+  }
+
   private startBlockedMovement(targetPosition: Vector, returnPosition?: Vector): void {
     this.clearPreviewTrailTile();
     this.moveTargetPosition = vec(targetPosition.x, targetPosition.y);
     this.blockedReturnPosition = returnPosition ? vec(returnPosition.x, returnPosition.y) : this.movementStartPosition;
-    this.blockedTurnElapsed = 0;
-    this.blockedTurnStartRotation = this.player.rotation;
-    this.blockedTurnTargetRotation = this.player.rotation + Math.PI;
     const blockedApproachTarget = this.computeBorderPosition(
       this.movementStartPosition ?? this.player.pos,
       targetPosition
@@ -2513,10 +2519,12 @@ export class DemoScene extends Scene {
   }
 
   private beginBlockedReturnTurn(): void {
-    this.movementPhase = "turningBlocked";
-    this.blockedTurnElapsed = 0;
-    this.blockedTurnStartRotation = this.player.rotation;
-    this.blockedTurnTargetRotation = this.player.rotation + Math.PI;
+    const returnOrientation = this.getOppositeFacingOrientation(
+      this.getFacingOrientationFromVector(this.movementStartPosition ?? this.player.pos, this.blockedReturnPosition ?? this.player.pos)
+    );
+
+    this.player.setFacingOrientation(returnOrientation);
+    this.beginBlockedReturnMovement();
   }
 
   private beginBlockedReturnMovement(): void {

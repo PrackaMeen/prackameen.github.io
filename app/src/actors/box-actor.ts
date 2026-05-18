@@ -1,6 +1,8 @@
 import { Actor, Color, type Graphic, type Vector, vec } from "excalibur";
 import { TILE_SIZE } from "../config";
 
+type CharacterFacingOrientation = 0 | 1 | 2 | 3;
+
 function snapToGrid(value: number, tileSize: number): number {
   return Math.round((value - tileSize / 2) / tileSize) * tileSize + tileSize / 2;
 }
@@ -10,8 +12,9 @@ export class BoxActor extends Actor {
   private targetPosition: Vector | null = null;
   private targetSnapToGrid = true;
   private selected = false;
-  private normalGraphic: Graphic | null = null;
-  private selectedGraphic: Graphic | null = null;
+  private facingOrientation: CharacterFacingOrientation = 0;
+  private normalGraphics: Graphic[] = [];
+  private selectedGraphics: Graphic[] = [];
 
   setTargetPosition(target: Vector, snapToGrid = true): void {
     this.targetPosition = vec(target.x, target.y);
@@ -22,28 +25,25 @@ export class BoxActor extends Actor {
     this.targetPosition = null;
   }
 
-  setStateGraphics(normalGraphic: Graphic, selectedGraphic: Graphic): void {
-    this.normalGraphic = normalGraphic;
-    this.selectedGraphic = selectedGraphic;
-    this.graphics.use(normalGraphic);
+  setStateGraphics(normalGraphics: Graphic[], selectedGraphics: Graphic[]): void {
+    this.normalGraphics = normalGraphics;
+    this.selectedGraphics = selectedGraphics;
+    this.updateDisplayedGraphic();
+  }
+
+  setFacingOrientation(orientation: CharacterFacingOrientation): void {
+    this.facingOrientation = orientation;
+    this.updateDisplayedGraphic();
   }
 
   select(): void {
     this.selected = true;
-    if (this.selectedGraphic) {
-      this.graphics.use(this.selectedGraphic);
-    } else {
-      this.color = Color.fromHex("#ff5b5b");
-    }
+    this.updateDisplayedGraphic();
   }
 
   deselect(): void {
     this.selected = false;
-    if (this.normalGraphic) {
-      this.graphics.use(this.normalGraphic);
-    } else {
-      this.color = Color.fromHex("#6bf0ff");
-    }
+    this.updateDisplayedGraphic();
   }
 
   get isSelected(): boolean {
@@ -82,11 +82,27 @@ export class BoxActor extends Actor {
         } else {
           const directionX = offsetX / distance;
           const directionY = offsetY / distance;
-          this.rotation = Math.atan2(directionY, directionX) + Math.PI / 2;
+          const facingOrientation: CharacterFacingOrientation = Math.abs(directionX) >= Math.abs(directionY)
+            ? (directionX >= 0 ? 1 : 3)
+            : (directionY >= 0 ? 2 : 0);
+
+          this.setFacingOrientation(facingOrientation);
           this.pos = this.pos.add(vec(directionX * step, directionY * step));
         }
       }
     }
 
+  }
+
+  private updateDisplayedGraphic(): void {
+    const graphics = this.selected ? this.selectedGraphics : this.normalGraphics;
+    const graphic = graphics[this.facingOrientation] ?? graphics[0];
+
+    if (graphic) {
+      this.graphics.use(graphic);
+      return;
+    }
+
+    this.color = this.selected ? Color.fromHex("#ff5b5b") : Color.fromHex("#6bf0ff");
   }
 }

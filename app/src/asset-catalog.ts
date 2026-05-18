@@ -13,7 +13,7 @@ export interface AssetCatalogEntry {
 }
 
 export const assetCatalog: AssetCatalogEntry[] = [
-  { assetName: "char0", sourceKind: "asset", path: "chars/Char0_2.png", category: "character" },
+  { assetName: "char0", sourceKind: "spriteSheet", path: "Character0/Character0.png", category: "character" },
   { assetName: "char1", sourceKind: "asset", path: "chars/Char1_2.png", category: "character" },
   { assetName: "road0", sourceKind: "spriteSheet", path: "Road0/Road0.png", category: "trailTile" },
   { assetName: "road1", sourceKind: "spriteSheet", path: "Road1/Road1.png", category: "trailTile" },
