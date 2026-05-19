@@ -14,36 +14,63 @@ function createStubRandom(rolls: number[]): SeededRandom {
   } as unknown as SeededRandom;
 }
 
+function getHero(heroId: string) {
+  const hero = heroRoster.find((entry) => entry.id === heroId);
+
+  expect(hero).toBeDefined();
+
+  return hero!;
+}
+
 describe("karak combat", () => {
-  it("gives the seer the first-move combat bonus", () => {
-    const seer = heroRoster.find((hero) => hero.id === "seer");
-    expect(seer).toBeDefined();
+  it.each([
+    {
+      name: "regular loss keeps the monster alive",
+      heroId: "wizard",
+      rolls: [2, 2],
+      monsterTotal: 6,
+      turnCounter: 1,
+      expected: { heroTotal: 4, victory: false, tie: false, rolls: [2, 2] }
+    },
+    {
+      name: "seer gets the first-move combat bonus",
+      heroId: "seer",
+      rolls: [3, 3],
+      monsterTotal: 7,
+      turnCounter: 0,
+      expected: { heroTotal: 8, victory: true, tie: false, rolls: [3, 3] }
+    },
+    {
+      name: "thief wins ties",
+      heroId: "thief",
+      rolls: [3, 4],
+      monsterTotal: 7,
+      turnCounter: 2,
+      expected: { heroTotal: 7, victory: true, tie: true, rolls: [3, 4] }
+    },
+    {
+      name: "warrior rerolls both dice after a losing roll",
+      heroId: "warrior",
+      rolls: [1, 1, 5, 4],
+      monsterTotal: 7,
+      turnCounter: 1,
+      expected: { heroTotal: 9, victory: true, tie: false, rolls: [5, 4] }
+    },
+    {
+      name: "swordsman rerolls dice that show one",
+      heroId: "swordsman",
+      rolls: [1, 4, 5],
+      monsterTotal: 8,
+      turnCounter: 1,
+      expected: { heroTotal: 9, victory: true, tie: false, rolls: [5, 4] }
+    }
+  ])("$name", ({ heroId, rolls, monsterTotal, turnCounter, expected }) => {
+    const combat = resolveKarakCombat(getHero(heroId), monsterTotal, createStubRandom(rolls), turnCounter);
 
-    const combat = resolveKarakCombat(seer!, 7, createStubRandom([3, 3]), 0);
-
-    expect(combat.heroTotal).toBe(8);
-    expect(combat.victory).toBe(true);
-    expect(combat.tie).toBe(false);
-  });
-
-  it("lets the thief win ties", () => {
-    const thief = heroRoster.find((hero) => hero.id === "thief");
-    expect(thief).toBeDefined();
-
-    const combat = resolveKarakCombat(thief!, 7, createStubRandom([3, 4]), 2);
-
-    expect(combat.heroTotal).toBe(7);
-    expect(combat.tie).toBe(true);
-    expect(combat.victory).toBe(true);
-  });
-
-  it("rerolls both dice for the warrior after a losing roll", () => {
-    const warrior = heroRoster.find((hero) => hero.id === "warrior");
-    expect(warrior).toBeDefined();
-
-    const combat = resolveKarakCombat(warrior!, 7, createStubRandom([1, 1, 5, 4]), 1);
-
-    expect(combat.heroTotal).toBe(9);
-    expect(combat.victory).toBe(true);
+    expect(combat.heroTotal).toBe(expected.heroTotal);
+    expect(combat.monsterTotal).toBe(monsterTotal);
+    expect(combat.victory).toBe(expected.victory);
+    expect(combat.tie).toBe(expected.tie);
+    expect(combat.rolls).toEqual(expected.rolls);
   });
 });

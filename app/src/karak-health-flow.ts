@@ -26,3 +26,17 @@ export function reviveKarakHero(state: KarakHealthFlowState): KarakHealthFlowSta
 		revivePending: false
 	};
 }
+
+export function applyKarakFountainHeal(state: KarakHealthFlowState, maxHealth: number): KarakHealthFlowState {
+	const fullHealth = Math.max(0, maxHealth);
+
+	if (state.health === fullHealth && !state.isUnconscious && !state.revivePending) {
+		return state;
+	}
+
+	return {
+		health: fullHealth,
+		isUnconscious: false,
+		revivePending: false
+	};
+}
