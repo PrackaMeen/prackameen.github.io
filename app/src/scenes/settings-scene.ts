@@ -1,5 +1,5 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, PointerButton, Scene, TextAlign, type PointerEvent, vec } from "excalibur";
-import { GAME_HEIGHT, GAME_WIDTH, gameSettings } from "../config";
+import { GAME_HEIGHT, GAME_WIDTH, getTrailTileVersion, gameSettings, setTrailTileVersionPreference, type TrailTileVersion } from "../config";
 import type { GameController } from "../game-controller";
 import { createScreenButtonTemplate, getCanvasPointerPosition, isPointInsideScreenButton } from "../ui/screen-button-template";
 
@@ -98,6 +98,14 @@ export class SettingsScene extends Scene {
       coordPlane: CoordPlane.Screen
     });
 
+    const tileVersionLabel = new Label({
+      text: "Tiles",
+      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.30),
+      font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#d9ffea"),
+      coordPlane: CoordPlane.Screen
+    });
+
     const maxLabel = new Label({
       text: "Zoom max",
       pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.08),
@@ -122,6 +130,14 @@ export class SettingsScene extends Scene {
       coordPlane: CoordPlane.Screen
     });
 
+    const tileVersionValue = new Label({
+      text: getTrailTileVersion().toUpperCase(),
+      pos: vec(GAME_WIDTH / 2 + panelWidth * 0.10, GAME_HEIGHT / 2 + panelHeight * 0.30),
+      font: new Font({ family: "Space Grotesk", size: bodySize + 4, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#f7fbff"),
+      coordPlane: CoordPlane.Screen
+    });
+
     const minDecrease = this.createButton(rowLeftX, GAME_HEIGHT / 2 - panelHeight * 0.05, buttonWidth, buttonHeight, "-");
     const minIncrease = this.createButton(rowRightX, GAME_HEIGHT / 2 - panelHeight * 0.05, buttonWidth, buttonHeight, "+");
     const maxDecrease = this.createButton(rowLeftX, GAME_HEIGHT / 2 + panelHeight * 0.08, buttonWidth, buttonHeight, "-");
@@ -129,7 +145,8 @@ export class SettingsScene extends Scene {
     const debugToggle = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.19, buttonWidth, buttonHeight, gameSettings.debugInfoEnabled ? "On" : "Off");
     debugToggle.button.color = gameSettings.debugInfoEnabled ? Color.fromHex("#7cf7a3") : Color.fromHex("#7b8492");
     debugToggle.label.color = gameSettings.debugInfoEnabled ? Color.fromHex("#08121c") : Color.fromHex("#edf4ff");
-    const backButton = this.createButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + panelHeight * 0.28, buttonWidth * 1.5, buttonHeight, "Back");
+    const tileVersionToggle = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.30, buttonWidth, buttonHeight, getTrailTileVersion().toUpperCase());
+    const backButton = this.createButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + panelHeight * 0.40, buttonWidth * 1.5, buttonHeight, "Back");
 
     this.controls = [
       {
@@ -163,6 +180,17 @@ export class SettingsScene extends Scene {
         }
       },
       {
+        ...tileVersionToggle,
+        onPress: () => {
+          const nextVersion: TrailTileVersion = getTrailTileVersion() === "v1" ? "v2" : "v1";
+
+          setTrailTileVersionPreference(nextVersion);
+          tileVersionValue.text = nextVersion.toUpperCase();
+          tileVersionToggle.label.text = nextVersion.toUpperCase();
+          window.location.reload();
+        }
+      },
+      {
         ...maxIncrease,
         onPress: () => {
           gameSettings.cameraZoomMax = clamp(gameSettings.cameraZoomMax + 0.1, gameSettings.cameraZoomMin + 0.1, 5);
@@ -183,8 +211,10 @@ export class SettingsScene extends Scene {
     this.add(minLabel);
     this.add(maxLabel);
     this.add(debugLabel);
+    this.add(tileVersionLabel);
     this.add(minValue);
     this.add(maxValue);
+    this.add(tileVersionValue);
 
     for (const control of this.controls) {
       this.add(control.button);

@@ -21,18 +21,52 @@ export const HEART_SIZE_MAX = 22;
 export const HEART_FRAME_COUNT = 4;
 export const HEART_ANIMATION_FRAME_DURATION = 300;
 
+export type TrailTileVersion = "v1" | "v2";
+
+const trailTileVersionStorageKey = "trailTileVersion";
+
+function readTrailTileVersion(): TrailTileVersion {
+	if (typeof window === "undefined") {
+		return "v1";
+	}
+
+	const searchParams = new URLSearchParams(window.location.search);
+	const requestedVersion = searchParams.get("tileVersion") ?? searchParams.get("tiles") ?? searchParams.get("tileSet");
+	const storedVersion = globalThis.localStorage?.getItem(trailTileVersionStorageKey);
+
+	if (requestedVersion === "v2") {
+		return "v2";
+	}
+
+	if (storedVersion === "v2") {
+		return "v2";
+	}
+
+	return "v1";
+}
+
+	export function getTrailTileVersion(): TrailTileVersion {
+	return readTrailTileVersion();
+}
+
+	export const TRAIL_TILE_VERSION = getTrailTileVersion();
+
+export function setTrailTileVersionPreference(version: TrailTileVersion): void {
+	globalThis.localStorage?.setItem(trailTileVersionStorageKey, version);
+}
+
 export const USED_TRAIL_TILE_ASSET_NAMES = [
-	// "road0",
-	// "road1",
-	// "road2",
-	// "road3",
-	// "road4",
+	"road0",
+	"road1",
+	"road2",
+	"road3",
+	"road4",
 	"fountain4",
-	// "chamber0",
-	// "chamber1",
-	// "chamber2",
-	// "chamber3",
-	// "chamber4"
+	"chamber0",
+	"chamber1",
+	"chamber2",
+	"chamber3",
+	"chamber4"
 ] as const;
 
 export const gameSettings = {

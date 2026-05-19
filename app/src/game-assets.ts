@@ -16,7 +16,7 @@ import {
   TREASURE_ANIMATION_FRAME_DURATION,
   TREASURE_SIZE
 } from "./config";
-import { assetCatalog, monsterSpriteAnimationIds, trailTileAssetNames, treasureSpriteAnimationIds } from "./asset-catalog";
+import { assetCatalog, getTrailTileDefinitions, monsterSpriteAnimationIds, treasureSpriteAnimationIds, type TrailTileDefinition } from "./asset-catalog";
 import { dropTable, monsterTable } from "./game-data";
 import trailTileCollisionCsv from "./data/trail-tile-collision-metadata.csv?raw";
 
@@ -53,22 +53,6 @@ const treasureSpriteSources = Object.fromEntries(
 const monsterSpriteSources = Object.fromEntries(
   monsterSpriteAnimationIds.map((spriteAnimationId) => [spriteAnimationId, imageSources[spriteAnimationId]])
 ) as Record<string, ImageSource>;
-
-const trailTileSources = assetCatalog
-  .filter((entry) => entry.category === "trailTile" && trailTileAssetNames.includes(entry.assetName))
-  .map((entry) => {
-    const source = imageSources[entry.assetName];
-
-    if (!source) {
-      throw new Error(`Missing trail tile sprite source for configured asset ${entry.assetName}.`);
-    }
-
-    return {
-      assetName: entry.assetName,
-      source,
-      spriteSheetRows: entry.spriteSheetRows ?? 4
-    };
-  });
 // Match the top-bar HUD sizing in DemoScene so heart sprites render at the same size as their screen-space actors.
 const HUD_HEIGHT = clamp(GAME_HEIGHT * HUD_HEIGHT_RATIO, HUD_HEIGHT_MIN, HUD_HEIGHT_MAX);
 const HEART_HUD_SIZE = clamp(
@@ -115,6 +99,30 @@ function createTintedSingleSprite(image: ImageSource, displaySize: number, tint:
   return Sprite.from(image, {
     destSize: { width: displaySize, height: displaySize },
     tint
+  });
+}
+
+function createTrailTileOrientations(definition: TrailTileDefinition): AnimationGraphic[] {
+  const sourceAssetNames = definition.sourceAssetNames.length === 1
+    ? [definition.sourceAssetNames[0], definition.sourceAssetNames[0], definition.sourceAssetNames[0], definition.sourceAssetNames[0]]
+    : definition.sourceAssetNames;
+
+  if (sourceAssetNames.length !== 4) {
+    throw new Error(`Trail tile asset ${definition.assetName} must define either one or four source assets.`);
+  }
+
+  return sourceAssetNames.map((sourceAssetName: string, orientationIndex: number) => {
+    const source = imageSources[sourceAssetName];
+
+    if (!source) {
+      throw new Error(`Missing trail tile sprite source for configured asset ${sourceAssetName}.`);
+    }
+
+    if (definition.renderKind === "horizontalStrip") {
+      return createHorizontalStripAnimation(source, TILE_SIZE, definition.frameCount ?? 4, 140);
+    }
+
+    return createGridAnimation(source, TILE_SIZE, orientationIndex, 140, definition.spriteSheetRows ?? 4);
   });
 }
 
@@ -315,6 +323,7 @@ export async function loadGameAssets(): Promise<void> {
 }
 
 export function createGameSprites(): GameSprites {
+  const trailTileDefinitions = getTrailTileDefinitions();
   const monsterVariants = monsterTable.map((monsterRow) => {
     const source = monsterSpriteSources[monsterRow.spriteAnimationId];
 
@@ -348,10 +357,10 @@ export function createGameSprites(): GameSprites {
     monsters: monsterVariants,
     treasure: treasureAnimationsById.treasure0 ?? createHorizontalStripAnimation(imageSources.treasure0, TREASURE_SIZE, TREASURE_ANIMATION_FRAME_COUNT, TREASURE_ANIMATION_FRAME_DURATION),
     treasureAnimationsById,
-    trailTiles: trailTileSources.map(({ assetName, source, spriteSheetRows }) => ({
-      assetName,
-      orientations: [0, 1, 2, 3].map((orientationRow) => createGridAnimation(source, TILE_SIZE, orientationRow, 140, spriteSheetRows)),
-      collisionByOrientation: getTrailTileCollisionByAsset(assetName)
+    trailTiles: trailTileDefinitions.map((definition) => ({
+      assetName: definition.assetName,
+      orientations: createTrailTileOrientations(definition),
+      collisionByOrientation: getTrailTileCollisionByAsset(definition.assetName)
     })),
     backdrop: createGridAnimation(imageSources.chamber4, TILE_SIZE, 0, 180)
   };

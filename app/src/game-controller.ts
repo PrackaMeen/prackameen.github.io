@@ -1,7 +1,8 @@
 import type { Engine } from "excalibur";
+import { TRAIL_TILE_VERSION } from "./config";
 
 export class GameController {
-  private readonly demoStateStorageKey = "game-demo-state-v1";
+  private readonly demoStateStorageKey = `game-demo-state-v1-${TRAIL_TILE_VERSION}`;
   private hasPlayableDemoSession = false;
   private demoResetter: (() => void) | null = null;
   private demoStateSerializer: (() => string | null) | null = null;
@@ -64,6 +65,7 @@ export class GameController {
   }
 
   startNewGame(): void {
+    this.clearDemoState();
     this.demoResetter?.();
     this.hasPlayableDemoSession = true;
     this.engine.goToScene("demo");
