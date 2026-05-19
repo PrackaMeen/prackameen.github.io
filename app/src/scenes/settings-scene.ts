@@ -1,6 +1,7 @@
 import { Actor, Color, CoordPlane, Font, FontUnit, Label, PointerButton, Scene, TextAlign, type PointerEvent, vec } from "excalibur";
 import { GAME_HEIGHT, GAME_WIDTH, getTrailTileVersion, gameSettings, setTrailTileVersionPreference, type TrailTileVersion } from "../config";
 import type { GameController } from "../game-controller";
+import { getNextHeroId, getSelectedHero, heroRoster, setSelectedHeroPreference, type HeroId } from "../hero-roster";
 import { createScreenButtonTemplate, getCanvasPointerPosition, isPointInsideScreenButton } from "../ui/screen-button-template";
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -15,6 +16,9 @@ interface ButtonControl {
 
 export class SettingsScene extends Scene {
   private inputEnabled = false;
+  private controls: ButtonControl[] = [];
+  private selectedHeroId: HeroId = getSelectedHero().id;
+
   private settingsPointerHandler = (event: PointerEvent): void => {
     if (!this.inputEnabled) {
       return;
@@ -40,20 +44,17 @@ export class SettingsScene extends Scene {
     }
   };
 
-  private controls: ButtonControl[] = [];
-
   constructor(private readonly controller: GameController) {
     super();
   }
 
   override onInitialize(): void {
     const panelWidth = clamp(GAME_WIDTH - 32, 340, 760);
-    const panelHeight = clamp(GAME_HEIGHT - 32, 420, 520);
+    const panelHeight = clamp(GAME_HEIGHT - 32, 500, 640);
     const titleSize = clamp(GAME_WIDTH * 0.056, 28, 56);
     const bodySize = clamp(GAME_WIDTH * 0.018, 15, 22);
     const buttonWidth = clamp(GAME_WIDTH * 0.16, 92, 128);
     const buttonHeight = clamp(GAME_HEIGHT * 0.062, 42, 56);
-    const buttonTextSize = clamp(GAME_WIDTH * 0.022, 16, 22);
     const rowLeftX = GAME_WIDTH / 2 - panelWidth * 0.22;
     const rowRightX = GAME_WIDTH / 2 + panelWidth * 0.22;
 
@@ -74,33 +75,37 @@ export class SettingsScene extends Scene {
     });
 
     const subtitle = new Label({
-      text: "Adjust camera zoom boundaries for the demo.",
-      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2 - panelHeight * 0.24),
+      text: "Adjust camera zoom, trail tiles, and the temporary hero roster.",
+      pos: vec(GAME_WIDTH / 2, GAME_HEIGHT / 2 - panelHeight * 0.28),
       font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, textAlign: TextAlign.Center }),
       color: Color.fromHex("#a6b6d8"),
       maxWidth: panelWidth - 72,
       coordPlane: CoordPlane.Screen
     });
 
+    const heroLabel = new Label({
+      text: "Hero",
+      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 - panelHeight * 0.16),
+      font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#d9ffea"),
+      coordPlane: CoordPlane.Screen
+    });
+
+    const heroValue = new Label({
+      text: this.formatHeroSelection(this.selectedHeroId),
+      pos: vec(GAME_WIDTH / 2 + panelWidth * 0.07, GAME_HEIGHT / 2 - panelHeight * 0.16),
+      font: new Font({ family: "Space Grotesk", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#f7fbff"),
+      maxWidth: panelWidth * 0.62,
+      coordPlane: CoordPlane.Screen
+    });
+
+    const heroPrevious = this.createButton(rowLeftX, GAME_HEIGHT / 2 - panelHeight * 0.16, buttonWidth, buttonHeight, "<");
+    const heroNext = this.createButton(rowRightX, GAME_HEIGHT / 2 - panelHeight * 0.16, buttonWidth, buttonHeight, ">");
+
     const minLabel = new Label({
       text: "Zoom min",
-      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 - panelHeight * 0.05),
-      font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#d9ffea"),
-      coordPlane: CoordPlane.Screen
-    });
-
-    const debugLabel = new Label({
-      text: "Debug info",
-      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.19),
-      font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
-      color: Color.fromHex("#d9ffea"),
-      coordPlane: CoordPlane.Screen
-    });
-
-    const tileVersionLabel = new Label({
-      text: "Tiles",
-      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.30),
+      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 - panelHeight * 0.01),
       font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
       color: Color.fromHex("#d9ffea"),
       coordPlane: CoordPlane.Screen
@@ -108,7 +113,23 @@ export class SettingsScene extends Scene {
 
     const maxLabel = new Label({
       text: "Zoom max",
-      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.08),
+      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.12),
+      font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#d9ffea"),
+      coordPlane: CoordPlane.Screen
+    });
+
+    const debugLabel = new Label({
+      text: "Debug info",
+      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.25),
+      font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
+      color: Color.fromHex("#d9ffea"),
+      coordPlane: CoordPlane.Screen
+    });
+
+    const tileVersionLabel = new Label({
+      text: "Tiles",
+      pos: vec(GAME_WIDTH / 2 - panelWidth * 0.25, GAME_HEIGHT / 2 + panelHeight * 0.36),
       font: new Font({ family: "Inter", size: bodySize, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
       color: Color.fromHex("#d9ffea"),
       coordPlane: CoordPlane.Screen
@@ -116,7 +137,7 @@ export class SettingsScene extends Scene {
 
     const minValue = new Label({
       text: gameSettings.cameraZoomMin.toFixed(2),
-      pos: vec(GAME_WIDTH / 2 + panelWidth * 0.10, GAME_HEIGHT / 2 - panelHeight * 0.05),
+      pos: vec(GAME_WIDTH / 2 + panelWidth * 0.10, GAME_HEIGHT / 2 - panelHeight * 0.01),
       font: new Font({ family: "Space Grotesk", size: bodySize + 4, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
       color: Color.fromHex("#f7fbff"),
       coordPlane: CoordPlane.Screen
@@ -124,31 +145,48 @@ export class SettingsScene extends Scene {
 
     const maxValue = new Label({
       text: gameSettings.cameraZoomMax.toFixed(2),
-      pos: vec(GAME_WIDTH / 2 + panelWidth * 0.10, GAME_HEIGHT / 2 + panelHeight * 0.08),
+      pos: vec(GAME_WIDTH / 2 + panelWidth * 0.10, GAME_HEIGHT / 2 + panelHeight * 0.12),
       font: new Font({ family: "Space Grotesk", size: bodySize + 4, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
       color: Color.fromHex("#f7fbff"),
       coordPlane: CoordPlane.Screen
     });
+
+    const debugToggle = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.25, buttonWidth, buttonHeight, gameSettings.debugInfoEnabled ? "On" : "Off");
+    debugToggle.button.color = gameSettings.debugInfoEnabled ? Color.fromHex("#7cf7a3") : Color.fromHex("#7b8492");
+    debugToggle.label.color = gameSettings.debugInfoEnabled ? Color.fromHex("#08121c") : Color.fromHex("#edf4ff");
 
     const tileVersionValue = new Label({
       text: getTrailTileVersion().toUpperCase(),
-      pos: vec(GAME_WIDTH / 2 + panelWidth * 0.10, GAME_HEIGHT / 2 + panelHeight * 0.30),
+      pos: vec(GAME_WIDTH / 2 + panelWidth * 0.10, GAME_HEIGHT / 2 + panelHeight * 0.36),
       font: new Font({ family: "Space Grotesk", size: bodySize + 4, unit: FontUnit.Px, bold: true, textAlign: TextAlign.Center }),
       color: Color.fromHex("#f7fbff"),
       coordPlane: CoordPlane.Screen
     });
 
-    const minDecrease = this.createButton(rowLeftX, GAME_HEIGHT / 2 - panelHeight * 0.05, buttonWidth, buttonHeight, "-");
-    const minIncrease = this.createButton(rowRightX, GAME_HEIGHT / 2 - panelHeight * 0.05, buttonWidth, buttonHeight, "+");
-    const maxDecrease = this.createButton(rowLeftX, GAME_HEIGHT / 2 + panelHeight * 0.08, buttonWidth, buttonHeight, "-");
-    const maxIncrease = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.08, buttonWidth, buttonHeight, "+");
-    const debugToggle = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.19, buttonWidth, buttonHeight, gameSettings.debugInfoEnabled ? "On" : "Off");
-    debugToggle.button.color = gameSettings.debugInfoEnabled ? Color.fromHex("#7cf7a3") : Color.fromHex("#7b8492");
-    debugToggle.label.color = gameSettings.debugInfoEnabled ? Color.fromHex("#08121c") : Color.fromHex("#edf4ff");
-    const tileVersionToggle = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.30, buttonWidth, buttonHeight, getTrailTileVersion().toUpperCase());
-    const backButton = this.createButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + panelHeight * 0.40, buttonWidth * 1.5, buttonHeight, "Back");
+    const minDecrease = this.createButton(rowLeftX, GAME_HEIGHT / 2 - panelHeight * 0.01, buttonWidth, buttonHeight, "-");
+    const minIncrease = this.createButton(rowRightX, GAME_HEIGHT / 2 - panelHeight * 0.01, buttonWidth, buttonHeight, "+");
+    const maxDecrease = this.createButton(rowLeftX, GAME_HEIGHT / 2 + panelHeight * 0.12, buttonWidth, buttonHeight, "-");
+    const maxIncrease = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.12, buttonWidth, buttonHeight, "+");
+    const tileVersionToggle = this.createButton(rowRightX, GAME_HEIGHT / 2 + panelHeight * 0.36, buttonWidth, buttonHeight, getTrailTileVersion().toUpperCase());
+    const backButton = this.createButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + panelHeight * 0.46, buttonWidth * 1.5, buttonHeight, "Back");
 
     this.controls = [
+      {
+        ...heroPrevious,
+        onPress: () => {
+          this.selectedHeroId = getNextHeroId(this.selectedHeroId, -1);
+          setSelectedHeroPreference(this.selectedHeroId);
+          heroValue.text = this.formatHeroSelection(this.selectedHeroId);
+        }
+      },
+      {
+        ...heroNext,
+        onPress: () => {
+          this.selectedHeroId = getNextHeroId(this.selectedHeroId, 1);
+          setSelectedHeroPreference(this.selectedHeroId);
+          heroValue.text = this.formatHeroSelection(this.selectedHeroId);
+        }
+      },
       {
         ...minDecrease,
         onPress: () => {
@@ -167,6 +205,13 @@ export class SettingsScene extends Scene {
         ...maxDecrease,
         onPress: () => {
           gameSettings.cameraZoomMax = clamp(gameSettings.cameraZoomMax - 0.1, gameSettings.cameraZoomMin + 0.1, 5);
+          maxValue.text = gameSettings.cameraZoomMax.toFixed(2);
+        }
+      },
+      {
+        ...maxIncrease,
+        onPress: () => {
+          gameSettings.cameraZoomMax = clamp(gameSettings.cameraZoomMax + 0.1, gameSettings.cameraZoomMin + 0.1, 5);
           maxValue.text = gameSettings.cameraZoomMax.toFixed(2);
         }
       },
@@ -191,13 +236,6 @@ export class SettingsScene extends Scene {
         }
       },
       {
-        ...maxIncrease,
-        onPress: () => {
-          gameSettings.cameraZoomMax = clamp(gameSettings.cameraZoomMax + 0.1, gameSettings.cameraZoomMin + 0.1, 5);
-          maxValue.text = gameSettings.cameraZoomMax.toFixed(2);
-        }
-      },
-      {
         ...backButton,
         onPress: () => {
           this.controller.showMenu();
@@ -208,6 +246,8 @@ export class SettingsScene extends Scene {
     this.add(panel);
     this.add(title);
     this.add(subtitle);
+    this.add(heroLabel);
+    this.add(heroValue);
     this.add(minLabel);
     this.add(maxLabel);
     this.add(debugLabel);
@@ -215,6 +255,11 @@ export class SettingsScene extends Scene {
     this.add(minValue);
     this.add(maxValue);
     this.add(tileVersionValue);
+
+    this.add(heroPrevious.button);
+    this.add(heroPrevious.label);
+    this.add(heroNext.button);
+    this.add(heroNext.label);
 
     for (const control of this.controls) {
       this.add(control.button);
@@ -252,5 +297,10 @@ export class SettingsScene extends Scene {
     });
 
     return { button: template.button, label: template.label };
+  }
+
+  private formatHeroSelection(heroId: HeroId): string {
+    const hero = heroRoster.find((entry) => entry.id === heroId) ?? heroRoster[0];
+    return `${hero.name}\n${hero.abilities.join(" • ")}`;
   }
 }

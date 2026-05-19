@@ -1,7 +1,12 @@
 import { Actor, Circle, Color, CoordPlane, Font, FontUnit, Label, PointerButton, PointerType, Rectangle, Scene, TextAlign, type Graphic, type PointerEvent, type Vector, vec } from "excalibur";
-import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, gameSettings } from "../config";
+import { CHAR_SIZE, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE, gameSettings, getCombatSeed } from "../config";
 import type { GameSprites, TrailTileOrientation, TrailTileWalls } from "../game-assets";
 import type { GameController } from "../game-controller";
+import { getHeroById, getSelectedHero, type HeroDefinition, type HeroId } from "../hero-roster";
+import { resolveKarakCombat } from "../karak-combat";
+import { applyKarakMonsterDamage, reviveKarakHero } from "../karak-health-flow";
+import { SeededRandom } from "../seeded-rng";
+import { monsterTable } from "../game-data";
 import { BoxActor } from "../actors/box-actor";
 import { TileValidationStateMachine } from "../tile-validation-state-machine";
 import { TileTapFlowStateMachine } from "../tile-tap-flow-state-machine";
@@ -108,7 +113,7 @@ interface DebugOverlayControl {
 }
 
 interface DemoSavedStateV2 {
-  version: 2;
+  version: 2 | 3;
   player: {
     x: number;
     y: number;
@@ -116,6 +121,11 @@ interface DemoSavedStateV2 {
     selected: boolean;
   };
   playerHealth?: number;
+  heroId?: HeroId;
+  turnCounter?: number;
+  combatRollCount?: number;
+  isUnconscious?: boolean;
+  revivePending?: boolean;
   camera: {
     x: number;
     y: number;
@@ -186,7 +196,7 @@ function isDemoSavedState(value: unknown): value is DemoSavedStateV2 {
   const camera = snapshot.camera;
   const nextTrailTileIndex = snapshot.nextTrailTileIndex;
 
-  return snapshot.version === 2
+  return (snapshot.version === 2 || snapshot.version === 3)
     && player !== null
     && player !== undefined
     && typeof player === "object"
@@ -204,6 +214,11 @@ function isDemoSavedState(value: unknown): value is DemoSavedStateV2 {
     && nextTrailTileIndex !== undefined
     && Number.isInteger(nextTrailTileIndex)
     && nextTrailTileIndex >= 0
+    && (snapshot.turnCounter === undefined || Number.isInteger(snapshot.turnCounter) && snapshot.turnCounter >= 0)
+    && (snapshot.combatRollCount === undefined || Number.isInteger(snapshot.combatRollCount) && snapshot.combatRollCount >= 0)
+    && (snapshot.isUnconscious === undefined || typeof snapshot.isUnconscious === "boolean")
+    && (snapshot.revivePending === undefined || typeof snapshot.revivePending === "boolean")
+    && (snapshot.heroId === undefined || typeof snapshot.heroId === "string")
     && Array.isArray(snapshot.trailTiles)
     && snapshot.trailTiles.every((tile) => isDemoSavedTrailTile(tile))
     && Array.isArray(snapshot.monsters)
@@ -215,6 +230,8 @@ function isDemoSavedState(value: unknown): value is DemoSavedStateV2 {
 export class DemoScene extends Scene {
   private readonly controller: GameController;
   private readonly sprites: GameSprites;
+  private selectedHero: HeroDefinition = getSelectedHero();
+  private combatRandom = new SeededRandom(`${getCombatSeed()}::${this.selectedHero.id}`);
   private readonly playerSize = CHAR_SIZE;
   private readonly player = new BoxActor({
     pos: vec(snapToTileCenter(GAME_WIDTH / 2), snapToTileCenter(GAME_HEIGHT / 2)),
@@ -258,6 +275,10 @@ export class DemoScene extends Scene {
   private readonly maxPlayerHealth = 5;
   private playerHealth = this.maxPlayerHealth;
   private gameOver = false;
+  private isUnconscious = false;
+  private revivePending = false;
+  private turnCounter = 0;
+  private combatRollCount = 0;
   private readonly heartControls: HeartControl[] = [];
   private moveTargetPosition: Vector | null = null;
   private pendingTrailTilePosition: Vector | null = null;
@@ -603,6 +624,7 @@ export class DemoScene extends Scene {
   override onActivate(): void {
     (globalThis as typeof globalThis & { __activeSceneName?: string }).__activeSceneName = "demo";
     this.initializeTouchGestureTracking();
+    this.syncSelectedHeroFromSettings();
 
     const pendingDemoState = this.controller.consumePendingDemoState();
 
@@ -668,6 +690,11 @@ export class DemoScene extends Scene {
     this.blockedTurnStartRotation = 0;
     this.blockedTurnTargetRotation = 0;
     this.nextTrailTileIndex = 0;
+    this.isUnconscious = false;
+    this.revivePending = false;
+    this.turnCounter = 0;
+    this.combatRollCount = 0;
+    this.syncSelectedHeroFromSettings();
 
     this.player.pos = vec(snapToTileCenter(GAME_WIDTH / 2), snapToTileCenter(GAME_HEIGHT / 2));
     this.player.rotation = 0;
@@ -733,6 +760,10 @@ export class DemoScene extends Scene {
     this.blockedTurnTargetRotation = 0;
     this.nextTrailTileIndex = 0;
     this.gameOver = false;
+    this.isUnconscious = false;
+    this.revivePending = false;
+    this.turnCounter = 0;
+    this.combatRollCount = 0;
   }
 
   private createHeartHud(): void {
@@ -803,12 +834,12 @@ export class DemoScene extends Scene {
   }
 
   private updateTopBarButtonState(): void {
-    const canContinue = this.gameOver && gameSettings.debugInfoEnabled;
+    const canContinue = this.isUnconscious && gameSettings.debugInfoEnabled;
 
     this.menuButton.button.color = Color.fromHex("#4c3220");
     this.menuButton.label.color = Color.fromHex("#f3e7d8");
 
-    this.inventoryButton.label.text = canContinue ? "Cont." : "Inv";
+    this.inventoryButton.label.text = canContinue ? "Revive" : "Inv";
     this.inventoryButton.button.color = canContinue ? Color.fromHex("#7cf7a3") : Color.fromHex("#2c1d14");
     this.inventoryButton.label.color = canContinue ? Color.fromHex("#08121c") : Color.fromHex("#f3e7d8");
     this.inventoryButton.button.graphics.opacity = canContinue ? 1 : 0.92;
@@ -859,7 +890,7 @@ export class DemoScene extends Scene {
     }
 
     const snapshot: DemoSavedStateV2 = {
-      version: 2,
+      version: 3,
       player: {
         x: this.player.pos.x,
         y: this.player.pos.y,
@@ -867,6 +898,11 @@ export class DemoScene extends Scene {
         selected: this.player.isSelected
       },
       playerHealth: this.playerHealth,
+      heroId: this.selectedHero.id,
+      turnCounter: this.turnCounter,
+      combatRollCount: this.combatRollCount,
+      isUnconscious: this.isUnconscious,
+      revivePending: this.revivePending,
       camera: {
         x: this.camera.pos.x,
         y: this.camera.pos.y,
@@ -899,6 +935,12 @@ export class DemoScene extends Scene {
     this.clearDynamicSceneState();
 
     this.nextTrailTileIndex = snapshot.nextTrailTileIndex;
+    this.turnCounter = snapshot.turnCounter ?? 0;
+    this.combatRollCount = snapshot.combatRollCount ?? 0;
+    this.isUnconscious = snapshot.isUnconscious ?? false;
+    this.revivePending = snapshot.revivePending ?? false;
+    this.selectedHero = getHeroById(snapshot.heroId);
+    this.resetCombatRandom();
 
     for (const tile of snapshot.trailTiles) {
       const trailVariant = this.sprites.trailTiles.find((variant) => variant.assetName === tile.assetName);
@@ -955,7 +997,7 @@ export class DemoScene extends Scene {
     this.player.setFacingOrientation(this.getFacingOrientationFromRotation(snapshot.player.rotation));
     this.player.clearTargetPosition();
     this.playerHealth = clamp(snapshot.playerHealth ?? this.maxPlayerHealth, 0, this.maxPlayerHealth);
-    this.gameOver = this.playerHealth <= 0;
+    this.gameOver = false;
 
     if (snapshot.player.selected) {
       this.player.select();
@@ -979,6 +1021,61 @@ export class DemoScene extends Scene {
     this.performGameReset();
     this.controller.clearDemoState();
     this.controller.saveDemoState();
+  }
+
+  private syncSelectedHeroFromSettings(): void {
+    const currentHero = getSelectedHero();
+
+    if (currentHero.id === this.selectedHero.id) {
+      return;
+    }
+
+    this.selectedHero = currentHero;
+    this.resetCombatRandom();
+    this.updateDebugInfoLabel();
+  }
+
+  private resetCombatRandom(): void {
+    this.combatRandom = new SeededRandom(`${getCombatSeed()}::${this.selectedHero.id}`);
+    this.combatRandom.skip(this.combatRollCount);
+  }
+
+  private reviveHero(): void {
+    const nextHealthState = reviveKarakHero({
+      health: this.playerHealth,
+      isUnconscious: this.isUnconscious,
+      revivePending: this.revivePending
+    });
+
+    if (nextHealthState.health === this.playerHealth && nextHealthState.isUnconscious === this.isUnconscious && nextHealthState.revivePending === this.revivePending) {
+      return;
+    }
+
+    this.playerHealth = nextHealthState.health;
+    this.isUnconscious = nextHealthState.isUnconscious;
+    this.revivePending = nextHealthState.revivePending;
+    this.updateHeartDisplay();
+    this.scoreLabel.text = "Revived to 1 life.";
+    this.messageLabel.text = "The next turn can begin.";
+    this.controller.saveDemoState();
+  }
+
+  private rollCombatDie(): number {
+    this.combatRollCount += 1;
+    return this.combatRandom.rollDie();
+  }
+
+  private rollCombatDice(count: number = 2): number[] {
+    return Array.from({ length: count }, () => this.rollCombatDie());
+  }
+
+  private getMonsterCombatStrength(monsterIndex: number): number {
+    return monsterTable[monsterIndex]?.hp ?? monsterIndex + 1;
+  }
+
+  private resolveHeroCombat(monsterIndex: number): { rolls: number[]; heroTotal: number; monsterTotal: number; victory: boolean; tie: boolean } {
+    const monsterTotal = this.getMonsterCombatStrength(monsterIndex);
+    return resolveKarakCombat(this.selectedHero, monsterTotal, this.combatRandom, this.turnCounter);
   }
 
   override onInitialize(): void {
@@ -1402,14 +1499,10 @@ export class DemoScene extends Scene {
 
   private handleInventoryButtonPress(screenPos: Vector): boolean {
     if (this.isPointInsideButton(screenPos, this.inventoryButton)) {
-      this.logPointerClick(this.gameOver && gameSettings.debugInfoEnabled ? "continue" : "inventory", screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
-      if (this.gameOver && gameSettings.debugInfoEnabled) {
-        this.playerHealth = this.maxPlayerHealth;
-        this.gameOver = false;
-        this.updateHeartDisplay();
-        this.scoreLabel.text = "All lives restored.";
-        this.messageLabel.text = "Continue from the last game state.";
-        this.controller.saveDemoState();
+      this.logPointerClick(this.isUnconscious && gameSettings.debugInfoEnabled ? "revive" : "inventory", screenPos, this.engine.screen.screenToWorldCoordinates(screenPos));
+
+      if (this.isUnconscious || this.revivePending) {
+        this.reviveHero();
         return true;
       }
 
@@ -1658,6 +1751,7 @@ export class DemoScene extends Scene {
   }
 
   private beginTileDiscovery(targetPosition: Vector): void {
+    this.beginTurnIfNeeded();
     const startPosition = vec(this.player.pos.x, this.player.pos.y);
     const pausePosition = this.computeBorderPosition(startPosition, targetPosition);
 
@@ -1791,6 +1885,7 @@ export class DemoScene extends Scene {
       this.scoreLabel.text = "Back at the start position.";
     }
 
+    this.finishTurn();
     this.controller.saveDemoState();
 
     this.refreshButtonStyles();
@@ -1817,6 +1912,7 @@ export class DemoScene extends Scene {
       this.setTileActionMode("hidden");
     }
 
+    this.finishTurn();
     this.controller.saveDemoState();
     this.refreshButtonStyles();
   }
@@ -1975,6 +2071,7 @@ export class DemoScene extends Scene {
     this.clearPreviewTrailTile();
     this.scoreLabel.text = "Movement blocked by walls.";
     this.messageLabel.text = "The box turned back and returned to the start.";
+    this.finishTurn();
     this.controller.saveDemoState();
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
@@ -2173,6 +2270,7 @@ export class DemoScene extends Scene {
 
   private isMovementInputLocked(): boolean {
     return this.gameOver
+      || this.isUnconscious
       || this.movementPhase === "movingToBorder"
       || this.movementPhase === "movingToTarget"
       || this.movementPhase === "attackingMonster"
@@ -2196,7 +2294,22 @@ export class DemoScene extends Scene {
     const characterY = Math.round(this.player.pos.y);
     const zoom = this.camera.zoom.toFixed(2);
     const winner = this.lastMonsterEncounterWinner === null ? "none" : this.lastMonsterEncounterWinner;
-    this.debugInfoLabel.text = `M[${cameraX},${cameraY}]\nCh[${characterX},${characterY}]\nZ[${zoom}]\nFight[${winner}]`;
+    this.debugInfoLabel.text = `M[${cameraX},${cameraY}]\nCh[${characterX},${characterY}]\nZ[${zoom}]\nHero[${this.selectedHero.name}]\nTurn[${this.turnCounter}]\nFight[${winner}]`;
+  }
+
+  private beginTurnIfNeeded(): void {
+    if (!this.revivePending) {
+      return;
+    }
+
+    this.revivePending = false;
+    this.isUnconscious = false;
+    this.playerHealth = Math.max(1, this.playerHealth);
+    this.updateHeartDisplay();
+  }
+
+  private finishTurn(): void {
+    this.turnCounter += 1;
   }
 
   private showTrailTile(position: Vector, orientation: TrailTileOrientation): void {
@@ -2293,6 +2406,7 @@ export class DemoScene extends Scene {
     this.player.clearTargetPosition();
     this.moveTargetPosition = targetPosition;
     this.movementPhase = "attackingMonster";
+    this.beginTurnIfNeeded();
     this.scoreLabel.text = "Monster encounter started.";
     this.messageLabel.text = "The box attacks immediately.";
   }
@@ -2305,13 +2419,15 @@ export class DemoScene extends Scene {
       return;
     }
 
-    if (this.isPlayerVictoriousAgainstMonster(monster.monsterIndex)) {
+    const combatResult = this.resolveHeroCombat(monster.monsterIndex);
+
+    if (combatResult.victory) {
       const monsterPosition = vec(monster.actor.pos.x, monster.actor.pos.y);
       this.removeChamberMonster(monster);
       this.spawnTreasureDrop(monsterPosition, monster.monsterIndex);
       this.activeMonsterEncounter = null;
       this.lastMonsterEncounterWinner = "char";
-      this.messageLabel.text = "The monster is defeated. The box keeps moving forward.";
+      this.messageLabel.text = `Victory with ${combatResult.rolls.join(" + ")} = ${combatResult.heroTotal} against ${combatResult.monsterTotal}.`;
       this.scoreLabel.text = "Monster defeated.";
       this.player.setTargetPosition(this.moveTargetPosition ?? this.player.pos);
       this.movementPhase = "movingToTarget";
@@ -2319,10 +2435,13 @@ export class DemoScene extends Scene {
     }
 
     this.lastMonsterEncounterWinner = "monster";
-    this.messageLabel.text = "The monster wins. The box turns back.";
-    this.scoreLabel.text = "Monster won the encounter.";
+    this.messageLabel.text = `The monster wins: ${combatResult.heroTotal} against ${combatResult.monsterTotal}.`;
+    this.scoreLabel.text = combatResult.tie ? "Tie lost to monster." : "Monster won the encounter.";
     this.activeMonsterEncounter = null;
-    this.playerHealth = clamp(this.playerHealth - 1, 0, this.maxPlayerHealth);
+    const nextHealthState = applyKarakMonsterDamage(this.playerHealth, this.maxPlayerHealth);
+    this.playerHealth = nextHealthState.health;
+    this.isUnconscious = nextHealthState.isUnconscious;
+    this.revivePending = nextHealthState.revivePending;
     this.updateHeartDisplay();
     if (this.movementPausePosition) {
       this.player.pos = vec(this.movementPausePosition.x, this.movementPausePosition.y);
@@ -2364,16 +2483,19 @@ export class DemoScene extends Scene {
     this.previewCommitElapsed = 0;
     this.movementPhase = "idle";
     if (this.playerHealth <= 0) {
-      this.gameOver = true;
-      this.scoreLabel.text = "No lives left.";
+      this.isUnconscious = true;
+      this.revivePending = true;
+      this.gameOver = false;
+      this.scoreLabel.text = "Unconscious until the next turn.";
       this.messageLabel.text = gameSettings.debugInfoEnabled
-        ? "Game over. Use Continue to restore all lives."
-        : "Game over. Return to the menu.";
+        ? "The hero is unconscious. Use Revive to continue on the next turn."
+        : "The hero is unconscious.";
     } else {
       this.scoreLabel.text = "The box returned to the start tile.";
       this.messageLabel.text = "The chamber monster pushed it back.";
     }
     this.updateHeartDisplay();
+    this.finishTurn();
     this.controller.saveDemoState();
   }
 
@@ -2410,7 +2532,7 @@ export class DemoScene extends Scene {
   }
 
   private isPlayerVictoriousAgainstMonster(monsterIndex: number): boolean {
-    return monsterIndex % 2 === 0;
+    return this.resolveHeroCombat(monsterIndex).victory;
   }
 
   private syncChamberMonsterVisualMode(): void {

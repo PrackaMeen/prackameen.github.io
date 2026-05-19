@@ -55,6 +55,36 @@ export function setTrailTileVersionPreference(version: TrailTileVersion): void {
 	globalThis.localStorage?.setItem(trailTileVersionStorageKey, version);
 }
 
+const combatSeedStorageKey = "combatSeed";
+
+export function getCombatSeed(): string {
+	if (typeof window === "undefined") {
+		return "karak-combat-default";
+	}
+
+	const searchParams = new URLSearchParams(window.location.search);
+	const requestedSeed = searchParams.get("seed") ?? searchParams.get("combatSeed");
+
+	if (requestedSeed) {
+		setCombatSeedPreference(requestedSeed);
+		return requestedSeed;
+	}
+
+	const storedSeed = globalThis.localStorage?.getItem(combatSeedStorageKey);
+
+	if (storedSeed) {
+		return storedSeed;
+	}
+
+	const generatedSeed = `karak-${Math.random().toString(36).slice(2, 10)}`;
+	setCombatSeedPreference(generatedSeed);
+	return generatedSeed;
+}
+
+export function setCombatSeedPreference(seed: string): void {
+	globalThis.localStorage?.setItem(combatSeedStorageKey, seed);
+}
+
 export const USED_TRAIL_TILE_ASSET_NAMES = [
 	"road0",
 	"road1",
