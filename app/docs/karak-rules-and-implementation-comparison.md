@@ -76,39 +76,70 @@ Source: https://www.zatrolene-hry.cz/spolecenska-hra/karak-7162/
 ### What is already implemented in the app
 
 - A separate demo scene exists in [app/src/scenes/game-scene.ts](../src/scenes/game-scene.ts).
+- The app now has a temporary Karak hero roster with selectable heroes and hero-specific combat traits.
+- The app now has a pure seeded combat resolver with hero bonuses and hero-specific rerolls.
+- The app now has a pure 4-step turn budget helper, and the scene consumes one step per completed movement.
 - The app already supports a 5-life health HUD and life loss / restore state in that scene.
+- The app now has a pure Karak health flow helper for monster damage, unconscious state, revive, and fountain healing.
 - The app already supports dungeon-tile placement, tile orientation, direct movement validation, and adjacent-tile discovery flow.
 - The app already has chamber monster encounters and a treasure-drop state machine.
+- The app now has a pure Karak inventory-capacity helper, and treasure pickup can store items until the inventory is full.
+- The app now has a pure scoring helper for treasure-chest points and the dragon ruby value.
 - The app already has an inventory scene and a controller that can move between demo, inventory, menu, and settings scenes.
 - The app already persists demo state with local storage.
 
 ### Main gaps versus Karak
 
-- There is no hero selection system with five Karak heroes and their special abilities.
-- There is no 4-step turn system; the current scene is a demo/navigation flow rather than a full round-based board-game turn engine.
-- There is no complete room token system matching Karak's monster, treasure, key, spell, and chest progression.
-- There is no dragon endgame or victory-point scoring loop.
-- There is no implemented portal, fountain-healing, curse, or unconscious-state rule set matching the Karak description.
-- The combat flow in the current app is a debug/demo encounter system, not the full Karak dice-combat rules.
-- The current app is centered on a single controllable player box rather than a full multiplayer hero board-game model.
+- The scene still follows the demo-style movement flow, with a real step budget layered on top.
+- The movement loop still needs to become a proper Karak exploration loop instead of a debug/navigation flow.
+- There is still no complete room-token system matching Karak's monster, treasure, key, spell, and chest progression.
+- There is still no portal activation rule, cursed-coin rule, or full chest/key progression.
+- There is still no dragon endgame or victory-point resolution loop.
+- The current app is still centered on a single controllable player box rather than a full multiplayer hero board-game model.
 
 ### Practical takeaway
 
-- The current GAME implementation contains reusable building blocks for map discovery, orientation validation, inventory navigation, health display, and encounter state.
-- It does not yet implement Karak as a complete ruleset; it only covers a small subset of the movement and encounter surface.
-- If the goal is to build Karak faithfully, the next step should be a dedicated game model for heroes, turns, encounters, inventory items, and scoring rather than extending the demo scene directly.
+- The current GAME implementation now covers a useful slice of Karak rules in isolated helpers, but not the full play loop.
+- The next work should keep the helper-first approach, then wire those helpers into the scene one rule boundary at a time.
+- The safest integration path is movement rewrite first, then room tokens, then chest/key and portal logic, then endgame scoring.
+
+## Progress Plan
+
+### Done
+
+- [x] Temporary hero roster with selectable Karak heroes.
+- [x] Seeded combat helper with hero-specific bonuses.
+- [x] Turn-step helper with 4-step budget tracking.
+- [x] Health flow helper with unconscious, revive, and fountain healing.
+- [x] Inventory-capacity helper for treasure pickup.
+- [x] Scoring helper for treasure chests and the dragon ruby.
+
+### In progress
+
+- [ ] Replace demo-style movement with a Karak movement loop that consumes the turn-step budget.
+- [ ] Turn discovered rooms into token-driven outcomes instead of demo encounters.
+- [ ] Wire end-of-turn rules into the movement loop consistently, including fountain healing and revive timing.
+
+### Still missing
+
+- [ ] Dungeon tile draw and attachment logic that grows the map during exploration.
+- [ ] Room token system for monsters, treasure, keys, spells, portals, chests, and curses.
+- [ ] Portal activation after both portal tiles are discovered.
+- [ ] Chest/key progression and treasure collection rules.
+- [ ] Dragon endgame trigger and treasure-based scoring.
+- [ ] Multiplayer hero board-game model rather than a single demo player box.
 
 ## Implementation gap checklist
 
 ### Must-have for a faithful Karak implementation
 
-- [ ] Hero roster with five selectable heroes and two abilities each.
-- [ ] Turn-based engine with exactly 4 movement steps per turn.
-- [ ] Dungeon tile draw and attachment logic that grows the map during exploration.
+- [x] Hero roster with five selectable heroes and two abilities each. (Temporary selector is in place.)
+- [~] Turn-based engine with exactly 4 movement steps per turn. (Helper exists; scene rewrite is still partial.)
+- [~] Dungeon tile draw and attachment logic that grows the map during exploration. (Tile placement exists, but not the full Karak expansion loop.)
 - [ ] Room token system for monsters, treasure, keys, spells, portals, chests, and curses.
-- [ ] Dice combat resolution with hero bonuses, monster values, tie handling, and loss handling.
-- [ ] Inventory rules for equipment, spells, keys, and dropping items when full.
-- [ ] Healing fountain logic, unconscious state, and revive behavior.
+- [~] Dice combat resolution with hero bonuses, monster values, tie handling, and loss handling. (Core combat helper exists; full rule flow is not yet wired everywhere.)
+- [~] Inventory rules for equipment, spells, keys, and dropping items when full. (Capacity and treasure pickup are wired; full item model is still missing.)
+- [~] Healing fountain logic, unconscious state, and revive behavior. (Helper and end-of-turn fountain hook exist; full turn lifecycle still needs polish.)
 - [ ] Portal activation after both portal tiles are discovered.
 - [ ] Chest/key progression and treasure collection rules.
 - [ ] Dragon endgame trigger and treasure-based scoring.
@@ -124,6 +155,8 @@ Source: https://www.zatrolene-hry.cz/spolecenska-hra/karak-7162/
 
 ### Recommended next implementation layer
 
-- [ ] Introduce a Karak-specific domain model for heroes, turns, items, and scoring.
-- [ ] Move rules out of the demo scene and into a dedicated game engine/state layer.
-- [ ] Add tests for hero abilities, combat outcomes, and endgame scoring.
+- [ ] Finish the Karak movement rewrite so one turn = four actual exploration steps.
+- [ ] Add a room-token helper for monster, treasure, key, spell, portal, and chest outcomes.
+- [ ] Introduce a Karak-specific domain model for inventory items, portals, and scoring.
+- [ ] Move the remaining rules out of the demo scene and into a dedicated game engine/state layer.
+- [ ] Add tests for room tokens, portal activation, chest/key progression, and endgame scoring.
