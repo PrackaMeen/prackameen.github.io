@@ -9,8 +9,8 @@ export interface KarakCombatResolution {
 	tie: boolean;
 }
 
-export function resolveKarakCombat(hero: HeroDefinition, monsterTotal: number, rng: SeededRandom, turnCounter: number): KarakCombatResolution {
-	const heroBonus = hero.attackBonus + (hero.id === "seer" && turnCounter === 0 ? 1 : 0);
+export function resolveKarakCombat(hero: HeroDefinition, monsterTotal: number, rng: SeededRandom, isFirstStepOfTurn: boolean): KarakCombatResolution {
+	const heroBonus = hero.attackBonus + (hero.id === "seer" && isFirstStepOfTurn ? 1 : 0);
 	let rolls = [rng.rollDie(), rng.rollDie()];
 
 	if (hero.rerollOnOnes && rolls.some((roll) => roll === 1)) {

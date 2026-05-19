@@ -4,7 +4,9 @@ import type { GameSprites, TrailTileOrientation, TrailTileWalls } from "../game-
 import type { GameController } from "../game-controller";
 import { getHeroById, getSelectedHero, type HeroDefinition, type HeroId } from "../hero-roster";
 import { resolveKarakCombat } from "../karak-combat";
-import { applyKarakMonsterDamage, reviveKarakHero } from "../karak-health-flow";
+import { applyKarakFountainHeal, applyKarakMonsterDamage, reviveKarakHero } from "../karak-health-flow";
+import { resolveKarakInventoryAdd } from "../karak-inventory";
+import { consumeKarakTurnStep, createKarakTurnStepState, type KarakTurnStepState } from "../karak-turn-step";
 import { SeededRandom } from "../seeded-rng";
 import { monsterTable } from "../game-data";
 import { BoxActor } from "../actors/box-actor";
@@ -126,6 +128,9 @@ interface DemoSavedStateV2 {
   combatRollCount?: number;
   isUnconscious?: boolean;
   revivePending?: boolean;
+  turnStepsRemaining?: number;
+  turnStepsPerTurn?: number;
+  inventoryItems?: string[];
   camera: {
     x: number;
     y: number;
@@ -218,6 +223,8 @@ function isDemoSavedState(value: unknown): value is DemoSavedStateV2 {
     && (snapshot.combatRollCount === undefined || Number.isInteger(snapshot.combatRollCount) && snapshot.combatRollCount >= 0)
     && (snapshot.isUnconscious === undefined || typeof snapshot.isUnconscious === "boolean")
     && (snapshot.revivePending === undefined || typeof snapshot.revivePending === "boolean")
+    && (snapshot.turnStepsRemaining === undefined || Number.isInteger(snapshot.turnStepsRemaining) && snapshot.turnStepsRemaining >= 0)
+    && (snapshot.turnStepsPerTurn === undefined || Number.isInteger(snapshot.turnStepsPerTurn) && snapshot.turnStepsPerTurn > 0)
     && (snapshot.heroId === undefined || typeof snapshot.heroId === "string")
     && Array.isArray(snapshot.trailTiles)
     && snapshot.trailTiles.every((tile) => isDemoSavedTrailTile(tile))
@@ -278,6 +285,7 @@ export class DemoScene extends Scene {
   private isUnconscious = false;
   private revivePending = false;
   private turnCounter = 0;
+  private turnStepState: KarakTurnStepState = createKarakTurnStepState(this.turnCounter);
   private combatRollCount = 0;
   private readonly heartControls: HeartControl[] = [];
   private moveTargetPosition: Vector | null = null;
@@ -312,6 +320,7 @@ export class DemoScene extends Scene {
   private readonly menuButton: SimpleButtonControl;
   private readonly inventoryButton: SimpleButtonControl;
   private readonly tileTapFlowStateMachine = new TileTapFlowStateMachine();
+  private inventoryItems: string[] = [];
   private readonly topBar: Actor;
   private readonly bottomBar: Actor;
   private readonly tapTraceLabel: Label;
@@ -693,6 +702,7 @@ export class DemoScene extends Scene {
     this.isUnconscious = false;
     this.revivePending = false;
     this.turnCounter = 0;
+    this.turnStepState = createKarakTurnStepState(this.turnCounter);
     this.combatRollCount = 0;
     this.syncSelectedHeroFromSettings();
 
@@ -763,6 +773,7 @@ export class DemoScene extends Scene {
     this.isUnconscious = false;
     this.revivePending = false;
     this.turnCounter = 0;
+    this.turnStepState = createKarakTurnStepState(this.turnCounter);
     this.combatRollCount = 0;
   }
 
@@ -839,7 +850,7 @@ export class DemoScene extends Scene {
     this.menuButton.button.color = Color.fromHex("#4c3220");
     this.menuButton.label.color = Color.fromHex("#f3e7d8");
 
-    this.inventoryButton.label.text = canContinue ? "Revive" : "Inv";
+    this.updateInventoryButtonLabel();
     this.inventoryButton.button.color = canContinue ? Color.fromHex("#7cf7a3") : Color.fromHex("#2c1d14");
     this.inventoryButton.label.color = canContinue ? Color.fromHex("#08121c") : Color.fromHex("#f3e7d8");
     this.inventoryButton.button.graphics.opacity = canContinue ? 1 : 0.92;
@@ -903,6 +914,9 @@ export class DemoScene extends Scene {
       combatRollCount: this.combatRollCount,
       isUnconscious: this.isUnconscious,
       revivePending: this.revivePending,
+      turnStepsRemaining: this.turnStepState.stepsRemaining,
+      turnStepsPerTurn: this.turnStepState.stepsPerTurn,
+      inventoryItems: [...this.inventoryItems],
       camera: {
         x: this.camera.pos.x,
         y: this.camera.pos.y,
@@ -939,6 +953,9 @@ export class DemoScene extends Scene {
     this.combatRollCount = snapshot.combatRollCount ?? 0;
     this.isUnconscious = snapshot.isUnconscious ?? false;
     this.revivePending = snapshot.revivePending ?? false;
+    this.turnStepState = createKarakTurnStepState(this.turnCounter, snapshot.turnStepsPerTurn ?? 4);
+    this.turnStepState.stepsRemaining = Math.min(this.turnStepState.stepsPerTurn, Math.max(0, snapshot.turnStepsRemaining ?? this.turnStepState.stepsPerTurn));
+    this.inventoryItems = [...(snapshot.inventoryItems ?? [])];
     this.selectedHero = getHeroById(snapshot.heroId);
     this.resetCombatRandom();
 
@@ -1075,7 +1092,12 @@ export class DemoScene extends Scene {
 
   private resolveHeroCombat(monsterIndex: number): { rolls: number[]; heroTotal: number; monsterTotal: number; victory: boolean; tie: boolean } {
     const monsterTotal = this.getMonsterCombatStrength(monsterIndex);
-    return resolveKarakCombat(this.selectedHero, monsterTotal, this.combatRandom, this.turnCounter);
+    return resolveKarakCombat(
+      this.selectedHero,
+      monsterTotal,
+      this.combatRandom,
+      this.turnStepState.stepsRemaining === this.turnStepState.stepsPerTurn
+    );
   }
 
   override onInitialize(): void {
@@ -1091,6 +1113,7 @@ export class DemoScene extends Scene {
     this.add(this.tapTraceLabel);
     this.add(this.inventoryButton.button);
     this.add(this.inventoryButton.label);
+    this.updateInventoryButtonLabel();
 
     const buttonWidth = clamp(GAME_WIDTH * 0.12, 72, 110);
     const buttonHeight = clamp(GAME_HEIGHT * 0.055, 40, 54);
@@ -1522,7 +1545,8 @@ export class DemoScene extends Scene {
     ].filter((hit): hit is string => hit !== null);
 
     const hitText = hits.length > 0 ? hits.join(",") : "none";
-    this.tapTraceLabel.text = `Tap trace: s(${Math.round(screenPos.x)},${Math.round(screenPos.y)}) w(${Math.round(worldPos.x)},${Math.round(worldPos.y)}) -> ${hitText}`;
+    const movementsUsed = this.turnStepState.stepsPerTurn - this.turnStepState.stepsRemaining;
+    this.tapTraceLabel.text = `Tap trace: t(${movementsUsed}/${this.turnStepState.stepsPerTurn}) s(${Math.round(screenPos.x)},${Math.round(screenPos.y)}) w(${Math.round(worldPos.x)},${Math.round(worldPos.y)}) -> ${hitText}`;
   }
 
   private logPointerClick(componentName: string, screenPos: Vector, worldPos: Vector): void {
@@ -1636,14 +1660,25 @@ export class DemoScene extends Scene {
     }
 
     const treasureDrop = this.pendingTreasureDrop;
+    const inventoryResult = resolveKarakInventoryAdd(this.inventoryItems, treasureDrop.treasureKey, 6);
+
     this.pendingTreasureDrop = null;
-    this.treasureDrops.delete(treasureDrop.tilePositionKey);
-    treasureDrop.actor.kill();
     this.setTileActionMode("hidden");
-    this.messageLabel.text = "Treasure collected.";
-    this.scoreLabel.text = "The treasure disappears from the tile.";
+
+    if (inventoryResult.stored) {
+      this.inventoryItems = inventoryResult.items;
+      this.treasureDrops.delete(treasureDrop.tilePositionKey);
+      treasureDrop.actor.kill();
+      this.messageLabel.text = "Treasure collected.";
+      this.scoreLabel.text = `Inventory: ${this.inventoryItems.length}/6.`;
+    } else {
+      this.messageLabel.text = "Inventory full. Treasure stays on the tile.";
+      this.scoreLabel.text = "Leave something behind, then try again.";
+    }
+
     this.controller.saveDemoState();
     this.refreshButtonStyles();
+    this.updateInventoryButtonLabel();
   }
 
   private leaveTreasureDrop(): void {
@@ -1657,6 +1692,7 @@ export class DemoScene extends Scene {
     this.scoreLabel.text = "The treasure stays on the tile.";
     this.controller.saveDemoState();
     this.refreshButtonStyles();
+    this.updateInventoryButtonLabel();
   }
 
   private primeTouchCameraDrag(screenPos: Vector): void {
@@ -1885,7 +1921,12 @@ export class DemoScene extends Scene {
       this.scoreLabel.text = "Back at the start position.";
     }
 
-    this.finishTurn();
+    const turnEnded = this.finishTurn();
+
+    if (turnEnded) {
+      this.applyEndOfTurnHealing();
+    }
+
     this.controller.saveDemoState();
 
     this.refreshButtonStyles();
@@ -1912,7 +1953,12 @@ export class DemoScene extends Scene {
       this.setTileActionMode("hidden");
     }
 
-    this.finishTurn();
+    const turnEnded = this.finishTurn();
+
+    if (turnEnded) {
+      this.applyEndOfTurnHealing();
+    }
+
     this.controller.saveDemoState();
     this.refreshButtonStyles();
   }
@@ -2071,7 +2117,12 @@ export class DemoScene extends Scene {
     this.clearPreviewTrailTile();
     this.scoreLabel.text = "Movement blocked by walls.";
     this.messageLabel.text = "The box turned back and returned to the start.";
-    this.finishTurn();
+    const turnEnded = this.finishTurn();
+
+    if (turnEnded) {
+      this.applyEndOfTurnHealing();
+    }
+
     this.controller.saveDemoState();
     this.updateModeButtonStyles();
     this.updateTileActionButtonStyles();
@@ -2294,7 +2345,16 @@ export class DemoScene extends Scene {
     const characterY = Math.round(this.player.pos.y);
     const zoom = this.camera.zoom.toFixed(2);
     const winner = this.lastMonsterEncounterWinner === null ? "none" : this.lastMonsterEncounterWinner;
-    this.debugInfoLabel.text = `M[${cameraX},${cameraY}]\nCh[${characterX},${characterY}]\nZ[${zoom}]\nHero[${this.selectedHero.name}]\nTurn[${this.turnCounter}]\nFight[${winner}]`;
+    this.debugInfoLabel.text = `M[${cameraX},${cameraY}]\nCh[${characterX},${characterY}]\nZ[${zoom}]\nHero[${this.selectedHero.name}]\nTurn[${this.turnCounter}]\nStep[${this.turnStepState.stepsRemaining}/${this.turnStepState.stepsPerTurn}]\nFight[${winner}]`;
+  }
+
+  private updateInventoryButtonLabel(): void {
+    if (this.isUnconscious && gameSettings.debugInfoEnabled) {
+      this.inventoryButton.label.text = "Revive";
+      return;
+    }
+
+    this.inventoryButton.label.text = `Inv ${this.inventoryItems.length}/6`;
   }
 
   private beginTurnIfNeeded(): void {
@@ -2308,8 +2368,41 @@ export class DemoScene extends Scene {
     this.updateHeartDisplay();
   }
 
-  private finishTurn(): void {
-    this.turnCounter += 1;
+  private finishTurn(): boolean {
+    const nextTurnState = consumeKarakTurnStep(this.turnStepState);
+
+    this.turnStepState = nextTurnState.state;
+
+    if (nextTurnState.turnEnded) {
+      this.turnCounter = this.turnStepState.turnIndex;
+    }
+
+    return nextTurnState.turnEnded;
+  }
+
+  private applyEndOfTurnHealing(): void {
+    const currentTile = this.getPlacedTrailTile(this.player.pos);
+
+    if (currentTile?.assetName !== "fountain4") {
+      return;
+    }
+
+    const nextHealthState = applyKarakFountainHeal({
+      health: this.playerHealth,
+      isUnconscious: this.isUnconscious,
+      revivePending: this.revivePending
+    }, this.maxPlayerHealth);
+
+    if (nextHealthState.health === this.playerHealth && nextHealthState.isUnconscious === this.isUnconscious && nextHealthState.revivePending === this.revivePending) {
+      return;
+    }
+
+    this.playerHealth = nextHealthState.health;
+    this.isUnconscious = nextHealthState.isUnconscious;
+    this.revivePending = nextHealthState.revivePending;
+    this.updateHeartDisplay();
+    this.scoreLabel.text = "Healed at the fountain.";
+    this.messageLabel.text = "The hero returns to full health.";
   }
 
   private showTrailTile(position: Vector, orientation: TrailTileOrientation): void {

@@ -29,7 +29,7 @@ describe("karak combat", () => {
       heroId: "wizard",
       rolls: [2, 2],
       monsterTotal: 6,
-      turnCounter: 1,
+      isFirstStepOfTurn: false,
       expected: { heroTotal: 4, victory: false, tie: false, rolls: [2, 2] }
     },
     {
@@ -37,15 +37,23 @@ describe("karak combat", () => {
       heroId: "seer",
       rolls: [3, 3],
       monsterTotal: 7,
-      turnCounter: 0,
+      isFirstStepOfTurn: true,
       expected: { heroTotal: 8, victory: true, tie: false, rolls: [3, 3] }
+    },
+    {
+      name: "seer does not get the bonus after the first step",
+      heroId: "seer",
+      rolls: [3, 3],
+      monsterTotal: 7,
+      isFirstStepOfTurn: false,
+      expected: { heroTotal: 7, victory: false, tie: true, rolls: [3, 3] }
     },
     {
       name: "thief wins ties",
       heroId: "thief",
       rolls: [3, 4],
       monsterTotal: 7,
-      turnCounter: 2,
+      isFirstStepOfTurn: false,
       expected: { heroTotal: 7, victory: true, tie: true, rolls: [3, 4] }
     },
     {
@@ -53,7 +61,7 @@ describe("karak combat", () => {
       heroId: "warrior",
       rolls: [1, 1, 5, 4],
       monsterTotal: 7,
-      turnCounter: 1,
+      isFirstStepOfTurn: false,
       expected: { heroTotal: 9, victory: true, tie: false, rolls: [5, 4] }
     },
     {
@@ -61,11 +69,11 @@ describe("karak combat", () => {
       heroId: "swordsman",
       rolls: [1, 4, 5],
       monsterTotal: 8,
-      turnCounter: 1,
+      isFirstStepOfTurn: false,
       expected: { heroTotal: 9, victory: true, tie: false, rolls: [5, 4] }
     }
-  ])("$name", ({ heroId, rolls, monsterTotal, turnCounter, expected }) => {
-    const combat = resolveKarakCombat(getHero(heroId), monsterTotal, createStubRandom(rolls), turnCounter);
+  ])("$name", ({ heroId, rolls, monsterTotal, isFirstStepOfTurn, expected }) => {
+    const combat = resolveKarakCombat(getHero(heroId), monsterTotal, createStubRandom(rolls), isFirstStepOfTurn);
 
     expect(combat.heroTotal).toBe(expected.heroTotal);
     expect(combat.monsterTotal).toBe(monsterTotal);
