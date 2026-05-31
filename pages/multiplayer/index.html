@@ -1,0 +1,37 @@
+<main class="page-shell">
+  <section class="card">
+    <p class="kicker">Multiplayer</p>
+    <h1>Multiplayer</h1>
+    <p>Choose how you want to play multiplayer.</p>
+  </section>
+
+  <section class="card card-grid">
+    <article>
+      <h2>Join via Network</h2>
+      <p>Connect to a host on your LAN or the internet using a join code.</p>
+      <button id="goLobbyNetworkBtn" class="nav-btn nav-btn--network" type="button">Join via Network</button>
+    </article>
+    <article>
+      <h2>Host via Network</h2>
+      <p>Start a session reachable over LAN or the internet via a signaling server.</p>
+      <button id="goHostNetworkBtn" class="nav-btn nav-btn--network" type="button">Host via Network</button>
+    </article>
+  </section>
+
+  <section class="card">
+    <h2>Your Default Profile</h2>
+    <p class="profile-hint">Loaded from Settings and used as your multiplayer starting identity.</p>
+    <div class="profile-row">
+      <span class="profile-key">Nickname</span>
+      <span id="profileNickname" class="profile-value">-</span>
+    </div>
+    <div class="profile-row">
+      <span class="profile-key">Preferred Character</span>
+      <span id="profileCharacter" class="profile-value">Random</span>
+    </div>
+    <div class="profile-row">
+      <span class="profile-key">Preferred Color</span>
+      <span id="profileColor" class="profile-value">Random</span>
+    </div>
+  </section>
+</main>

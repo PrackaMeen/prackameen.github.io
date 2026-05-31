@@ -1,0 +1,21 @@
+<main class="page-shell">
+  <section class="card animations-intro">
+    <p class="kicker">Menu</p>
+    <h1>Animations</h1>
+    <p>Pick an animated sprite-sheet entry and preview it on the canvas using the same frame resolver the board uses.</p>
+
+    <div class="animations-toolbar">
+      <label class="animations-select-label" for="animationSelect">
+        <span>Animation</span>
+        <select id="animationSelect" class="animations-select"></select>
+      </label>
+      <div id="animationDetails" class="animations-details" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="card animations-stage-card">
+    <div id="animationStage" class="animations-stage" aria-label="Animation preview stage">
+      <canvas id="animationCanvas" class="animations-canvas" aria-label="Animation preview canvas"></canvas>
+    </div>
+  </section>
+</main>

@@ -1,0 +1,128 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, #f7f5ef 0%, #f6ead7 100%);
+}
+
+.nav-root {
+  position: sticky;
+  top: 0;
+  flex: 0 0 auto;
+  z-index: 10;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(247, 245, 239, 0.86);
+  backdrop-filter: blur(8px);
+}
+
+.nav-inner {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  padding: 0.7rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.nav-copy {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.crumb-link {
+  text-decoration: none;
+  color: #102a3c;
+  border-radius: 8px;
+  padding: 0.1rem 0.35rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(16, 42, 60, 0.14);
+}
+
+.crumb-sep {
+  color: #4f606d;
+  font-size: 0.75rem;
+}
+
+.nav-version {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 2rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(67, 73, 78, 0.12);
+  color: rgba(44, 48, 52, 0.72);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.nav-message {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: #102a3c;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-message:empty {
+  display: none;
+}
+
+.app-root {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.boot-message,
+.boot-error {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+}
+
+.boot-error h1 {
+  margin: 0 0 0.4rem;
+  font-family: "Syne", "Space Grotesk", sans-serif;
+}
+

@@ -1,0 +1,2308 @@
+{
+  "items": [
+    {
+      "version": "1.1.109",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "New Assets",
+      "businessSummary": "New animated tiles for Road4 and Chamber4 were added to the asset catalog and included in the PWA build, so they are now available for discovery and placement in the game.",
+      "highlights": [
+        "Road4",
+        "Chamber4"
+      ]
+    },
+    {
+      "version": "1.1.108",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "UI was preventing placement of Hidden tile improperly",
+      "businessSummary": "During Hidden tile placement, the UI was blocking the Place Tile button and preventing the commit action from reaching the runtime, which made it impossible to place a tile on a revealed cell. The fix removes the UI block and lets the runtime validate the placement as intended.",
+      "highlights": [
+        "If tile is not revealed we are considering tile to be road4 - which has no walls",
+        "Validation of placement of Hidden tile should not consider unrevealed tile as blocked by walls.",
+        "Any tile should be placeable as there is no tile with 4 walls, there is always at least 1 exit."
+      ]
+    },
+    {
+      "version": "1.1.98",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Asset walls now come only from the WASM runtime",
+      "businessSummary": "The PWA asset layer no longer keeps its own wall tables for roads and chambers. It now reads wall metadata from the runtime-hydrated .NET tile definitions, so the browser matches the shipped game logic instead of duplicating it.",
+      "highlights": [
+        "Removed the hardcoded JS wall helpers from game-assets.js.",
+        "Kept the runtime tile-definition hydration path as the only wall source.",
+        "Trimmed the asset sync test to sprite and animation coverage."
+      ]
+    },
+    {
+      "version": "1.1.97",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "WASM now supplies wall data to the asset layer",
+      "businessSummary": "The PWA asset layer now prefers wall metadata from the runtime-hydrated WASM tile catalog, so game-assets.js can avoid maintaining a separate wall table once the runtime is available.",
+      "highlights": [
+        "Kept the local wall helper only as a pre-hydration fallback.",
+        "Let runtime tile definitions supply the canonical wall data.",
+        "Preserved the JSON tile catalog as sprite and animation only."
+      ]
+    },
+    {
+      "version": "1.1.96",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Corner walls now match the actual tile drawings",
+      "businessSummary": "The corner wall helper in the PWA now matches the updated shared topology and the real tile drawings, so the fallback movement checks stay consistent with how Road2 and chamber corners are visually arranged.",
+      "highlights": [
+        "Aligned the JS corner wall helper with GameBoardTopology.",
+        "Added a regression check for the corrected corner orientation.",
+        "Kept wall data out of the JSON tile catalog while preserving sprite sync."
+      ]
+    },
+    {
+      "version": "1.1.95",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Wall data now comes from shared topology",
+      "businessSummary": "The tile catalog no longer carries wall metadata in JSON or the PWA fallback table. Wall checks now resolve from shared GameBoardTopology only, which removes duplicated source-of-truth data and keeps movement rules consistent.",
+      "highlights": [
+        "Removed wall metadata from tile-definitions.json and the PWA fallback catalog.",
+        "Kept sprite and animation definitions in the tile catalog.",
+        "Validated wall behavior against the shared topology instead of duplicated asset data."
+      ]
+    },
+    {
+      "version": "1.1.94",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road2 walls now match the tile definitions",
+      "businessSummary": "The shared Road2 corner topology now matches tile-definitions.json, so orientation 1 no longer behaves like an open crossing and movement checks stop allowing illegal wall crossings.",
+      "highlights": [
+        "Aligned Road2 orientation 1 with the JSON wall layout.",
+        "Kept all four orientations available instead of skipping rotations.",
+        "Added a regression test for the Road2 wall metadata."
+      ]
+    },
+    {
+      "version": "1.1.93",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Discover rotations now respect allowed orientations",
+      "businessSummary": "Pending tile placements now rotate only through orientations the runtime marks as valid, so restricted discover results can no longer be stepped into or committed accidentally.",
+      "highlights": [
+        "Made placement rotation cycle through the runtime-allowed orientation list.",
+        "Blocked commits when the current orientation is not allowed.",
+        "Added regression tests for restricted rotation and commit validation."
+      ]
+    },
+    {
+      "version": "1.1.92",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Pinch zoom midpoint anchoring was finalized",
+      "businessSummary": "Two-finger zooming now keeps the board anchored to the midpoint between the touches, and the shipped PWA version was bumped so the corrected gesture math is delivered consistently.",
+      "highlights": [
+        "Kept the pinch zoom anchor centered between two touches.",
+        "Validated the gesture with a controller regression test.",
+        "Bumped the shipped PWA version after the final cleanup pass."
+      ]
+    },
+    {
+      "version": "1.1.91",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Pinch zoom now follows the two-finger midpoint",
+      "businessSummary": "Two-finger zooming now anchors the board under the midpoint between your fingers instead of drifting toward the canvas center, which makes pinch gestures feel natural and predictable.",
+      "highlights": [
+        "Anchored pinch zoom to the midpoint of the active touches.",
+        "Kept the board point under the fingers stable while scaling.",
+        "Added a regression test for two-finger midpoint zooming."
+      ]
+    },
+    {
+      "version": "1.1.90",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Client tile catalog now matches the JSON definitions",
+      "businessSummary": "The fallback tile catalog in game-assets.js now mirrors tile-definitions.json for sprite paths, metadata paths, and wall layouts, so the PWA stays consistent even before runtime data loads.",
+      "highlights": [
+        "Aligned Road1 and Chamber variants with the JSON catalog.",
+        "Added a regression test that compares every tile kind and orientation.",
+        "Bumped the PWA version so the updated catalog is refreshed in the browser."
+      ]
+    },
+    {
+      "version": "1.1.89",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Tile fallback paths now match the updated definitions",
+      "businessSummary": "The client-side fallback tile definitions now use the same folder-style asset paths as tile-definitions.json, so previews stay consistent even before the runtime definitions load.",
+      "highlights": [
+        "Aligned the client fallback tile paths with the updated JSON asset layout.",
+        "Kept the runtime and PWA tile catalogs in sync for road and chamber tiles.",
+        "Added a resolver regression test for the updated tile paths."
+      ]
+    },
+    {
+      "version": "1.1.88",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board preview now uses the pending discovered tile",
+      "businessSummary": "The main board canvas now renders the pending discovered tile on the revealed target cell, so the canvas preview matches the HUD preview before commit.",
+      "highlights": [
+        "Overrode the board draw plan for pending discovery targets.",
+        "Kept the HUD preview and board canvas on the same pending-placement state.",
+        "Added a regression test covering the first discovered tile."
+      ]
+    },
+    {
+      "version": "1.1.87",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Discover preview now follows the selected tile sprite",
+      "businessSummary": "The discover preview now renders from the runtime-selected tile sprite sheet, so the preview art matches the actual tile that gets committed after placement.",
+      "highlights": [
+        "Aligned the overlay preview with the runtime-selected tile asset.",
+        "Kept the discovered tile kind and orientation consistent through placement.",
+        "Bumped the app version to force a fresh shell and asset cache."
+      ]
+    },
+    {
+      "version": "1.1.86",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Discover tile selection is now seeded",
+      "businessSummary": "Hidden-tile discovery now uses a seeded random choice from GameLogic, so the same match seed reproduces the same reveal sequence while still keeping each game varied.",
+      "highlights": [
+        "Added seed support to game start requests.",
+        "Moved discover-time tile selection into the runtime so it is reproducible.",
+        "Kept the no-seed fallback on a time-based runtime seed."
+      ]
+    },
+    {
+      "version": "1.1.85",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Animated frames now advance on the live render clock",
+      "businessSummary": "Road0 and other animated sprites now use the current render timestamp directly instead of blending it with metadata elapsed time, which restores the expected four-frame cycle and removes the alternating frame pairs.",
+      "highlights": [
+        "Fixed the animation frame resolver to avoid double-counting elapsed time.",
+        "Restored the full four-frame Road0 cycle on the board and in the placement preview.",
+        "Kept the moved character redraw behavior intact."
+      ]
+    },
+    {
+      "version": "1.1.84",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Animated boards keep the latest moved state",
+      "businessSummary": "The board canvas now swaps to the newest session immediately when a move or placement is requested, so a running Road0 animation cannot redraw the old character position after the move completes.",
+      "highlights": [
+        "Updated the active animation session as soon as a new render is requested.",
+        "Prevented stale animation ticks from overwriting the newest moved character state.",
+        "Kept the Road0 placement preview on the same sprite-sheet frame path as the board tile."
+      ]
+    },
+    {
+      "version": "1.1.83",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road0 placement preview now uses the animated frame",
+      "businessSummary": "The discover/placement preview now renders Road0 from the same sprite-sheet frame as the board tile, so the preview image matches what the player already sees on the map.",
+      "highlights": [
+        "Rendered the placement preview card from the sprite sheet instead of a static tile URL.",
+        "Resolved the preview frame using the same animation frame selection as the board canvas.",
+        "Kept the preview aligned with the animated Road0 tile state."
+      ]
+    },
+    {
+      "version": "1.1.82",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Committed tile placement keeps the preview facing",
+      "businessSummary": "When a green move preview is committed, the player's facing now persists into the saved session instead of snapping back to the old orientation after the tile is placed.",
+      "highlights": [
+        "Copied the green preview-facing into the committed session snapshot.",
+        "Kept the selected player's sprite aligned after place tile finishes.",
+        "Left blocked previews and non-green paths unchanged."
+      ]
+    },
+    {
+      "version": "1.1.81",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Selected player now faces the green move preview",
+      "businessSummary": "When a move preview is valid, the selected player sprite now turns toward the target tile before the move is committed. Blocked previews keep the current facing unchanged.",
+      "highlights": [
+        "Applied a temporary preview-facing only for green move arrows.",
+        "Kept red or blocked previews from changing the character image.",
+        "Used the runtime-facing direction mapping so preview and committed movement match."
+      ]
+    },
+    {
+      "version": "1.1.80",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Queued redraws no longer get dropped",
+      "businessSummary": "If a move completes while an animated board frame is already rendering, the board now schedules one more redraw instead of dropping the update, so the player no longer snaps back to Road0 until the next click.",
+      "highlights": [
+        "Queued a follow-up frame when a render request arrives mid-render.",
+        "Kept the active player sprite on the newly moved tile immediately after action resolution.",
+        "Preserved the animated-road redraw loop without losing the latest session state."
+      ]
+    },
+    {
+      "version": "1.1.79",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Moved players now resync after camera follow",
+      "businessSummary": "After a successful move or place-and-move action, the board now renders again after the camera recenters so the player's visible position, selection state, and animated-road camera stay in sync.",
+      "highlights": [
+        "Kept the camera follow behavior from the previous fix.",
+        "Restored the final board render so session-derived state is refreshed after actions.",
+        "Prevents the player from briefly snapping back to the old road tile visually."
+      ]
+    },
+    {
+      "version": "1.1.78",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Camera updates no longer recurse through board render",
+      "businessSummary": "Selecting a character, centering the camera, and completing a place-and-move action now redraw the canvases directly instead of re-entering the full board render path, which removes the console stack overflow and keeps the view responsive.",
+      "highlights": [
+        "Stopped viewport callbacks from calling the full board render again.",
+        "Redrew the main canvas and overlay directly when the camera changes.",
+        "Applied the initial center before invoking the centering callback to avoid re-entry."
+      ]
+    },
+    {
+      "version": "1.1.77",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Camera follow now redraws immediately",
+      "businessSummary": "Place-and-move actions now recenter the camera on the active player, and center-view redraws the main board immediately instead of waiting for the next click.",
+      "highlights": [
+        "Repainted the main canvas whenever the viewport changes.",
+        "Recentered the camera after a successful move or placement action.",
+        "Kept the overlay and board canvas on the same frame after camera updates."
+      ]
+    },
+    {
+      "version": "1.1.76",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Overlay geometry now matches the board canvas",
+      "businessSummary": "The placement arrow and hidden-tile preview now use the same locked cell size as the main board, keeping the player, arrow, and discovery tile visually aligned on stretched emulator screens.",
+      "highlights": [
+        "Unified overlay cell sizing with the main board canvas.",
+        "Prevented hidden-tile previews from stretching differently in the emulator.",
+        "Kept the board hit-testing and draw scale on one coordinate system."
+      ]
+    },
+    {
+      "version": "1.1.75",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board starts zoomed in on the active player",
+      "businessSummary": "The game now opens with a larger canvas zoom while keeping the camera centered on the active player, so sprites are easier to read without changing the fixed board viewport.",
+      "highlights": [
+        "Raised the initial canvas zoom level.",
+        "Kept the camera centered on the active player from the first render.",
+        "Bumped the app version so the new default view ships immediately."
+      ]
+    },
+    {
+      "version": "1.1.74",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Pointer hit-testing now matches the rendered board",
+      "businessSummary": "Click and touch selection now invert the same fixed cell size and viewport pan used by the canvas renderer, so the selected player position matches the actual sprite placement after zoom and movement.",
+      "highlights": [
+        "Updated pointer mapping to account for viewport pan and scale.",
+        "Kept selection and render coordinates on the same board cell system.",
+        "Bumped the app version so the alignment fix ships immediately."
+      ]
+    },
+    {
+      "version": "1.1.73",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board viewport now fills the full in-between space",
+      "businessSummary": "The game board canvas now occupies the whole area between the navigation and action bars, and pan/zoom are applied inside the canvas render instead of shrinking the parent map container.",
+      "highlights": [
+        "Removed the parent map transform and board-surface resize coupling.",
+        "Kept the canvas locked to the viewport area between the bars.",
+        "Moved pan and zoom fully into draw-time rendering coordinates."
+      ]
+    },
+    {
+      "version": "1.1.72",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board canvas now stays fixed for the session",
+      "businessSummary": "The canvas backing store is now sized once at startup and reused for the rest of the game, so discovery and board growth no longer resize the visible drawing surface.",
+      "highlights": [
+        "Locked the canvas backing dimensions on first render.",
+        "Kept later board growth inside the existing canvas surface.",
+        "Bumped the app version so the fixed-canvas behavior ships immediately."
+      ]
+    },
+    {
+      "version": "1.1.71",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Canvas size now stays fixed during play",
+      "businessSummary": "The game board now keeps one static viewport size for the whole session and preserves the initial cell scale when new tiles are discovered, instead of refitting the canvas to the growing board.",
+      "highlights": [
+        "Locked the board viewport after the initial fit.",
+        "Kept cell size stable as the logical board grows.",
+        "Bumped the app version so the static-canvas behavior ships immediately."
+      ]
+    },
+    {
+      "version": "1.1.70",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Discovery no longer auto-zooms the board",
+      "businessSummary": "When a new tile is revealed, the board now keeps the current zoom level and only grows the board surface. That prevents the camera from shrinking the whole map every time the runtime expands the board.",
+      "highlights": [
+        "Separated initial board fitting from later board growth.",
+        "Kept manual zoom stable during discovery-driven expansion.",
+        "Bumped the app version so the viewport change is reloaded immediately."
+      ]
+    },
+    {
+      "version": "1.1.69",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board edges now expand as full rows and columns",
+      "businessSummary": "When a move reaches a new edge, the WASM runtime now fills the entire new row or column instead of placing just one tile, so mixed movement paths stay rectangular and the renderer no longer shows gray gaps or broken alignment.",
+      "highlights": [
+        "Extended movement-driven board growth to full rows and columns.",
+        "Kept the board rectangular after mixed vertical and horizontal moves.",
+        "Bumped the app version so the updated runtime is fetched immediately."
+      ]
+    },
+    {
+      "version": "1.1.68",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Left-expanding boards now stay aligned",
+      "businessSummary": "When the board grows to the left, the renderer now subtracts the board origin before placing cells on the canvas, so the new tiles appear in the correct position instead of leaving a gray strip on the right side.",
+      "highlights": [
+        "Made board cell layout origin-aware in the renderer.",
+        "Kept left-expanding boards aligned to the canvas.",
+        "Bumped the app version so cached shell files pick up the layout fix."
+      ]
+    },
+    {
+      "version": "1.1.67",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board now grows when moving to an edge",
+      "businessSummary": "Successful moves now extend the board in the movement direction before the next turn, so walking left from the edge keeps the player visible and lets the UI select the newly revealed tile instead of making the character disappear.",
+      "highlights": [
+        "Extended board growth to successful move actions, not just placement commits.",
+        "Kept the player visible when stepping onto edge tiles.",
+        "Bumped the app version so the updated runtime contract is fetched immediately."
+      ]
+    },
+    {
+      "version": "1.1.66",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "WASM now owns player facing state",
+      "businessSummary": "The runtime now stores player facing on the character snapshot and returns it with the board state, so the UI can render movement direction directly from WASM instead of keeping a separate orientation cache.",
+      "highlights": [
+        "Added facing to the shared character model and runtime snapshots.",
+        "Updated move and placement commits to write facing in WASM.",
+        "Removed the UI-local orientation cache from the game board shell."
+      ]
+    },
+    {
+      "version": "1.1.65",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Character preloads no longer request bare asset names",
+      "businessSummary": "The asset preloader now skips the raw Char0 and Char1 base paths, so the browser stops requesting nonexistent URLs like /Char1/Char1?v=... while still keeping the runtime player asset routing intact.",
+      "highlights": [
+        "Removed the raw Char base names from the eager preload list.",
+        "Stopped the browser from requesting nonexistent bare character URLs.",
+        "Bumped the app version so cached shells pick up the preload cleanup."
+      ]
+    },
+    {
+      "version": "1.1.64",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Player selection now faces the right way",
+      "businessSummary": "The active character now uses Char1 by default and Char0 only when selected, with the movement-facing mapping flipped so the sprite points the way the player expects on both desktop and mobile.",
+      "highlights": [
+        "Made the unselected player art visible at game start.",
+        "Swapped between Char1 and Char0 on deselect/select.",
+        "Inverted the movement direction mapping for correct facing."
+      ]
+    },
+    {
+      "version": "1.1.63",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Character fallback now scales correctly",
+      "businessSummary": "When a Char0 or Char1 sheet fails to load, the renderer now drops the Char metadata and uses the full player sprite as the fallback frame. That prevents the fallback from being cropped down to 16x16 and makes the on-screen player appear at the expected size and position.",
+      "highlights": [
+        "Removed the stale Char frame crop from the player fallback path.",
+        "Kept the player visible at the correct scale when the new sheets are missing.",
+        "Bumped the app version so cached shells fetch the corrected loader behavior."
+      ]
+    },
+    {
+      "version": "1.1.62",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Char player definitions added",
+      "businessSummary": "The new Char0 and Char1 player orientations now have metadata files for all four directions, so the renderer can resolve the incoming art contract immediately when those PNGs are delivered.",
+      "highlights": [
+        "Added Char0 and Char1 metadata for orientations 0 through 3.",
+        "Kept the metadata frame size aligned with the existing player sprite.",
+        "Bumped the app version so cached PWA files refresh onto the new definitions."
+      ]
+    },
+    {
+      "version": "1.1.61",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Char player sheets are now the default",
+      "businessSummary": "The player now resolves to the new Char0 and Char1 sheets first, while the older player art is only used if loading the new sheets fails. The version bump forces browsers to fetch the updated routing immediately.",
+      "highlights": [
+        "Made Char0 and Char1 the default player sheet sources.",
+        "Kept the existing player sprite as the fallback on load error.",
+        "Bumped the app version so cached shell files refresh cleanly."
+      ]
+    },
+    {
+      "version": "1.1.60",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Player art now shows immediately again",
+      "businessSummary": "The board now uses the existing player sprite as the default visible fallback instead of waiting on the missing Char sheets, and the version bump forces the browser to reload the updated asset routing.",
+      "highlights": [
+        "Made the visible player art the default entity source again.",
+        "Kept the Char0 and Char1 paths reserved for future artwork delivery.",
+        "Bumped the app version so stale cached shell files are replaced."
+      ]
+    },
+    {
+      "version": "1.1.59",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Player sprite fallback now reloads cleanly",
+      "businessSummary": "The active character now falls back to the existing player art when the new Char0 and Char1 sheets are unavailable, and the app version bump forces browsers to fetch the updated asset paths instead of serving stale cached files.",
+      "highlights": [
+        "Added a cache-busting version bump for the player sprite fallback change.",
+        "Kept the active character visible even if the variant sheets are not present locally.",
+        "Preserved the new Char0 and Char1 asset contract for the next art drop."
+      ]
+    },
+    {
+      "version": "1.1.58",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board camera now stays put after selecting the player",
+      "businessSummary": "Clicking the active character now only highlights it; the camera no longer snaps back unless you use the explicit center button. That keeps manual panning intact while preserving a quick recenter action when needed.",
+      "highlights": [
+        "Removed automatic recentering from board re-renders and resize callbacks.",
+        "Kept the transient Center View button as the only recenter control.",
+        "Preserved player highlight behavior when selecting the active character."
+      ]
+    },
+    {
+      "version": "1.1.57",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board now shows a recenter button when panned away",
+      "businessSummary": "When the board camera is no longer centered on the active player, a transient center button appears in the action bar. Clicking it snaps the camera back to the player's character without disturbing the existing touch and action flows.",
+      "highlights": [
+        "Exposed camera-centered state from the viewport controller.",
+        "Added a transient recenter action to the board HUD.",
+        "Kept quick taps, long-press panning, and pinch zoom working together."
+      ]
+    },
+    {
+      "version": "1.1.56",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board touch gestures now support tap, pan, and pinch",
+      "businessSummary": "The game board now treats a quick one-finger press as a normal action, a long press plus drag as map panning, and two-finger touches as zooming. That makes the board usable on touch devices without losing the existing select-and-act flow.",
+      "highlights": [
+        "Kept quick taps routed into the existing board action logic.",
+        "Added long-press drag panning for the board viewport.",
+        "Preserved two-finger pinch zoom for touch navigation."
+      ]
+    },
+    {
+      "version": "1.1.55",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Animations preview page added to the menu",
+      "businessSummary": "The app now has an Animations page that lets you choose an animated sprite-sheet entry and preview it on a canvas using the same frame resolution path as the game board. That gives us a quick visual check that animation assets still render correctly.",
+      "highlights": [
+        "Added a menu route for animation previews.",
+        "Rendered the selected sprite sheet on a dedicated canvas with the live animation frame resolver.",
+        "Populated the dropdown from the current animated tile definitions so the preview stays in sync with the game assets."
+      ]
+    },
+    {
+      "version": "1.1.54",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road0 animation now survives runtime tile hydration",
+      "businessSummary": "The board keeps the 4-frame Road0 sprite animation even when the WASM runtime provides the rest of the tile definitions. That prevents the animated art from collapsing back to the first frame after startup.",
+      "highlights": [
+        "Preserved the Road0 animation metadata during runtime tile-definition hydration.",
+        "Added a regression test for the runtime sprite-sheet source contract.",
+        "Bumped the PWA version so the fix can be tested immediately."
+      ]
+    },
+    {
+      "version": "1.1.53",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road0 sheet animation and canvas clicks stabilized",
+      "businessSummary": "The Road0 sprite-sheet animation now renders against the live canvas while the board click mapping still lines up with the visible cells after removing the grid DOM. That gives us the new animated art without losing the existing move and placement flows.",
+      "highlights": [
+        "Kept Road0 animated with the new 4-frame sprite sheets.",
+        "Restored board click mapping through the canvas wrapper after the grid removal.",
+        "Synced the PWA version so the final test build is easy to verify."
+      ]
+    },
+    {
+      "version": "1.1.52",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Road0 now animates from sprite sheets",
+      "businessSummary": "The Road0 tile definitions now point at 4-frame sprite sheets, and the canvas renderer advances those frames automatically while the board is visible. That makes the new art assets render the way they were authored instead of freezing on the first frame.",
+      "highlights": [
+        "Added 4-frame Road0 sheet metadata for the new tile art.",
+        "Let the canvas renderer advance animated tile and entity frames over time.",
+        "Kept the PWA version trail in sync so the change is easy to test immediately."
+      ]
+    },
+    {
+      "version": "1.1.51",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board now renders without the grid DOM",
+      "businessSummary": "The board page now uses the canvas wrapper as the only visual surface, so the inspected DOM matches the actual rendered board instead of duplicating tile artwork in grid cells. That keeps the runtime simpler and makes the canvas the clear source of truth for board visuals.",
+      "highlights": [
+        "Removed the board grid layer from the DOM.",
+        "Moved board sizing and canvas syncing to the wrapper element.",
+        "Kept the board interactions and regression tests aligned with the canvas path."
+      ]
+    },
+    {
+      "version": "1.1.50",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board now renders from canvas only",
+      "businessSummary": "The game board page now leaves the visible tile and entity artwork to the canvas renderer instead of painting the same images through DOM cell layers. That aligns the inspected board with the actual runtime rendering path and removes the extra image-backed board surface.",
+      "highlights": [
+        "Moved the visible board artwork onto the canvas renderer.",
+        "Kept the existing cell grid for sizing, selection, and interaction state.",
+        "Raised the PWA version so the change is easy to test immediately."
+      ]
+    },
+    {
+      "version": "1.1.49",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Revealed Road4 row now renders in the preview shot",
+      "businessSummary": "The screenshot test now marks the first two row tiles as revealed so the Road4 sprites appear in the image while the hidden preview remains under discovery. That finally matches the visual state you described.",
+      "highlights": [
+        "Revealed the two row tiles in the test session.",
+        "Kept the hidden discover target in place for the glitch capture.",
+        "Left production behavior unchanged and synced the PWA version."
+      ]
+    },
+    {
+      "version": "1.1.48",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Row-cropped discover preview screenshot",
+      "businessSummary": "The screenshot test now crops tightly around the horizontal discover row so the Road4 tiles and hidden preview occupy the frame. That makes the visual glitch much easier to inspect without changing the app itself.",
+      "highlights": [
+        "Focused the screenshot on the board row instead of the full stage.",
+        "Kept the test-only board scaling in place for readability.",
+        "Maintained the versioned release-note trail for the repro update."
+      ]
+    },
+    {
+      "version": "1.1.47",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board cells enlarged for the preview screenshot",
+      "businessSummary": "The screenshot test now scales the board cells up so the Road4 tiles and hidden preview are readable in the captured image. That makes the visual evidence much easier to inspect while keeping production UI unchanged.",
+      "highlights": [
+        "Applied a test-only cell-size override for the screenshot capture.",
+        "Kept the board-stage image focused on the horizontal discover preview.",
+        "Preserved the versioned release-note trail for the updated repro."
+      ]
+    },
+    {
+      "version": "1.1.46",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Horizontal Road4 discover preview captured",
+      "businessSummary": "The regression screenshot now captures the exact hidden-tile discover state on a horizontal Road4 row before commit. That gives us a cleaner, more faithful image of the rendering glitch you wanted to preserve.",
+      "highlights": [
+        "Captured the discover state before commit.",
+        "Used a horizontal Road4 board so the row matches the reported bug.",
+        "Kept the app version history aligned with the screenshot change."
+      ]
+    },
+    {
+      "version": "1.1.45",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Tile preview now appears in the screenshot",
+      "businessSummary": "The regression image now captures the placement preview card after the tile is queued, so the actual tile is visible instead of only the board arrow overlay. This makes the visual proof easier to trust and review.",
+      "highlights": [
+        "Captured the screenshot after pressing Place Tile.",
+        "Included the action bar so the preview tile card is visible.",
+        "Kept the PWA version metadata and release notes aligned."
+      ]
+    },
+    {
+      "version": "1.1.44",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Focused three-tile preview screenshot",
+      "businessSummary": "We now capture a pre-commit hidden-tile preview image that isolates the three-cell row involved in the rendering issue. That gives us a clean visual reference for reviewing the bug without extra board noise.",
+      "highlights": [
+        "Captured the hidden-tile preview before commit.",
+        "Cropped the screenshot to the board row so the affected tiles are easy to inspect.",
+        "Kept the version history in sync with the current app state."
+      ]
+    },
+    {
+      "version": "1.1.43",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Three-tile placement preview screenshot added",
+      "businessSummary": "We now capture a minimal three-tile board state that shows the placement preview before commit. That makes the visual regression easier to understand and gives us a cleaner reference image for verifying the tile rendering behavior.",
+      "highlights": [
+        "Added a focused screenshot repro for the three-tile preview state.",
+        "Captured the board element directly so the image shows the row without extra page chrome.",
+        "Kept the versioned PWA release history aligned with the shipped app version."
+      ]
+    },
+    {
+      "version": "1.1.42",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Board growth repro now captures the problematic render state",
+      "businessSummary": "We now have a browser test that reproduces the board-growth issue and captures the exact rendered state after the second append. That gives us a reliable screenshot reference for verifying the fix and prevents the bug from being lost in future changes.",
+      "highlights": [
+        "Added a screenshot-producing Playwright repro for the board-growth sequence.",
+        "Kept the prior board-growth regression tests in place.",
+        "Preserved the app version and release-note history for the shipped PWA."
+      ]
+    },
+    {
+      "version": "1.1.41",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Movement no longer grows the board with extra tiles",
+      "businessSummary": "The board now stays at its intended size after moving a player, which prevents stray extra tiles from appearing during a right, up, down, right movement sequence. That keeps the visible board stable and makes reproduction of the rendering bug straightforward.",
+      "highlights": [
+        "Removed the move-time tile expansion that was creating extra visible cells.",
+        "Added regression coverage to ensure moves do not auto-expand the board.",
+        "Kept the hidden-tile placement flow and committed board state intact."
+      ]
+    },
+    {
+      "version": "1.1.40",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Hidden-tile placement now keeps consecutive placements stable",
+      "businessSummary": "The hidden-tile flow now has regression coverage for two placements in a row, so the board can be checked after a discover, move, and second placement sequence without the UI drifting into duplicated preview states.",
+      "highlights": [
+        "Added a regression path for two consecutive hidden-tile placements.",
+        "Removed the speculative preview-card alignment tweak.",
+        "Kept the hidden-tile placement rules unchanged while strengthening validation."
+      ]
+    },
+    {
+      "version": "1.1.39",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Placement preview art now nudges into the right alignment",
+      "businessSummary": "The placement preview card now shifts the tile art slightly to the right so the visible preview lines up better with the tile frame. That keeps the pending-placement presentation cleaner without changing gameplay rules.",
+      "highlights": [
+        "Adjusted the placement preview artwork alignment in the action bar.",
+        "Kept the board rules and hidden-tile flow unchanged.",
+        "Preserved the existing regression coverage for hidden placement."
+      ]
+    },
+    {
+      "version": "1.1.38",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Hidden-tile placement now has full regression coverage",
+      "businessSummary": "The hidden-tile placement path is now protected by a browser regression test that proves discover, rotation, and commit all work in sequence. That helps keep the pending-placement flow stable for players.",
+      "highlights": [
+        "Expanded the Playwright coverage to verify the full hidden-tile placement flow.",
+        "Locked in the expected rotate-and-commit behavior after discovery.",
+        "Kept the underlying game behavior unchanged while strengthening validation."
+      ]
+    },
+    {
+      "version": "1.1.37",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Hidden-tile placement now shows the rotate-to-continue message",
+      "businessSummary": "After a hidden tile is placed, the game board now shows the expected guidance telling the player to rotate it before continuing. That keeps the pending-placement flow clear and matches the browser behavior we want to preserve.",
+      "highlights": [
+        "Adjusted the post-discover message to the user-facing placement guidance.",
+        "Locked the behavior in Playwright as a regression test.",
+        "Kept the hidden-tile placement flow unchanged apart from the copy."
+      ]
+    },
+    {
+      "version": "1.1.36",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board action and state logic now live outside the page",
+      "businessSummary": "The game board page is now thinner because the remaining action orchestration and shared board-state helpers moved into dedicated modules. That keeps the canvas-first board easier to maintain while preserving the same player interactions.",
+      "highlights": [
+        "Moved move, rotate, and cancel behavior into a dedicated action controller.",
+        "Moved shared board-state helpers into a reusable module.",
+        "Kept the browser behavior and board rendering flow intact."
+      ]
+    },
+    {
+      "version": "1.1.35",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Canvas transition plan now matches the controller split",
+      "businessSummary": "The transition plan was updated to describe the current board architecture instead of the older phased rollout language. That keeps the documentation aligned with the shipped canvas-first board and the remaining page-owned action logic.",
+      "highlights": [
+        "Updated the board architecture notes to reflect the runtime, HUD, viewport, and bootstrap controllers.",
+        "Reframed the remaining work around action orchestration and board-state helpers.",
+        "Kept the PWA version aligned with the documentation change."
+      ]
+    },
+    {
+      "version": "1.1.34",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board mount and disposal now live in a bootstrap helper",
+      "businessSummary": "The game board page is thinner again because the mount lifecycle, resize observer, and event wiring moved into a dedicated bootstrap helper. That keeps the board startup path easier to maintain while preserving the same player experience.",
+      "highlights": [
+        "Moved board listener registration and disposal into a bootstrap helper.",
+        "Kept the runtime, HUD, viewport, and interaction controllers intact.",
+        "Preserved the existing browser behavior and automated coverage."
+      ]
+    },
+    {
+      "version": "1.1.33",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board runtime bootstrap now lives in a controller",
+      "businessSummary": "The game board page is slimmer again because the WASM loading and hydration flow moved into a dedicated runtime controller. That keeps the startup logic easier to maintain while preserving the same board behavior for players.",
+      "highlights": [
+        "Moved WASM runtime loading and hydration out of the page module.",
+        "Kept the board startup state and action flow unchanged for users.",
+        "Preserved the existing browser coverage for board interactions."
+      ]
+    },
+    {
+      "version": "1.1.32",
+      "commit": "pending",
+      "date": "2026-05-03",
+      "title": "Game board HUD wiring now lives in a controller",
+      "businessSummary": "The game board page is slimmer again because the status text and action-bar rendering moved into a dedicated HUD controller. That keeps the canvas-first board easier to maintain while preserving the same player interactions.",
+      "highlights": [
+        "Moved the game-board status text and action bar into a controller module.",
+        "Kept move, placement, and rotation actions wired to the same runtime flow.",
+        "Preserved the existing browser coverage for board interaction behavior."
+      ]
+    },
+    {
+      "version": "1.1.31",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game board page now delegates the remaining board logic",
+      "businessSummary": "The game board page is slimmer again because the last leftover selection and viewport helpers now live in the dedicated controllers. That keeps the canvas-first board easier to maintain without changing how players move, place, or preview tiles.",
+      "highlights": [
+        "Removed the last duplicated board helpers from the page module.",
+        "Kept selection, viewport, and active-player logic behind controller APIs.",
+        "Preserved the existing browser behavior and Playwright coverage."
+      ]
+    },
+    {
+      "version": "1.1.30",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Board selection and camera logic now live in controllers",
+      "businessSummary": "The board page is now slimmer because selection handling and viewport math moved into dedicated controllers. That makes the canvas-first board easier to maintain without changing the player experience.",
+      "highlights": [
+        "Extracted the board interaction logic into a reusable controller.",
+        "Extracted zoom, pan, and camera math into a viewport controller.",
+        "Kept the browser behavior and Playwright coverage intact."
+      ]
+    },
+    {
+      "version": "1.1.29",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Canvas transition plan now matches the shipped board",
+      "businessSummary": "The transition plan now describes the canvas-first board implementation that is actually in the app, so the documented rollout and remaining work no longer point to removed future-file placeholders.",
+      "highlights": [
+        "Rewrote the transition plan to reflect the current board architecture.",
+        "Removed stale feature-flag and future-module references from the plan.",
+        "Kept the app version aligned with the documentation update."
+      ]
+    },
+    {
+      "version": "1.1.28",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Sprite sheets now keep loading after versioned asset URLs",
+      "businessSummary": "The game board now rewrites sprite metadata URLs correctly even when assets include cache-busting query strings. That keeps board art and tile animations loading reliably after each deploy.",
+      "highlights": [
+        "Preserved sprite metadata loading for versioned PNG URLs.",
+        "Verified the browser path with Playwright request interception.",
+        "Bumped the PWA version so the fix ships in the app shell."
+      ]
+    },
+    {
+      "version": "1.1.27",
+      "commit": "ae19bb8",
+      "date": "2026-05-02",
+      "title": "PWA cache keys now move with the build stamp",
+      "businessSummary": "The PWA now uses a fresh build identifier and service-worker cache name so updated page modules are not stuck behind an older cached shell. This makes the game board reflect the latest placement and discovery behavior after a deploy.",
+      "highlights": [
+        "Bumped the PWA build version to force a new asset URL set.",
+        "Synced the service worker commit stamp so its cache name changes too.",
+        "Reduced the chance of stale game-board code surviving a new release."
+      ]
+    },
+    {
+      "version": "1.1.26",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Placement preview now appears in the action bar",
+      "businessSummary": "When a tile is revealed, the bottom action bar now shows the pending tile itself alongside rotate left, place & move, and rotate right. This makes the two-step placement flow easier to understand before the move is committed.",
+      "highlights": [
+        "Added a visible preview card for the pending revealed tile.",
+        "Kept the three placement actions in the bottom bar.",
+        "Preserved the WASM-owned validation and commit flow."
+      ]
+    },
+    {
+      "version": "1.1.25",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Placement actions now live in the action bar",
+      "businessSummary": "When a tile is revealed, the board now shows three clear action-bar controls: rotate left, place & move, and rotate right. Rotation wraps through the tile variants, so the player can align the revealed tile before committing the move.",
+      "highlights": [
+        "Moved tile rotation controls into the main action bar.",
+        "Kept rotate left/right behavior wrapping through the tile orientation set.",
+        "Preserved the WASM-owned placement flow for validation and commit handling."
+      ]
+    },
+    {
+      "version": "1.1.24",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Hidden tile placement now reveals and rotates before commit",
+      "businessSummary": "The game board now uses a two-step discovery flow for unrevealed tiles: the first commit places and reveals the tile, then the player can rotate it with the on-board arrows until the path lines up before finalizing the move. The browser only renders the placement state while WASM keeps the validation rules authoritative.",
+      "highlights": [
+        "Moved hidden-tile placement and rotation validation into the WASM runtime.",
+        "Added a pending placement state so the revealed tile can be rotated before the final commit.",
+        "Kept the browser layer visual-only for the new placement controls."
+      ]
+    },
+    {
+      "version": "1.1.23",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game board startup now comes only from WASM state",
+      "businessSummary": "The board page no longer invents a 19x19 fallback map in JavaScript. It waits for the WASM runtime to provide the actual board dimensions and state, so the UI always reflects the module that owns game state.",
+      "highlights": [
+        "Removed the JS-generated 19x19 fallback board.",
+        "Made the game board render only from WASM-provided state.",
+        "Bumped the app version so the startup behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.22",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Legal discovery previews now show the hidden tile again",
+      "businessSummary": "When you hover a legal unexplored target, the board now shows the temporary hidden tile overlay on top of the white cell. Blocked targets stay red and do not show the preview, so the hidden sprite only appears when the move can actually be committed.",
+      "highlights": [
+        "Restored the hidden preview overlay for legal unrevealed targets.",
+        "Kept blocked moves red with no hidden tile preview.",
+        "Bumped the app version so the corrected discovery preview ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.21",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Unrevealed tiles now stay plain white until previewed",
+      "businessSummary": "The board now renders unrevealed map space as plain white cells, and the hidden tile only appears as the temporary preview overlay when the move target is legal. This keeps committed moves from showing an extra hidden tile while preserving the planning cue during selection.",
+      "highlights": [
+        "Switched unrevealed board cells to plain white space.",
+        "Kept the hidden tile sprite as a temporary preview only.",
+        "Bumped the app version so the cleaner commit view ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.20",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Hidden previews now respect wall-blocked moves",
+      "businessSummary": "Blank move previews are now only shown when the source tile actually has an open edge toward the target direction. If a wall blocks the move, the target stays red and no hidden preview tile appears.",
+      "highlights": [
+        "Added wall-aware validation for blank move targets in the board preview.",
+        "Prevented hidden preview tiles from appearing on blocked moves.",
+        "Bumped the app version so the corrected preview behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.19",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Move preview now stays on top of hidden board space",
+      "businessSummary": "Temporary hidden move previews now appear only for legal targets, and the arrow is rendered above the preview tile so the selected path stays readable. This makes planning moves on unexplored board space clearer without changing the committed move behavior.",
+      "highlights": [
+        "Restricted hidden previews to legal green move targets.",
+        "Put the arrow overlay above the temporary hidden tile.",
+        "Bumped the app version so the improved preview behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.18",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Move previews now work on empty board space",
+      "businessSummary": "You can now click empty white cells on the board to place a temporary hidden move preview. The arrow follows your latest click until you confirm the action, which makes planning exploration feel much more direct.",
+      "highlights": [
+        "Added click-to-preview support for empty board positions.",
+        "Rendered a temporary hidden tile overlay while the action is still pending.",
+        "Bumped the app version so the updated board interaction ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.17",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Exploration now adds one hidden frontier tile at a time",
+      "businessSummary": "When a move reveals new map space, the runtime now appends only the single next frontier tile in that direction instead of materializing a whole row or column. This keeps exploration compact while still allowing players to keep moving outward.",
+      "highlights": [
+        "Changed map growth to add one frontier tile per move.",
+        "Kept move validation working across north and west exploration.",
+        "Bumped the app version so the compact growth behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.16",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Move actions now update the actual tile position",
+      "businessSummary": "The runtime now treats negative target coordinates as real board positions all the way through the shared action request path, so successful moves finally relocate the player to the destination tile even after the board extends north or west of zero.",
+      "highlights": [
+        "Fixed the shared action request sentinel used by GameRuntime move effects.",
+        "Kept the browser and runtime coordinate handling consistent for negative tiles.",
+        "Bumped the app version so the corrected movement behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.15",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "North and west exploration now keeps working past zero",
+      "businessSummary": "The WASM runtime now carries negative board coordinates correctly, so players can keep moving into newly revealed tiles after the map extends north or west of the starting area. This removes the dead-end behavior that appeared after the first few steps of exploration.",
+      "highlights": [
+        "Fixed the runtime action request handling for negative map coordinates.",
+        "Kept adjacent exploration valid after the board expands past zero.",
+        "Bumped the app version so the movement fix ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.14",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Board snapshots restored to rectangular layout",
+      "businessSummary": "The runtime now publishes the full rectangular board bounds again, while still keeping the hidden tiles and origin offsets used for exploration. This keeps adjacent tiles clickable for north and west movement without shifting world coordinates.",
+      "highlights": [
+        "Restored rectangular board snapshots for consistent adjacency.",
+        "Kept hidden tiles and board origin offsets in the runtime payload.",
+        "Bumped the app version so the corrected movement behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.13",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Discovery now reveals only nearby hidden tiles",
+      "businessSummary": "When a tile is revealed, the runtime now adds only the missing tiles in that tile’s immediate neighborhood instead of growing an entire row or column. This keeps exploration local and allows north and west reveals to work consistently.",
+      "highlights": [
+        "Changed discovery growth from full-line appends to a sparse neighborhood model.",
+        "Kept only the nearby hidden tiles around the revealed tile.",
+        "Bumped the app version so the tighter reveal behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.12",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Board now grows in the move direction",
+      "businessSummary": "The map no longer shifts when a reveal reaches the edge. Instead, it appends new tiles on the side you moved toward while keeping existing world coordinates stable, which preserves the player icon and camera position.",
+      "highlights": [
+        "Changed map growth from ring shifting to directional tile appends.",
+        "Kept existing revealed tiles and player positions stable.",
+        "Bumped the app version so the new movement behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.11",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Revealed tiles now grow the hidden perimeter",
+      "businessSummary": "When a move reveals a tile on the edge of the visible map, the runtime now expands the board by one ring so the new tile stays visible and gains eight hidden neighbors. This keeps the fog-of-war area growing naturally as players explore.",
+      "highlights": [
+        "Expanded the runtime board when a revealed move reaches the current edge.",
+        "Preserved player position and revealed tiles across the resize.",
+        "Bumped the app version so the larger exploration area ships in the next PWA build."
+      ]
+    },
+    {
+      "version": "1.1.10",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Board now starts with a revealed center tile",
+      "businessSummary": "New games now begin with one revealed Road4_0 tile in the center and eight hidden neighbors around it. The runtime also includes the revealed tile list in snapshots so the board consistently shows fog-of-war state from the first frame.",
+      "highlights": [
+        "Started games with the center tile revealed instead of showing the full board immediately.",
+        "Kept the surrounding eight tiles hidden at start.",
+        "Included revealed tile state in snapshots so the board renderer can show Hidden.png correctly."
+      ]
+    },
+    {
+      "version": "1.1.9",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Undiscovered tiles now render as Hidden",
+      "businessSummary": "The board now shows Hidden.png for tiles that have not been revealed yet, which makes fog-of-war state visible in the map itself. Revealed tiles continue to show their actual terrain and entities.",
+      "highlights": [
+        "Added a hidden-tile asset to the board renderer.",
+        "Preloaded and precached the hidden tile image.",
+        "Bumped the app version so the new fog-of-war behavior ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.8",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Tile click previews now show move outcome",
+      "businessSummary": "Clicking a destination tile now validates the move before confirmation and colors the selection and arrow to explain the outcome. Valid quiet moves appear dark green, blocked moves appear red, and moves that lead into combat or discovery appear blue.",
+      "highlights": [
+        "Added click-time validation for destination tiles on the game board.",
+        "Colored selection and arrow previews by move result.",
+        "Bumped the app version so the new UI ships in the PWA build."
+      ]
+    },
+    {
+      "version": "1.1.7",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Runtime tile definitions now emit current sprite paths",
+      "businessSummary": "The GameWasm tile definition generator was still emitting the old flat Road4.png-style URLs. It now produces the same directory-based sprite paths as the canonical tile definitions, so the latest build stops requesting stale tile assets.",
+      "highlights": [
+        "Updated the GameWasm tile definition generator to match the canonical JSON paths.",
+        "Eliminated the remaining source of Road4.png requests.",
+        "Bumped the app version so the runtime fix ships in the next PWA build."
+      ]
+    },
+    {
+      "version": "1.1.6",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Service worker now precaches the latest tile sprites",
+      "businessSummary": "The app was still requesting old flat tile image names from the service worker cache. The precache list now uses the current tile-definitions.json sprite paths, which keeps the latest version on the correct assets.",
+      "highlights": [
+        "Replaced stale service-worker tile sprite URLs.",
+        "Aligned precache entries with the canonical tile definitions.",
+        "Bumped the app version so the fix ships in the next PWA build."
+      ]
+    },
+    {
+      "version": "1.1.5",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Removed obsolete tile kind aliases",
+      "businessSummary": "The game asset loader now relies only on the canonical tile kinds from tile-definitions.json. This reduces fallback complexity and keeps tile resolution aligned with the authoritative asset data.",
+      "highlights": [
+        "Removed the unused tile kind alias map from the asset loader.",
+        "Kept tile resolution tied to the canonical JSON definitions.",
+        "Bumped the app version so the cleanup ships in the next PWA build."
+      ]
+    },
+    {
+      "version": "1.1.4",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game assets fallback now matches tile definitions",
+      "businessSummary": "The static game-assets fallback table now mirrors tile-definitions.json, so the app shows the same tile sprites and orientations whether it is using runtime-loaded definitions or the built-in fallback. This keeps the board visuals consistent during startup and offline use.",
+      "highlights": [
+        "Aligned the fallback sprites with the canonical tile definition JSON.",
+        "Kept startup and offline board rendering consistent.",
+        "Bumped the app version so the refreshed asset map ships as a new PWA build."
+      ]
+    },
+    {
+      "version": "1.1.3",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Startup board now uses the Road4_0 center tile",
+      "businessSummary": "The startup board now shows the Road4_0 asset for the center tile on the compact 3x3 map, so the visual board matches the intended opening layout even before runtime assets finish hydrating.",
+      "highlights": [
+        "Switched the static tile fallback to the Road4_0 center asset.",
+        "Kept the 3x3 startup board aligned with the runtime map.",
+        "Bumped the app version so the corrected tile ships in the next PWA build."
+      ]
+    },
+    {
+      "version": "1.1.2",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game board camera now follows the active player",
+      "businessSummary": "The game board now recenters on the active player as movement updates arrive, so the player stays in focus instead of drifting off-screen. This makes movement easier to follow on smaller screens and keeps the map anchored around the current action.",
+      "highlights": [
+        "Centered the board camera on the active player during render updates.",
+        "Kept the camera focused after viewport resizes.",
+        "Bumped the app version so the new camera behavior ships as a fresh PWA build."
+      ]
+    },
+    {
+      "version": "1.1.1",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game now starts on a compact 3x3 arena",
+      "businessSummary": "The game now starts with the requested player count on a smaller 3x3 board, with the first player placed on the center Road4 tile. Movement also respects walls between tiles, so blocked passages are rejected instead of allowing impossible moves.",
+      "highlights": [
+        "Started new games on a 3x3 board instead of the larger default map.",
+        "Placed the first player on the center Road4 tile at game start.",
+        "Rejected movement when walls block the shared edge between tiles."
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "PWA version bumped for the latest mobile layout build",
+      "businessSummary": "The app version now advances to 1.1.0 so the latest mobile board layout and shell changes ship as a fresh PWA release. This keeps update checks accurate and ensures users receive the newest experience through the normal confirmation flow.",
+      "highlights": [
+        "Moved the app and PWA metadata to version 1.1.0.",
+        "Kept the update flow aligned with the latest shipped shell build.",
+        "Preserved the release-notes history for the current build line."
+      ]
+    },
+    {
+      "version": "1.0.96",
+      "commit": "pending",
+      "date": "2026-05-02",
+      "title": "Game board now stays fully framed on mobile",
+      "businessSummary": "The mobile game-board view now keeps the board, empty play area, and action bar inside the viewport without introducing page scroll. This makes the play screen feel stable on phones and keeps the confirm controls visible where players expect them.",
+      "highlights": [
+        "Kept the mobile game-board page locked to the visible viewport.",
+        "Added a narrow-screen layout tweak for the board and action buttons.",
+        "Bumped the app version so the updated PWA shell ships as a new build."
+      ]
+    },
+    {
+      "version": "1.0.95",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game shell now keeps the full board and bottom actions in view",
+      "businessSummary": "The app shell now uses the remaining viewport below the top navigation, which keeps the game board and the bottom action bar visible without forcing the player to scroll the page.",
+      "highlights": [
+        "Changed the app shell to a bounded flex layout below the navigation bar.",
+        "Kept the game board and bottom action bar inside the visible viewport.",
+        "Retained the shared top navigation message and version display behavior."
+      ]
+    },
+    {
+      "version": "1.0.94",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game status now appears in the top navigation row",
+      "businessSummary": "The game board status messages now share the main navigation row instead of taking a separate row, which keeps the interface tighter and preserves more vertical space for the board.",
+      "highlights": [
+        "Moved game status text into the app shell navigation row.",
+        "Removed the separate in-page game-board HUD row.",
+        "Kept the version pill out of the way when the combined row text is too long."
+      ]
+    },
+    {
+      "version": "1.0.93",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now fits without scrolling",
+      "businessSummary": "The game board now resizes itself to the available stage area, so the full grid remains visible without requiring vertical scrolling on smaller screens.",
+      "highlights": [
+        "Removed the scroll-based board stage behavior.",
+        "Fit the board cells to the visible stage size automatically.",
+        "Kept the action bar and HUD visible while the full board stays on screen."
+      ]
+    },
+    {
+      "version": "1.0.92",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now scrolls to reveal the last row",
+      "businessSummary": "The game board stage now scrolls vertically instead of clipping at the viewport edge, so the bottom row can be brought fully into view on smaller screens.",
+      "highlights": [
+        "Made the board stage vertically scrollable instead of hard-clipped.",
+        "Added extra bottom scroll room so the last row can clear the action bar.",
+        "Bumped the app version to ship the layout fix as a new PWA build."
+      ]
+    },
+    {
+      "version": "1.0.91",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now fits the visible mobile viewport",
+      "businessSummary": "The game board layout now uses the visible viewport height on mobile devices and gives the board area a little extra bottom spacing, so the last row stays fully visible above the action bar.",
+      "highlights": [
+        "Switched the board shell to dynamic viewport height for mobile browsers.",
+        "Added bottom stage spacing so the last row no longer sits behind browser chrome.",
+        "Bumped the app version to ship the layout fix as a fresh PWA build."
+      ]
+    },
+    {
+      "version": "1.0.90",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GitHub Pages now serves GameWasm framework assets",
+      "businessSummary": "The published PWA now includes the GitHub Pages marker needed to serve the Blazor GameWasm framework files, which restores the hidden runtime boot path and prevents the game from stalling on a missing asset.",
+      "highlights": [
+        "Added the GitHub Pages marker so underscore-prefixed framework assets are published correctly.",
+        "Bumped the app and service worker version to refresh cached shell files.",
+        "Kept the GameWasm boot path aligned with the published site structure."
+      ]
+    },
+    {
+      "version": "1.0.89",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GameWasm bridge restored to the served asset path",
+      "businessSummary": "The game runtime now loads from the same published GameWasm path that the app serves, which fixes 404s from the hidden runtime iframe and lets game reloads complete reliably again.",
+      "highlights": [
+        "Restored the GameWasm host and runtime script to the served wwwroot asset path.",
+        "Bumped the shell and service worker version so cached bad URLs are replaced.",
+        "Kept the update flow and release notes aligned with the new runtime path."
+      ]
+    },
+    {
+      "version": "1.0.88",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GameWasm now loads from published asset routes",
+      "businessSummary": "The browser now points the GameWasm host and runtime bridge at the published asset routes used in production, which prevents reloads from stalling on a stale hidden iframe path. This keeps the WASM boot flow consistent between local runs and the deployed site.",
+      "highlights": [
+        "GameWasm now loads from the published asset route instead of the stale wwwroot path.",
+        "The service worker cache keys were aligned with the published runtime URLs.",
+        "App and service worker versions were bumped together to invalidate old cached shells."
+      ]
+    },
+    {
+      "version": "1.0.87",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Map now supports two-finger pan",
+      "businessSummary": "The game board map can now be moved with a two-finger gesture while zoom remains isolated to the map itself. This makes it easier to inspect different parts of the battlefield without affecting the bottom action bar or other page controls.",
+      "highlights": [
+        "Two-finger touch on the map now pans the board.",
+        "Zoom stays scoped to the map wrapper only.",
+        "The bottom action bar remains outside the zoomed area."
+      ]
+    },
+    {
+      "version": "1.0.86",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board map now stays top aligned",
+      "businessSummary": "The game board map is now anchored to the top of the play area while the bottom action bar remains pinned to the bottom. This keeps the board easier to scan and preserves a stable control strip when the map is zoomed or resized.",
+      "highlights": [
+        "The map now starts at the top of the available board area.",
+        "The bottom action bar remains pinned to the bottom edge.",
+        "Zoom continues to apply only to the rendered map, not the surrounding UI."
+      ]
+    },
+    {
+      "version": "1.0.84",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board map container is centered",
+      "businessSummary": "The game board stage now centers horizontally so the map feels balanced on wider screens while keeping the status and action bars full-width. This improves readability and gives the board more visual focus.",
+      "highlights": [
+        "The map container is centered within the game board page.",
+        "The top status strip and bottom action bar remain full-width.",
+        "The layout keeps the map visually anchored without changing gameplay controls."
+      ]
+    },
+    {
+      "version": "1.0.83",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board gets a bottom action bar",
+      "businessSummary": "The game board now keeps the header focused on status text and moves confirm actions into a dedicated bottom bar. This gives the map more vertical room while making the primary action controls easier to spot.",
+      "highlights": [
+        "The top board strip now shows only status text.",
+        "Confirm and cancel controls moved into a dedicated bottom action bar.",
+        "The board layout now feels less cramped on smaller screens."
+      ]
+    },
+    {
+      "version": "1.0.82",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GameLogic now starts the game session",
+      "businessSummary": "The browser now asks GameLogic to create the initial board and actor roster through a StartGame runtime event, instead of assembling the session in JavaScript. This keeps the map and available players or monsters under one engine-owned source of truth.",
+      "highlights": [
+        "GameLogic now exposes a StartGame event for session initialization.",
+        "The game board page now requests the starting snapshot from the runtime.",
+        "The PWA no longer constructs the initial board state itself for the game board flow."
+      ]
+    },
+    {
+      "version": "1.0.81",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game runtime cache and hydration hardening",
+      "businessSummary": "This update forces the browser to load the latest GameLogic WebAssembly bundle and keeps the runtime host aligned with the current app version. It also hardens session hydration so the browser can stay in sync with the engine without mixing up entity types.",
+      "highlights": [
+        "The PWA shell and hidden GameWasm host now use a new versioned bundle.",
+        "Runtime hydration is more defensive about saved session payloads and entity IDs.",
+        "The app keeps the GameLogic runtime and browser shell on the same cache-busted version."
+      ]
+    },
+    {
+      "version": "1.0.80",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now uses GameLogic for map and tile data",
+      "businessSummary": "The game board now loads its initial map state from the .NET WebAssembly runtime, and the tile catalog is also sourced from GameLogic so rendering and board setup share one definition set. This reduces duplication between the PWA shell and the game engine while keeping the browser UI unchanged.",
+      "highlights": [
+        "The board snapshot is now built by GameLogic and loaded into the PWA on startup.",
+        "Tile definitions are now sourced from the GameLogic runtime instead of only the JavaScript fallback.",
+        "The browser UI still renders the board, but it no longer owns the canonical map layout."
+      ]
+    },
+    {
+      "version": "1.0.79",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now validates moves with .NET WebAssembly",
+      "businessSummary": "The game board now loads a browser-hosted .NET runtime so move validation runs in WebAssembly while the existing HTML, CSS, and JavaScript board stays in place. This keeps the UI responsive and moves the rule checks into the shared game engine layer.",
+      "highlights": [
+        "The game-board page now loads the GameWasm bridge when it is available.",
+        "Move validation runs through the shared .NET game engine in the browser.",
+        "The existing JS board remains the rendering layer and falls back to the backend if the WASM runtime is unavailable."
+      ]
+    },
+    {
+      "version": "1.0.78",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Map zoom is now constrained to the board itself",
+      "businessSummary": "Pinch zoom now lives on the board element instead of the broader map shell, which keeps tap-based movement working and ensures only the tile grid responds to touch scaling. The rest of the page, including the action bar and navigation, stays outside the zoom target.",
+      "highlights": [
+        "Pinch zoom is attached directly to the tile grid.",
+        "Tap selection and movement remain active on the board.",
+        "The action strip and top navigation stay unaffected by zoom gestures."
+      ]
+    },
+    {
+      "version": "1.0.77",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Map tiles now support pinch zoom inside the board area",
+      "businessSummary": "Players can now pinch inside the map container to zoom tiles in and out without affecting the rest of the page. The tile grid scales proportionally so the board stays readable on touch devices while the action bar and navigation remain fixed.",
+      "highlights": [
+        "Pinch zoom is scoped to the map container only.",
+        "Tile size scales proportionally as the gesture changes.",
+        "The top navigation and action bar remain outside the zoomed area."
+      ]
+    },
+    {
+      "version": "1.0.76",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game board now queues a move target before validation",
+      "businessSummary": "The board now lets a player select their own icon, click a destination tile, and preview the move with an arrow before sending the action to the backend. The backend remains the source of truth for validation when the player clicks Perform Action.",
+      "highlights": [
+        "Players can click their own icon to select it on the board.",
+        "A clicked destination tile now shows a queued move arrow before submission.",
+        "The move is submitted for backend validation only when Perform Action is pressed."
+      ]
+    },
+    {
+      "version": "1.0.75",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Game start now reuses a shared 19x19 board builder",
+      "businessSummary": "Single-player and multiplayer now share the same game-start logic. The app builds a 19x19 board-only battlefield, places players at the corners, and opens a board-only page with no roster or description text so the map is the only focus.",
+      "highlights": [
+        "Added a shared 19x19 game-start session builder.",
+        "Single-player and multiplayer host starts now route to the same board-only page.",
+        "The board page shows only the map and entity sprites, with no visible descriptions."
+      ]
+    },
+    {
+      "version": "1.0.74",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Tile set demo page added to the menu",
+      "businessSummary": "The app now includes a dedicated tile-set demo page reachable directly from the main Menu. It renders the full tile catalog in orientation order as a visual-only reference so artwork changes can be reviewed quickly without gameplay text or extra UI clutter.",
+      "highlights": [
+        "Added a direct Menu link to the tile-set demo page.",
+        "The demo page shows only tiles in orientation order with no descriptions or body copy.",
+        "PWA version metadata was bumped so the new demo page replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.73",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Road and chamber tile metadata now supports dead ends",
+      "businessSummary": "The tile catalog now defines road and chamber families from 0 to 4 exits, including dead-end tiles, and stores wall metadata for each orientation in JSON. The loader still preloads all artwork once per version, but the renderer can now resolve the correct tile family, rotation, and wall layout from the definition file.",
+      "highlights": [
+        "Added road0 and chamber0 dead-end definitions with wall metadata.",
+        "The loader now recognizes numeric road/chamber keys and the older alias names.",
+        "PWA version metadata was bumped so the updated tile catalog replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.72",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Tile orientations now come from JSON",
+      "businessSummary": "The game client now loads a JSON tile catalog that defines four orientations per tile family and records wall presence for each side. The battle map can now pick the correct rotated tile and use the same definition data for future movement and wall checks.",
+      "highlights": [
+        "Added a JSON tile catalog with orientation-specific sprites and wall metadata.",
+        "The game renderer now reads tile orientation from the session and shows the proper rotated variant.",
+        "The app shell and service worker were versioned so the new tile catalog replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.71",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Battlefield tiles now load as layered sprites",
+      "businessSummary": "The single-player game flow now seeds a layered battlefield where terrain tiles render underneath player and monster sprites. The client preloads a shared PNG sprite set for the four core tile types and entity layers so the map can be drawn consistently from API-provided kinds.",
+      "highlights": [
+        "Added a shared sprite catalog for cross-road, direct-road, chamber-2, and chamber-4 tile kinds.",
+        "Terrain now renders as the bottom layer, with players and monsters drawn above it.",
+        "The sprite set is preloaded and versioned with the app shell so new releases replace cached artwork cleanly."
+      ]
+    },
+    {
+      "version": "1.0.70",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Network room chat now opens with the room",
+      "businessSummary": "The Host via Network and Join via Network pages now show a room chat panel as soon as a room is created or joined. Messages are stored with the room so members can talk inside the same flow without switching to another page.",
+      "highlights": [
+        "Room chat now appears immediately after a network room is created or joined.",
+        "Messages are saved with the room and reloaded as the room updates.",
+        "The network join page no longer depends on the removed placeholder chat toggle."
+      ]
+    },
+    {
+      "version": "1.0.69",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Session chat now lives inside host and join rooms",
+      "businessSummary": "The multiplayer host and join pages now include the session chat panel directly, so room members can talk without leaving the room. The old session chat launcher was removed from the main Multiplayer page to keep the entry flow focused on choosing how to play.",
+      "highlights": [
+        "Session chat is now visible inside the Host and Join room pages.",
+        "Players can talk while staying in the room flow instead of opening a separate chat screen.",
+        "The Multiplayer landing page no longer exposes the old session chat launcher."
+      ]
+    },
+    {
+      "version": "1.0.68",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "CI now reuses the local build counter",
+      "businessSummary": "GitHub Actions no longer changes the patch version. It now reads the stored build counter and continues from that value, so CI and local builds stay aligned and the build segment keeps the same reset behavior when the base version changes.",
+      "highlights": [
+        "Removed the special CI patch bump path.",
+        "Builds now continue from the stored local build counter.",
+        "Version resets still happen automatically when major, minor, or patch changes."
+      ]
+    },
+    {
+      "version": "1.0.67",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "GitHub Actions now reset the build segment",
+      "businessSummary": "Local rebuilds keep using the 3-digit build counter, but GitHub Actions now advance the patch segment and reset the build segment to 001 so CI-produced API versions stay clearly newer.",
+      "highlights": [
+        "Local builds still increment the 3-digit build counter.",
+        "GitHub Actions now move the patch segment forward and reset the build segment to 001.",
+        "Swagger and /api/version continue to show the same numeric API version."
+      ]
+    },
+    {
+      "version": "1.0.66",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Build counter reset now follows the base version",
+      "businessSummary": "The backend API version now uses a compact three-digit build segment. When major, minor, or patch changes, the build counter resets automatically so the visible API version stays aligned with the new base release.",
+      "highlights": [
+        "Build versions now use a 3-digit numeric build segment.",
+        "Changing major, minor, or patch resets the build counter to 001.",
+        "Swagger and /api/version continue to show the same numeric version value."
+      ]
+    },
+    {
+      "version": "1.0.65",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "API build numbers are now short and numeric",
+      "businessSummary": "The backend API version still changes on every rebuild, but the build segment is now a short 8-digit numeric value so it stays compact while remaining easy to compare and display.",
+      "highlights": [
+        "Build versions now use an 8-digit numeric build segment.",
+        "Local rebuilds still advance the version immediately without waiting for a commit.",
+        "The Admin and Lab version checks continue to compare the numeric version correctly."
+      ]
+    },
+    {
+      "version": "1.0.64",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "API build numbers now stay short",
+      "businessSummary": "The backend version still updates on every local rebuild, but the build segment is now capped at 8 numeric characters so the version stays compact while remaining easy to compare.",
+      "highlights": [
+        "Build versions now use an 8-digit numeric build segment.",
+        "Local rebuilds still advance the version immediately without waiting for a commit.",
+        "The Admin and Lab version checks continue to compare the numeric version correctly."
+      ]
+    },
+    {
+      "version": "1.0.63",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Backend versioning now tracks 4-part build numbers",
+      "businessSummary": "The Admin and Lab version checks now understand numeric major.minor.patch.build API versions, and the signaling backend now stamps a new numeric build segment on every local or GitHub build run so version changes show up immediately.",
+      "highlights": [
+        "API version strings now compare all numeric segments instead of truncating at three parts.",
+        "Local signaling builds get a fresh numeric build stamp even before commit.",
+        "GitHub Actions builds also receive a new numeric build stamp on every run."
+      ]
+    },
+    {
+      "version": "1.0.62",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Joined players now leave cleanly and hosts can expel peers",
+      "businessSummary": "The Join via Network page now removes the player from the room when they navigate away, and the Host via Network page can expel connected players directly from the peer list. Joined rooms also collapse to the connected peers view instead of keeping the scan flow visible.",
+      "highlights": [
+        "Leaving Join via Network now removes that player from the room.",
+        "Host via Network now includes an Expel action for connected peers.",
+        "The scan/join UI hides after a successful join so the peer list becomes the focus."
+      ]
+    },
+    {
+      "version": "1.0.61",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join via Network now scans and joins directly",
+      "businessSummary": "The Join via Network page now focuses on QR scanning and direct room join actions. Successful scans join the room immediately, and the old join-code input has been removed to keep the flow simpler on mobile.",
+      "highlights": [
+        "Removed the pasted join-code field from the Join via Network page.",
+        "QR scans now trigger the join request directly using the parsed room payload.",
+        "PWA version metadata was bumped so the streamlined join flow replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.60",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Admin backend selector now shows all available options",
+      "businessSummary": "The Admin backend selector now renders the available room APIs as an actual option list. On localhost it shows both Local and Live, while on non-local origins it shows only Live and disables selection when there is only one available backend.",
+      "highlights": [
+        "Replaced the hidden-button pattern with a visible backend option list.",
+        "Local appears only in local runtime, and Live stays available as the default option.",
+        "Single-option states are now disabled so the Admin page matches the available backend choices."
+      ]
+    },
+    {
+      "version": "1.0.59",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Admin can now switch backend API",
+      "businessSummary": "The Admin console now includes a backend picker for Local and Live room APIs. It shows each backend version, keeps the live option available at all times, and makes it easier to point the room-management tools at the right environment without editing settings by hand.",
+      "highlights": [
+        "Admin now exposes Local and Live backend buttons with version labels.",
+        "Local is only shown when the app runs on localhost or file://, while Live remains available everywhere.",
+        "PWA version metadata was bumped so the backend selection UI replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.58",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Admin console replaces the Lab page",
+      "businessSummary": "The old mock-focused Lab page is now an Admin console with real room-management actions. It can list all games with only the safe summary fields, clean inactive games, and still exposes the app update and install controls for maintenance work.",
+      "highlights": [
+        "Renamed the Lab navigation entry to Admin and moved it to a room-management dashboard.",
+        "Added room listing and inactive cleanup actions backed by the signaling API.",
+        "PWA version metadata was bumped so the new admin console replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.57",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Host via Network now focuses on room sharing",
+      "businessSummary": "The Host via Network page now starts with a simple create-room flow and, once a room is live, shows only the connected users list and the QR code for joining. This makes the host screen easier to scan on phones and tablets during multiplayer setup.",
+      "highlights": [
+        "Removed the manual backend API input from the host flow.",
+        "After room creation, the host view now keeps the connected users list above the QR code.",
+        "PWA version metadata was bumped so the streamlined host layout replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.56",
+      "commit": "3660ec6",
+      "date": "2026-05-01",
+      "title": "PWA page scripts now always load by build",
+      "businessSummary": "Page HTML, styles, and module scripts now include the active build ID in their request URLs, so the app loads the newest page code instead of reusing stale cached modules during route changes and refreshes.",
+      "highlights": [
+        "Page asset requests now carry the current build ID as a cache-busting version parameter.",
+        "Route changes fetch the latest page module and stylesheet for the active build.",
+        "PWA version metadata was bumped so the new asset-loading behavior replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.55",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Multiplayer now assigns temp server names for blank hosts too",
+      "businessSummary": "When the client nickname is blank, the local UI still shows You, and the backend now gives the room a temporary server-generated host name instead of the literal Host label.",
+      "highlights": [
+        "Blank nicknames stay blank in preferences and local UI identity.",
+        "Server-generated temporary host names are used for multiplayer rooms when no nickname is supplied.",
+        "PWA version metadata was bumped so the updated behavior replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.54",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Blank nickname now stays local while multiplayer gets a temp name",
+      "businessSummary": "The shared nickname default is now blank, the local UI shows that client as You, and the backend assigns a temporary multiplayer name when no nickname is provided.",
+      "highlights": [
+        "Nickname preferences no longer default to the literal text You.",
+        "Network host and join pages use the local player identity for the You label.",
+        "The Signaling Function assigns temporary host/player names when requests omit a nickname."
+      ]
+    },
+    {
+      "version": "1.0.53",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Inactive rooms can now be cleaned up via API",
+      "businessSummary": "The Signaling Function now exposes a cleanup endpoint that removes inactive rooms from storage, helping keep room listings and room data tidy over time.",
+      "highlights": [
+        "Adds a new API endpoint to delete inactive rooms in bulk.",
+        "Returns how many rooms were deleted and which room IDs were removed.",
+        "PWA version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
+      "version": "1.0.52",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Network client identity now persists by room",
+      "businessSummary": "The network host and join pages now remember the current client's player ID for each room, so the local player is labeled as You consistently instead of being guessed from the current peer list.",
+      "highlights": [
+        "Local player IDs are now stored per room and backend URL.",
+        "Join and host pages restore the same self identity after refresh.",
+        "PWA version metadata was bumped so the updated identity logic can replace cached copies."
+      ]
+    },
+    {
+      "version": "1.0.51",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Update reload now forces a fresh app shell",
+      "businessSummary": "When a new version is activated, the app now reloads through a cache-busted URL instead of a plain refresh, which keeps the new worker, HTML, and JavaScript bundle in sync on mobile browsers.",
+      "highlights": [
+        "Update activation now navigates to a cache-busted URL.",
+        "Prevents mixed old/new app shell state after version changes.",
+        "PWA version metadata was bumped so the new reload behavior replaces cached copies."
+      ]
+    },
+    {
+      "version": "1.0.50",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Network player lists now mark the local client as You",
+      "businessSummary": "The network host and join screens now label the current client's own player row as You, so the same room is shown consistently from each device's perspective.",
+      "highlights": [
+        "The local player row is now identified by the current client player ID.",
+        "Each device shows its own player as You while keeping host/peer role labels.",
+        "PWA version metadata was bumped so the updated peer list rendering can replace cached copies."
+      ]
+    },
+    {
+      "version": "1.0.49",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join page room polling stays in scope",
+      "businessSummary": "The Join via Network page now keeps room polling and heartbeat helpers inside the page lifecycle, which prevents active-room join errors caused by undefined page state after refresh.",
+      "highlights": [
+        "Moved room polling and heartbeat helpers into the Join via Network page scope.",
+        "Prevents activeRoomId and roomApi ReferenceErrors during join and refresh.",
+        "PWA version metadata was bumped so cached copies can be replaced."
+      ]
+    },
+    {
+      "version": "1.0.48",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join page snapshot rendering now stays in scope",
+      "businessSummary": "The Join via Network page now renders room snapshots from inside the page mount scope, which removes the renderPeers ReferenceError that could block the room list and joined-room state from displaying on refresh.",
+      "highlights": [
+        "Moved room snapshot rendering back into the Join via Network page scope.",
+        "Fixes the renderPeers ReferenceError seen on page load and refresh.",
+        "PWA version metadata was bumped so the updated page script can replace cached copies."
+      ]
+    },
+    {
+      "version": "1.0.47",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "API requests bypass the PWA cache",
+      "businessSummary": "Network room and other API requests now skip the service worker cache, which prevents stale empty responses from being reused on mobile after the backend data changes.",
+      "highlights": [
+        "API GET requests now go straight to the network instead of being served from the app cache.",
+        "Room list responses should reflect the live backend state after a refresh.",
+        "PWA version metadata was bumped so the new service worker replaces the old cache."
+      ]
+    },
+    {
+      "version": "1.0.46",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Swagger is now generated from live functions",
+      "businessSummary": "The Signaling Function OpenAPI document is now built from the actual HTTP-triggered functions, so newly added endpoints appear automatically instead of relying on a hand-maintained route list.",
+      "highlights": [
+        "Swagger/OpenAPI now discovers HTTP-triggered functions at runtime.",
+        "New room endpoints are included without manual document edits.",
+        "PWA version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
+      "version": "1.0.45",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Lab page can force a latest-version check",
+      "businessSummary": "The Lab page now includes a manual Check Latest Version button that forces the service worker to re-check the newest build and re-run the update flow on demand.",
+      "highlights": [
+        "Adds a visible manual update-check button to the Lab page.",
+        "The forced check clears stale prompt state and re-evaluates the waiting service worker.",
+        "If a newer build is available, the existing reload/update flow is retriggered.",
+        "PWA version metadata was bumped to keep the cache aligned."
+      ]
+    },
+    {
+      "version": "1.0.44",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join page now starts room polling reliably",
+      "businessSummary": "The Join via Network page now marks the route as active before the page module mounts, so the waiting-room list starts loading immediately instead of being skipped on first open.",
+      "highlights": [
+        "The join page can now start its initial room poll as soon as it mounts.",
+        "Route-leave cleanup still stops background polling when you go back to Multiplayer.",
+        "PWA version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
+      "version": "1.0.43",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join page is tolerant of cached peer-list code",
+      "businessSummary": "The Join via Network page now includes a compatibility alias for the peer rendering helper, preventing a stale cached script from failing when it still references the older function name.",
+      "highlights": [
+        "Added a renderPeer compatibility alias on the network join page.",
+        "Helps stale or partially updated cached scripts keep rendering the peer list.",
+        "PWA version metadata was bumped again so the cache can refresh cleanly."
+      ]
+    },
+    {
+      "version": "1.0.42",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Join room polling now stops when you leave the page",
+      "businessSummary": "The Join via Network room list now shuts itself off as soon as you navigate away from the page, preventing unnecessary backend polling after you return to Multiplayer or another screen.",
+      "highlights": [
+        "Waiting-room polling now stops automatically when the Join via Network route is no longer active.",
+        "Leaving the page no longer keeps the room list endpoint hot in the background.",
+        "PWA version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
+      "version": "1.0.41",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Fixed Join via Network page bootstrap",
+      "businessSummary": "The Join via Network page now loads reliably again after the waiting-room poller was moved back into the page lifecycle. This restores the lobby list on local runs and keeps the new room-status flow usable.",
+      "highlights": [
+        "Fixed the join page bootstrap ReferenceError for waiting-room polling.",
+        "Waiting rooms continue to load inside the page lifecycle instead of as a stray top-level call.",
+        "Version metadata was bumped again to keep the PWA cache aligned with the fix."
+      ]
+    },
+    {
+      "version": "1.0.40",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Room statuses now distinguish lobby, play, and idle states",
+      "businessSummary": "Network rooms now track whether they are waiting to start, active, or inactive. The Join via Network screen only shows rooms that are still waiting in the lobby, which makes it easier to connect to sessions that are actually ready to accept players.",
+      "highlights": [
+        "Rooms now resolve to waiting to start, active, or inactive based on lobby activity and room start state.",
+        "Join via Network only shows rooms that are still waiting to start.",
+        "Host via Network can mark a room active when starting the game flow.",
+        "PWA app version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
+      "version": "1.0.39",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Network join now shows active hosted rooms",
+      "businessSummary": "Join via Network now surfaces only rooms with an active host heartbeat, so players can connect straight from a live room list instead of guessing or pasting a join code first.",
+      "highlights": [
+        "The Signaling Function now exposes a dedicated active-room list endpoint.",
+        "Join via Network shows active rooms with host name, room ID, and player count.",
+        "Players can join a live room directly from the list or keep using the join code field.",
+        "PWA app version metadata was bumped to keep cache and release tracking aligned."
+      ]
+    },
+    {
+      "version": "1.0.38",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Broadened REST CORS handling for browser preflight",
+      "businessSummary": "The Signaling Function now responds to browser preflight with permissive CORS headers so the GitHub Pages PWA and local development host can call the room API without being blocked by origin checks.",
+      "highlights": [
+        "OPTIONS preflight responses now always include the necessary CORS headers.",
+        "Room API responses are returned with shared allow-origin headers.",
+        "Supports both localhost development and the GitHub Pages PWA origin.",
+        "PWA version metadata was bumped to keep cache and release notes aligned."
+      ]
+    },
+    {
+      "version": "1.0.37",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Multiplayer page cleanup and room API passthrough",
+      "businessSummary": "The Multiplayer page now focuses on the network flow, and GitHub Pages now forwards room API calls to the real Signaling Function backend instead of returning a mock endpoint error.",
+      "highlights": [
+        "Removed the same-device Lobby and Host section from Multiplayer.",
+        "Room API requests from prackameen.github.io now pass through to the backend.",
+        "Create Room on GitHub Pages no longer returns Unknown mock endpoint.",
+        "App version metadata was bumped to keep the PWA cache aligned."
+      ]
+    },
+    {
+      "version": "1.0.36",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Centralized REST API configuration",
+      "businessSummary": "The PWA now keeps REST backend defaults, local-storage keys, join-code prefixing, and network timing in one shared config module, making local and deployed API behavior easier to keep consistent.",
+      "highlights": [
+        "Shared API config now defines the local and remote backend defaults in one place.",
+        "Room join-code prefix and persistence key are centralized.",
+        "Heartbeat and polling intervals now come from one shared module.",
+        "Host and join pages consume the same config values instead of duplicating constants."
+      ]
+    },
+    {
+      "version": "1.0.35",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "Localhost now auto-selects local REST backend",
+      "businessSummary": "When the PWA runs from localhost, the network host and join screens now default to the local Signaling Function backend instead of the deployed Azure URL, so local development works without manual API URL changes.",
+      "highlights": [
+        "localhost and loopback PWA sessions now default to http://localhost:7071/api.",
+        "Deployed GitHub Pages sessions still default to the Azure Functions API URL.",
+        "Room join codes continue to carry the backend base URL for cross-device sharing.",
+        "App version was bumped again to keep the PWA metadata aligned."
+      ]
+    },
+    {
+      "version": "1.0.34",
+      "commit": "pending",
+      "date": "2026-05-01",
+      "title": "REST room flow now uses Signaling Function",
+      "businessSummary": "The network host and join screens now create and join rooms through the Signaling Function REST API instead of the old WebSocket signaling relay, matching the deployed Azure Functions backend.",
+      "highlights": [
+        "Host now creates a room through POST /api/rooms and shares a room-based join code.",
+        "Join now uses the room join and room fetch endpoints from the REST API.",
+        "Room presence is refreshed with heartbeat updates and periodic state polling.",
+        "PWA version metadata was bumped to keep release tracking aligned."
+      ]
+    },
+    {
+      "version": "1.0.33",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Reliable LAN host detection via signaling server",
+      "businessSummary": "Network Host now detects LAN IP using the signaling server's local network interfaces, improving detection reliability on desktop browsers where WebRTC local-IP discovery may be restricted.",
+      "highlights": [
+        "Added WebClient endpoint to return local private IPv4 addresses.",
+        "Host page now queries signaling server for LAN IP before WebRTC fallback.",
+        "Read-only Local LAN Host block is now more reliable on PC.",
+        "CORS enabled for LAN-detection endpoint to support separate PWA origin during local development."
+      ]
+    },
+    {
+      "version": "1.0.32",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Read-only local LAN host helper on Network Host",
+      "businessSummary": "Network Host now shows a read-only local LAN host/IP block with quick Copy and Use actions, making it easier to host or share endpoint info from mobile and LAN devices.",
+      "highlights": [
+        "Added read-only Local LAN Host display on Host via Network page.",
+        "One-tap Copy action to paste LAN host/IP wherever needed.",
+        "One-tap Use action to fill the Extra Host field automatically.",
+        "Auto-detection uses signaling URL host first and device LAN detection when available."
+      ]
+    },
+    {
+      "version": "1.0.31",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "LAN host candidate prioritization and join diagnostics",
+      "businessSummary": "Network Join now prioritizes the manually entered IP/domain candidate before localhost, improving cross-device LAN connection success. Failed joins now report which signaling endpoints were attempted.",
+      "highlights": [
+        "Extra Host (IP/domain) is now tried before localhost in generated join candidates.",
+        "Join failure message includes the list of endpoint hosts that were attempted.",
+        "Helps diagnose LAN issues such as firewall blocks or unreachable signaling endpoints."
+      ]
+    },
+    {
+      "version": "1.0.30",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Simplified host endpoint input for QR/join payload",
+      "businessSummary": "Network Host setup now uses a single optional endpoint field that accepts either an IP address or a domain name, reducing setup complexity while keeping multi-endpoint join reliability.",
+      "highlights": [
+        "Replaced multiple optional endpoint inputs with one Extra Host field.",
+        "Extra Host accepts both IP addresses and DNS hostnames.",
+        "Generated join payload still includes endpoint candidates for fallback connection attempts.",
+        "Join flow behavior and backward compatibility remain unchanged."
+      ]
+    },
+    {
+      "version": "1.0.29",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "QR join payload now supports multiple server endpoints",
+      "businessSummary": "Host-generated join payloads now include an array of signaling server options (localhost, LAN IP, public IP, and optional public DNS). Joining clients can automatically try these endpoints until one connects.",
+      "highlights": [
+        "Host screen includes optional LAN IP, Public IP, and Public DNS inputs for join payload generation.",
+        "Join payload now carries signaling endpoint array while keeping backward compatibility.",
+        "Join flow attempts available signaling endpoints in order until connection succeeds.",
+        "Improves reliability across local-only, LAN, and internet scenarios from one QR code."
+      ]
+    },
+    {
+      "version": "1.0.28",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "In-app QR scanner with session-only payload",
+      "businessSummary": "Players can now scan host QR codes directly inside the G.A.M.E PWA Join page. QR payloads now contain only session join data, removing dependency on opening a browser URL from the system camera app.",
+      "highlights": [
+        "Join (Network) now has a built-in camera scanner for QR codes.",
+        "Host QR codes encode session payload only (join code), not a site URL.",
+        "Scanner auto-fills the Join Code input when a valid app QR is detected.",
+        "Backward compatibility kept for previous URL-based QR codes."
+      ]
+    },
+    {
+      "version": "1.0.27",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "QR join links now use signaling host",
+      "businessSummary": "Network host QR codes now point to the signaling server host (public IP/domain) instead of localhost, so phones and remote devices can open the correct join URL directly after scanning.",
+      "highlights": [
+        "QR URL host is derived from the configured signaling server URL.",
+        "When signaling uses a public IP or domain, scanned QR links now open that same reachable host.",
+        "App routing, join-code prefill, and one-tap connect flow remain unchanged."
+      ]
+    },
+    {
+      "version": "1.0.26",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "QR code sharing for network multiplayer",
+      "businessSummary": "When hosting a network multiplayer session, players can now scan a QR code from the host's screen instead of copy-pasting the join code. Mobile clients scan → automatically land on the join page with code pre-filled → one click to connect.",
+      "highlights": [
+        "Host page displays both a text join code (for copy-paste) and a scannable QR code.",
+        "QR code encodes a full URL that auto-navigates clients to the join page with code pre-filled.",
+        "Mobile clients: scan QR → join page appears → click Connect.",
+        "QR code library bundled locally for offline capability.",
+        "Fallback copy-paste remains available for all devices."
+      ]
+    },
+    {
+      "version": "1.0.25",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Hotfix: update loop stabilization",
+      "businessSummary": "Fixed a regression that could destabilize page startup and contribute to repeated reload behavior after updates. Multiplayer network routes and navigation were repaired, and update reload handling was hardened to reload only once per activation.",
+      "highlights": [
+        "Repaired page registry and navigation tree wiring for new network multiplayer routes.",
+        "Hardened service-worker activation reload path to prevent duplicate reload triggers.",
+        "Kept explicit user confirmation before applying a newer app version.",
+        "Stabilized startup routing and release-notes data format."
+      ]
+    },
+    {
+      "version": "1.0.24",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "LAN & internet multiplayer (WebRTC)",
+      "businessSummary": "Players can now join the same game session across devices on a local network or over the internet. The host generates a Join Code; anyone with the code and access to the signaling server can connect directly, peer-to-peer, with no cloud dependency beyond the signaling handshake.",
+      "highlights": [
+        "New 'Host via Network' and 'Join via Network' options on the Multiplayer page.",
+        "Host generates a compact Join Code that encodes both the session ID and signaling server address.",
+        "Joining players paste the Join Code — no manual IP or port configuration required.",
+        "Uses WebRTC DataChannels for direct peer-to-peer messaging after the initial handshake.",
+        "Signaling relay built into the G.A.M.E WebClient (ws://<server>/multiplayer/signaling).",
+        "For LAN: run the WebClient on any device on the network and use its local IP.",
+        "For internet: expose the WebClient publicly (port forward, ngrok, or cloud) and use its public URL.",
+        "All ordered message delivery, history persistence, and chat features work identically over the network."
+      ]
+    },
+    {
+      "version": "1.0.23",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Multiplayer chat — message delivery fix",
+      "businessSummary": "Fixed a bug where messages sent by the host were not appearing for any connected players, and messages sent by clients were not visible on the client's own screen. Chat now works correctly in both directions: every player sees every message in the order it was sent.",
+      "highlights": [
+        "Host messages are now correctly delivered to and displayed on all client screens.",
+        "Client messages are now displayed on the client's own screen after the host sequences and echoes them back.",
+        "Root cause was an off-by-one in the session message store that caused incoming messages to be silently buffered and never flushed."
+      ]
+    },
+    {
+      "version": "1.0.22",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Multiplayer session infrastructure (Epic 1)",
+      "businessSummary": "The foundation for real-time multiplayer is now in place. Players on the same device or browser can create and join sessions, see who is connected, and exchange ordered chat messages that persist across disconnects and page reloads. Host and Lobby pages are now functional entry points into the session flow. A dedicated Chat page is available for testing the pipeline end-to-end before game actions are wired in.",
+      "highlights": [
+        "Host page now creates a live multiplayer session and displays a shareable session ID.",
+        "Lobby page lets players join a session by pasting the session ID.",
+        "Messages are delivered to all players in the same global order, regardless of which device sends them.",
+        "Full message history is preserved locally and replayed automatically when a player reconnects after a disconnect.",
+        "New Chat (Dev) page provides a quick pipeline test: open 3 tabs, one as host and two as clients, and exchange messages.",
+        "Transport layer is designed to be swappable — BroadcastChannel is used today; WebRTC (LAN) and WebSocket (internet) transports will be added next.",
+        "All session logic lives in the PWA with no server dependency."
+      ]
+    },
+    {
+      "version": "1.0.21",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Persistent player profile defaults",
+      "businessSummary": "Settings now lets each player save their nickname, preferred character, and preferred color as persistent defaults. These defaults automatically load in both Single Player and Multiplayer flows.",
+      "highlights": [
+        "Added Player Profile settings form with nickname, preferred character, and preferred color.",
+        "Saved defaults persist locally and survive app reloads.",
+        "Single Player now starts with your saved nickname, character, and color.",
+        "Multiplayer now shows your saved default profile for quick verification."
+      ]
+    },
+    {
+      "version": "1.0.20",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Version label hides when breadcrumb is long",
+      "businessSummary": "The app version badge in the navigation bar now automatically hides when the breadcrumb trail is long enough to overlap it, keeping the header uncluttered on narrow screens or deep page hierarchies.",
+      "highlights": [
+        "Version badge hides automatically when the breadcrumb would overlap it.",
+        "Badge reappears immediately when space is available again (e.g. on resize)."
+      ]
+    },
+    {
+      "version": "1.0.19",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Start Game button and game page",
+      "businessSummary": "Players can now start the game from the Single Player roster screen. Clicking Start Game transitions to the game page showing the confirmed player lineup with their chosen colors and characters.",
+      "highlights": [
+        "Added Start Game button at the bottom of the Single Player roster screen.",
+        "Clicking Start Game navigates to a dedicated game page with the full player lineup.",
+        "Game page shows each player's color, character icon, name, and type."
+      ]
+    },
+    {
+      "version": "1.0.18",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Random option and expanded color palette",
+      "businessSummary": "Both the color and character pickers now include a Random option that is the default when a player is first added. The color palette has been expanded with yellow, orange, black, and purple.",
+      "highlights": [
+        "Random is the default selection for color and character on every new player.",
+        "Color picker now includes 8 colors: red, blue, green, brown, yellow, orange, black, purple.",
+        "Random option shown with a rainbow swatch (colors) or dice icon (character) in both pickers."
+      ]
+    },
+    {
+      "version": "1.0.17",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Player row layout ordering and alignment",
+      "businessSummary": "The player row layout has been reorganized for faster scanning and cleaner alignment. Color and character pickers are grouped on the left, player name fills the center area, and type/remove actions are anchored to the right.",
+      "highlights": [
+        "Changed row order to: color picker, character picker, player name, human/bot, remove player.",
+        "Aligned color and character controls to the left side of each row.",
+        "Aligned player type and remove action to the right while keeping name flexible in the middle."
+      ]
+    },
+    {
+      "version": "1.0.16",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Unique player color selection",
+      "businessSummary": "Single Player now supports color selection per player with strict uniqueness across the roster. Colors are selected from the same compact row interaction style to keep setup fast and readable.",
+      "highlights": [
+        "Added color selector per player with the four available colors: red, blue, green, and brown.",
+        "Color choice is unique across players; already used colors are disabled for others.",
+        "Add Player is capped by available unique colors so every player always has a distinct color."
+      ]
+    },
+    {
+      "version": "1.0.15",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Single-row player card with icon selector",
+      "businessSummary": "Each player now appears in one row with icon, name, type, and remove action. Clicking the icon opens character selection so the roster stays compact while still allowing quick class changes.",
+      "highlights": [
+        "Player row now shows icon, name, player type, and remove action in one horizontal line.",
+        "Character selector is opened by clicking the player icon.",
+        "Character choice updates icon immediately after selection."
+      ]
+    },
+    {
+      "version": "1.0.14",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Single Player character class selection",
+      "businessSummary": "Single Player now loads predefined character classes from API and assigns a random default character to each player. Players can change their character from the available classes at any time.",
+      "highlights": [
+        "Added API-backed character class catalog (icon and name) used by Single Player setup.",
+        "Every new player gets a random default character from API/mock response.",
+        "Character icon is now shown next to each player and updates when class is changed."
+      ]
+    },
+    {
+      "version": "1.0.13",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Single Player player roster",
+      "businessSummary": "The Single Player page now shows a player roster. You start as the only human player and can add bot opponents by clicking 'Add Player'. Each added player can be removed individually.",
+      "highlights": [
+        "Single Player page shows a live player list starting with you as the human player.",
+        "Add Player button appends a new bot player to the roster.",
+        "Added players can be removed via a remove button; the first human slot is always locked."
+      ]
+    },
+    {
+      "version": "1.0.12",
+      "commit": "pending",
+      "date": "2026-04-25",
+      "title": "Lab added to menu; unreferenced pages removed",
+      "businessSummary": "The Lab section is now accessible directly from the main menu. Pages that were not part of the app navigation hierarchy (Replays, Loadout) have been removed to keep the app tidy.",
+      "highlights": [
+        "Lab page added to the main menu navigation.",
+        "Lab is now part of the official page hierarchy and breadcrumb trail.",
+        "Removed Replays and Loadout pages that were not linked from any menu."
+      ]
+    },
+    {
+      "version": "1.0.11",
+      "commit": "ccae28c",
+      "date": "2026-04-25",
+      "title": "Top bar version placement",
+      "businessSummary": "The running app version is now shown in the top navigation row so testers can verify the active build at a glance from the main header area.",
+      "highlights": [
+        "Moved version label from menu content card to the sticky top bar.",
+        "Placed the label at the right side of the header row to match expected layout.",
+        "Kept a muted grey pill style for low-noise but always-visible build identification."
+      ]
+    },
+    {
+      "version": "1.0.10",
+      "commit": "ccae28c",
+      "date": "2026-04-25",
+      "title": "Menu build label visibility",
+      "businessSummary": "Players can now see the running app version directly from the main menu, making it easier to verify which build is open during testing and rollout checks.",
+      "highlights": [
+        "Main menu now shows the active app version in the header area.",
+        "The version label uses a muted grey treatment so it stays visible without competing with navigation.",
+        "Build identification is now easier before entering deeper app flows."
+      ]
+    },
+    {
+      "version": "1.0.9",
+      "commit": "ccae28c",
+      "date": "2026-04-25",
+      "title": "Online-aware automatic update checks",
+      "businessSummary": "The app now looks for new builds when players return after inactivity and every five minutes while online, making updates visible without requiring a manual refresh.",
+      "highlights": [
+        "Service worker update checks now run automatically when the app becomes active again.",
+        "Foreground sessions re-check for updates every five minutes while internet access is available.",
+        "Offline sessions skip unnecessary update requests and retry automatically once connectivity returns."
+      ]
+    },
+    {
+      "version": "1.0.8",
+      "commit": "f42c9a1",
+      "date": "2026-04-25",
+      "title": "Clear update visibility and release communication",
+      "businessSummary": "Players can now see exactly which app build they run and which build is available before accepting an update, reducing confusion and support friction during rollouts.",
+      "highlights": [
+        "Version badge now includes semantic version and short commit ID.",
+        "Update prompt confirms target build using version and commit.",
+        "Release notes are now data-driven from a repo file and rendered in-app."
+      ]
+    },
+    {
+      "version": "1.0.7",
+      "commit": "f42c9a1",
+      "date": "2026-04-25",
+      "title": "Navigation and flow expansion",
+      "businessSummary": "The app structure was expanded to support clearer navigation and broader gameplay flow mockups, making user journeys easier to test end-to-end.",
+      "highlights": [
+        "Introduced hierarchical navigation with breadcrumb path.",
+        "Added menu/page/inner-page route model.",
+        "Expanded static page folders for multiplayer flows."
+      ]
+    }
+  ]
+}

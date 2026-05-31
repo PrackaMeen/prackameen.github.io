@@ -1,0 +1,50 @@
+<main class="page-shell">
+  <section class="card">
+    <p class="kicker">Multiplayer / Lobby</p>
+    <h1>Join a Session</h1>
+    <p id="lobbyStatus" class="lobby-status">Enter a session ID to join.</p>
+  </section>
+
+  <section class="card">
+    <h2>Session ID</h2>
+    <form id="joinForm" class="join-form" autocomplete="off">
+      <input
+        id="sessionIdInput"
+        class="session-id-input"
+        type="text"
+        placeholder="Paste session ID here…"
+        required
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="joinBtn" class="primary-btn" type="submit">Join</button>
+    </form>
+  </section>
+
+  <section class="card" id="peersCard" hidden>
+    <h2>Connected Peers <span id="peerCount" class="peer-count">(0)</span></h2>
+    <ul id="peerList" class="peer-list" aria-label="Connected peers">
+      <li class="peer-item peer-item--empty">Connecting…</li>
+    </ul>
+  </section>
+
+  <section class="card chat-card" id="chatCard" hidden>
+    <h2>Session Chat</h2>
+    <ol id="messageLog" class="message-log" aria-live="polite" aria-label="Chat messages"></ol>
+    <form id="chatForm" class="chat-form" autocomplete="off">
+      <input
+        id="chatInput"
+        class="chat-input"
+        type="text"
+        placeholder="Type a message…"
+        maxlength="256"
+        required
+      />
+      <button class="chat-send-btn" type="submit">Send</button>
+    </form>
+  </section>
+
+  <section class="card actions-card" id="settingsCard" hidden>
+    <button id="goToSettingsBtn" class="primary-btn" type="button">Proceed to Game Settings</button>
+  </section>
+</main>

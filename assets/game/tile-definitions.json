@@ -1,0 +1,224 @@
+{
+    "tileKinds": {
+        "road0": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Road0/Road0_0.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Road0/Road0_1.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Road0/Road0_2.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Road0/Road0_3.png",
+                "animation": {
+                    "frameNames": [
+                        "frame-0",
+                        "frame-1",
+                        "frame-2",
+                        "frame-3"
+                    ],
+                    "frameDurationMs": 120,
+                    "loop": true
+                }
+            }
+        ],
+        "road1": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Road1/Road1_0.png"
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Road1/Road1_1.png"
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Road1/Road1_2.png"
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Road1/Road1_3.png"
+            }
+        ],
+        "road2": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Road2/Road2_0.png"
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Road2/Road2_1.png"
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Road2/Road2_2.png"
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Road2/Road2_3.png"
+            }
+        ],
+        "road3": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Road3/Road3_0.png"
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Road3/Road3_1.png"
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Road3/Road3_2.png"
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Road3/Road3_3.png"
+            }
+        ],
+        "road4": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Road4/Road4_0.png"
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Road4/Road4_1.png"
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Road4/Road4_2.png"
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Road4/Road4_3.png"
+            }
+        ],
+        "chamber0": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Chamber0/Chamber0_0.png"
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Chamber0/Chamber0_1.png"
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Chamber0/Chamber0_2.png"
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Chamber0/Chamber0_3.png"
+            }
+        ],
+        "chamber1": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Chamber1/Chamber1_0.png"
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Chamber1/Chamber1_1.png"
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Chamber1/Chamber1_2.png"
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Chamber1/Chamber1_3.png"
+            }
+        ],
+        "chamber2": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Chamber2/Chamber2_0.png"
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Chamber2/Chamber2_1.png"
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Chamber2/Chamber2_2.png"
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Chamber2/Chamber2_3.png"
+            }
+        ],
+        "chamber3": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Chamber3/Chamber3_0.png"
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Chamber3/Chamber3_1.png"
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Chamber3/Chamber3_2.png"
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Chamber3/Chamber3_3.png"
+            }
+        ],
+        "chamber4": [
+            {
+                "orientation": 0,
+                "sprite": "./assets/game/tiles/Chamber4/Chamber4_0.png"
+            },
+            {
+                "orientation": 1,
+                "sprite": "./assets/game/tiles/Chamber4/Chamber4_1.png"
+            },
+            {
+                "orientation": 2,
+                "sprite": "./assets/game/tiles/Chamber4/Chamber4_2.png"
+            },
+            {
+                "orientation": 3,
+                "sprite": "./assets/game/tiles/Chamber4/Chamber4_3.png"
+            }
+        ]
+    }
+}

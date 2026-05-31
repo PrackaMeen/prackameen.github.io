@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#ff6f3c" />
+  <meta name="description" content="G.A.M.E Mobile Test Lab - static PWA with GitHub-hosted API mocks." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
+  <title>G.A.M.E Mobile Test Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css?v=1.1.109" />
+  <link id="pageStylesheet" rel="stylesheet" href="" />
+</head>
+<body>
+  <header id="navRoot" class="nav-root" aria-label="Main navigation"></header>
+  <main id="appRoot" class="app-root" aria-live="polite"></main>
+
+  <script src="./mock-api.js"></script>
+  <script src="./lib/qrcode.min.js"></script>
+  <script src="./app.js?v=1.1.109" type="module"></script>
+</body>
+</html>

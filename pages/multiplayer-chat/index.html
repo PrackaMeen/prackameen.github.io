@@ -1,0 +1,44 @@
+<main class="page-shell">
+  <section class="card">
+    <p class="kicker">Multiplayer / Chat</p>
+    <h1>Session Chat</h1>
+    <p id="sessionStatus" class="session-status">Connecting…</p>
+  </section>
+
+  <section class="card">
+    <h2>Session</h2>
+    <div class="session-info-row">
+      <span class="session-info-key">Session ID</span>
+      <code id="sessionIdDisplay" class="session-id-code">—</code>
+      <button id="copySessionIdBtn" class="copy-btn" type="button" title="Copy session ID">Copy</button>
+    </div>
+    <div class="session-info-row">
+      <span class="session-info-key">Your Role</span>
+      <span id="sessionRole" class="session-role">—</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Connected Peers <span id="peerCount" class="peer-count">(0)</span></h2>
+    <ul id="peerList" class="peer-list" aria-label="Connected peers">
+      <li class="peer-item peer-item--empty">No peers yet.</li>
+    </ul>
+  </section>
+
+  <section class="card chat-card">
+    <h2>Messages</h2>
+    <ol id="messageLog" class="message-log" aria-live="polite" aria-label="Chat messages">
+    </ol>
+    <form id="chatForm" class="chat-form" autocomplete="off">
+      <input
+        id="chatInput"
+        class="chat-input"
+        type="text"
+        placeholder="Type a message…"
+        maxlength="256"
+        required
+      />
+      <button class="chat-send-btn" type="submit">Send</button>
+    </form>
+  </section>
+</main>

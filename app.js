@@ -1,0 +1,585 @@
+const APP_VERSION = "1.1.109";
+const APP_COMMIT_SHORT = "a921060";
+const APP_BUILD_ID = `${APP_VERSION}+${APP_COMMIT_SHORT}`;
+const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const DEFAULT_ROUTE = "menu";
+
+const PAGES = {
+  menu: {
+    title: "Menu",
+    basePath: "./pages/menu/"
+  },
+  "single-player": {
+    title: "Single Player",
+    basePath: "./pages/single-player/"
+  },
+  "single-player-game-settings": {
+    title: "Single Player / Game Settings",
+    basePath: "./pages/single-player-game-settings/"
+  },
+  "single-player-game": {
+    title: "Single Player / Game",
+    basePath: "./pages/single-player-game/"
+  },
+  "game-board": {
+    title: "Game",
+    basePath: "./pages/game-board/"
+  },
+  multiplayer: {
+    title: "Multiplayer",
+    basePath: "./pages/multiplayer/"
+  },
+  "multiplayer-lobby": {
+    title: "Multiplayer / Lobby",
+    basePath: "./pages/multiplayer-lobby/"
+  },
+  "multiplayer-lobby-joined-game-settings": {
+    title: "Multiplayer / Lobby / Joined Game Settings",
+    basePath: "./pages/multiplayer-lobby-joined-game-settings/"
+  },
+  "multiplayer-host": {
+    title: "Multiplayer / Host",
+    basePath: "./pages/multiplayer-host/"
+  },
+  "multiplayer-host-game-settings": {
+    title: "Multiplayer / Host / Game Settings",
+    basePath: "./pages/multiplayer-host-game-settings/"
+  },
+  "multiplayer-chat": {
+    title: "Multiplayer / Chat",
+    basePath: "./pages/multiplayer-chat/"
+  },
+  "multiplayer-host-network": {
+    title: "Multiplayer / Network Host",
+    basePath: "./pages/multiplayer-host-network/"
+  },
+  "multiplayer-lobby-network": {
+    title: "Multiplayer / Network Join",
+    basePath: "./pages/multiplayer-lobby-network/"
+  },
+  "tile-set-demo": {
+    title: "Tile Set Demo",
+    basePath: "./pages/tile-set-demo/"
+  },
+  animations: {
+    title: "Animations",
+    basePath: "./pages/animations/"
+  },
+  settings: {
+    title: "Settings",
+    basePath: "./pages/settings/"
+  },
+  "release-notes": {
+    title: "Release Notes",
+    basePath: "./pages/release-notes/"
+  },
+  admin: {
+    title: "Admin",
+    basePath: "./pages/admin/"
+  }
+};
+
+const NAV_TREE = [
+  {
+    id: "menu",
+    label: "Menu",
+    route: "menu",
+    children: [
+      {
+        id: "single-player",
+        label: "Single Player",
+        route: "single-player",
+        children: [
+          {
+            id: "single-player-game-settings",
+            label: "Game Settings",
+            route: "single-player-game-settings"
+          },
+          {
+            id: "single-player-game",
+            label: "Game",
+            route: "single-player-game"
+          }
+        ]
+      },
+      {
+        id: "multiplayer",
+        label: "Multiplayer",
+        route: "multiplayer",
+        children: [
+          {
+            id: "multiplayer-lobby",
+            label: "Lobby",
+            route: "multiplayer-lobby",
+            children: [
+              {
+                id: "multiplayer-lobby-joined-game-settings",
+                label: "Joined Game Settings",
+                route: "multiplayer-lobby-joined-game-settings"
+              }
+            ]
+          },
+          {
+            id: "multiplayer-host",
+            label: "Host",
+            route: "multiplayer-host",
+            children: [
+              {
+                id: "multiplayer-host-game-settings",
+                label: "Game Settings",
+                route: "multiplayer-host-game-settings"
+              }
+            ]
+          },
+          {
+            id: "multiplayer-host-network",
+            label: "Host (Network)",
+            route: "multiplayer-host-network"
+          },
+          {
+            id: "multiplayer-lobby-network",
+            label: "Join (Network)",
+            route: "multiplayer-lobby-network"
+          },
+        ]
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        route: "settings"
+      },
+      {
+        id: "tile-set-demo",
+        label: "Tile Set",
+        route: "tile-set-demo"
+      },
+      {
+        id: "animations",
+        label: "Animations",
+        route: "animations"
+      },
+      {
+        id: "release-notes",
+        label: "Release Notes",
+        route: "release-notes"
+      },
+      {
+        id: "admin",
+        label: "Admin",
+        route: "admin"
+      }
+    ]
+  }
+];
+
+const APP_ROOT = document.querySelector("#appRoot");
+const NAV_ROOT = document.querySelector("#navRoot");
+const PAGE_STYLESHEET = document.querySelector("#pageStylesheet");
+
+window.__GAME_VERSIONED_ASSET_URL__ = versionedAssetUrl;
+
+const updateState = {
+  swRegistration: null,
+  isReloadingForUpdate: false,
+  hasReloadedForControllerChange: false,
+  promptedBuildIds: new Set(),
+  isCheckingForUpdates: false,
+  lastHiddenAt: null
+};
+
+const navState = {
+  message: ""
+};
+
+let mountedPage = null;
+
+function getRouteName() {
+  const hash = window.location.hash.replace(/^#\/?/, "").trim();
+  return PAGES[hash] ? hash : DEFAULT_ROUTE;
+}
+
+function setRoute(routeName) {
+  if (window.location.hash.replace(/^#/, "") === `/${routeName}`) {
+    return;
+  }
+
+  window.location.hash = `/${routeName}`;
+}
+
+function parseVersion(version) {
+  const parts = String(version || "")
+    .replace(/^v/i, "")
+    .split(".")
+    .map((segment) => Number.parseInt(segment, 10));
+
+  if (parts.some((part) => Number.isNaN(part))) {
+    return [0, 0, 0];
+  }
+
+  return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
+}
+
+function isVersionNewer(currentVersion, candidateVersion) {
+  const current = parseVersion(currentVersion);
+  const candidate = parseVersion(candidateVersion);
+
+  for (let i = 0; i < 3; i += 1) {
+    if (candidate[i] > current[i]) {
+      return true;
+    }
+    if (candidate[i] < current[i]) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+function buildUpdateReloadUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("__update", APP_BUILD_ID);
+  url.searchParams.set("__reload", Date.now().toString());
+  return url.toString();
+}
+
+function forceUpdateReload() {
+  window.location.replace(buildUpdateReloadUrl());
+}
+
+function versionedAssetUrl(assetPath) {
+  const url = new URL(assetPath, window.location.href);
+  url.searchParams.set("v", APP_BUILD_ID);
+  return url.toString();
+}
+
+const GAME_ASSET_ROUTES = new Set(["single-player", "single-player-game", "game-board", "tile-set-demo", "animations"]);
+
+async function preloadGameAssets() {
+  const module = await import(versionedAssetUrl("./lib/game-assets.js"));
+  await module.preloadGameAssets();
+}
+
+function askWorkerBuildInfo(worker) {
+  return new Promise((resolve) => {
+    if (!worker) {
+      resolve(null);
+      return;
+    }
+
+    const channel = new MessageChannel();
+    const timeout = window.setTimeout(() => resolve(null), 1500);
+
+    channel.port1.onmessage = (event) => {
+      window.clearTimeout(timeout);
+      const version = event.data?.version;
+      const commit = event.data?.commit;
+      if (!version || !commit) {
+        resolve(null);
+        return;
+      }
+      resolve({ version, commit, buildId: `${version}+${commit}` });
+    };
+
+    worker.postMessage({ type: "GET_VERSION" }, [channel.port2]);
+  });
+}
+
+async function evaluateWaitingWorker(registration) {
+  const waitingWorker = registration?.waiting;
+  if (!waitingWorker) {
+    return;
+  }
+
+  const waitingBuild = await askWorkerBuildInfo(waitingWorker);
+  if (!waitingBuild) {
+    return;
+  }
+
+  const isSameVersionDifferentCommit = waitingBuild.version === APP_VERSION && waitingBuild.commit !== APP_COMMIT_SHORT;
+  const hasNewerBuild = isVersionNewer(APP_VERSION, waitingBuild.version) || isSameVersionDifferentCommit;
+  if (!hasNewerBuild) {
+    return;
+  }
+
+  if (updateState.promptedBuildIds.has(waitingBuild.buildId)) {
+    return;
+  }
+
+  updateState.promptedBuildIds.add(waitingBuild.buildId);
+  const shouldUpdate = window.confirm(
+    `Update available: v${waitingBuild.version} (${waitingBuild.commit}). Load it now?`
+  );
+
+  if (!shouldUpdate) {
+    return;
+  }
+
+  updateState.isReloadingForUpdate = true;
+  waitingWorker.postMessage({ type: "SKIP_WAITING" });
+}
+
+async function checkForAppUpdate() {
+  const registration = updateState.swRegistration;
+  if (!registration || updateState.isCheckingForUpdates || !navigator.onLine) {
+    return;
+  }
+
+  updateState.isCheckingForUpdates = true;
+
+  try {
+    await registration.update();
+    await evaluateWaitingWorker(registration);
+  } catch {
+    // Ignore transient connectivity/update-check failures; scheduled checks will retry.
+  } finally {
+    updateState.isCheckingForUpdates = false;
+  }
+}
+
+function startUpdateChecks() {
+  window.setInterval(() => {
+    if (document.visibilityState !== "visible") {
+      return;
+    }
+
+    void checkForAppUpdate();
+  }, UPDATE_CHECK_INTERVAL_MS);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      updateState.lastHiddenAt = Date.now();
+      return;
+    }
+
+    if (updateState.lastHiddenAt === null) {
+      return;
+    }
+
+    updateState.lastHiddenAt = null;
+    void checkForAppUpdate();
+  });
+
+  window.addEventListener("online", () => {
+    if (document.visibilityState !== "visible") {
+      return;
+    }
+
+    void checkForAppUpdate();
+  });
+}
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  navigator.serviceWorker.register("./sw.js").then(async (registration) => {
+    updateState.swRegistration = registration;
+    await evaluateWaitingWorker(registration);
+
+    registration.addEventListener("updatefound", () => {
+      const installingWorker = registration.installing;
+      if (!installingWorker) {
+        return;
+      }
+
+      installingWorker.addEventListener("statechange", async () => {
+        if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
+          await evaluateWaitingWorker(registration);
+        }
+      });
+    });
+
+    startUpdateChecks();
+    void checkForAppUpdate();
+  }).catch((error) => {
+    console.warn("Service worker registration failed", error);
+  });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!updateState.isReloadingForUpdate || updateState.hasReloadedForControllerChange) {
+      return;
+    }
+    updateState.hasReloadedForControllerChange = true;
+    forceUpdateReload();
+  });
+}
+
+function getFirstLeafRoute(node) {
+  if (!node) {
+    return null;
+  }
+  if (node.route) {
+    return node.route;
+  }
+  if (!node.children || node.children.length === 0) {
+    return null;
+  }
+  return getFirstLeafRoute(node.children[0]);
+}
+
+function findPathByRoute(nodes, routeName, path = []) {
+  for (const node of nodes) {
+    const nextPath = [...path, node];
+
+    if (node.route === routeName) {
+      return nextPath;
+    }
+
+    if (node.children?.length) {
+      const childPath = findPathByRoute(node.children, routeName, nextPath);
+      if (childPath.length) {
+        return childPath;
+      }
+    }
+  }
+
+  return [];
+}
+
+function renderBreadcrumb(path) {
+  if (!path.length) {
+    return "";
+  }
+
+  return path.map((node) => {
+    const route = node.route || getFirstLeafRoute(node);
+    return `<a class="crumb-link" href="#/${route}">${node.label}</a>`;
+  }).join('<span class="crumb-sep">&gt;</span>');
+}
+
+function syncNavVersionVisibility() {
+  const navInner = NAV_ROOT.querySelector(".nav-inner");
+  const versionEl = NAV_ROOT.querySelector(".nav-version");
+  if (!navInner || !versionEl) return;
+
+  // Restore display so we measure the natural layout with version present.
+  versionEl.style.display = "";
+
+  const overflows = navInner.scrollWidth > navInner.clientWidth + 4 || navInner.scrollHeight > navInner.clientHeight + 4;
+
+  // Hiding with display:none frees the reserved space so the nav copy can
+  // expand to full width and keep the row to a single line.
+  versionEl.style.display = overflows ? "none" : "";
+}
+
+window.addEventListener("resize", syncNavVersionVisibility);
+
+function setNavigationMessage(message) {
+  navState.message = String(message || "");
+  renderNavigation(getRouteName());
+}
+
+window.__GAME_SET_NAV_MESSAGE__ = setNavigationMessage;
+
+function renderNavigation(activeRoute) {
+  const activePath = findPathByRoute(NAV_TREE, activeRoute);
+
+  NAV_ROOT.replaceChildren();
+
+  const navInner = document.createElement("div");
+  navInner.className = "nav-inner";
+
+  const navCopy = document.createElement("div");
+  navCopy.className = "nav-copy";
+
+  const breadcrumb = document.createElement("nav");
+  breadcrumb.className = "breadcrumb";
+  breadcrumb.setAttribute("aria-label", "Breadcrumb");
+  breadcrumb.innerHTML = renderBreadcrumb(activePath);
+
+  const navMessage = document.createElement("div");
+  navMessage.className = "nav-message";
+  navMessage.setAttribute("aria-live", "polite");
+  navMessage.setAttribute("aria-atomic", "true");
+  navMessage.textContent = navState.message;
+
+  navCopy.appendChild(breadcrumb);
+  navCopy.appendChild(navMessage);
+
+  const version = document.createElement("span");
+  version.className = "nav-version";
+  version.title = `Build ${APP_VERSION} (${APP_COMMIT_SHORT})`;
+  version.textContent = `v${APP_VERSION}`;
+
+  navInner.appendChild(navCopy);
+  navInner.appendChild(version);
+  NAV_ROOT.appendChild(navInner);
+
+  syncNavVersionVisibility();
+}
+
+async function loadPage(pageName) {
+  const page = PAGES[pageName];
+  if (!page) {
+    throw new Error(`Unknown page: ${pageName}`);
+  }
+
+  APP_ROOT.innerHTML = "<p class=\"boot-message\">Loading page...</p>";
+
+  const htmlResponse = await fetch(versionedAssetUrl(`${page.basePath}index.html`));
+  if (!htmlResponse.ok) {
+    throw new Error(`Failed to load ${pageName} page HTML`);
+  }
+
+  const pageMarkup = await htmlResponse.text();
+  APP_ROOT.innerHTML = pageMarkup;
+  PAGE_STYLESHEET.href = versionedAssetUrl(`${page.basePath}styles.css`);
+
+  if (GAME_ASSET_ROUTES.has(pageName)) {
+    await preloadGameAssets();
+  }
+
+  setNavigationMessage("");
+  const module = await import(versionedAssetUrl(`${page.basePath}page.js`));
+  if (typeof mountedPage?.dispose === "function") {
+    mountedPage.dispose();
+  }
+
+  document.documentElement.dataset.page = pageName;
+  document.body.dataset.page = pageName;
+
+  mountedPage = module.mountPage({
+    appVersion: APP_VERSION,
+    appCommitShort: APP_COMMIT_SHORT,
+    appBuildId: APP_BUILD_ID,
+    route: pageName,
+    setRoute,
+    setNavMessage: setNavigationMessage,
+    setTitle: (title) => {
+      document.title = title;
+    }
+  }) || null;
+  document.title = page.title;
+}
+
+function renderLoadError(error) {
+  APP_ROOT.innerHTML = `
+    <section class="boot-error" role="alert">
+      <h1>Page failed to load</h1>
+      <p>${error.message}</p>
+    </section>
+  `;
+}
+
+async function bootCurrentRoute() {
+  const pageName = getRouteName();
+  renderNavigation(pageName);
+
+  try {
+    await loadPage(pageName);
+  } catch (error) {
+    renderLoadError(error);
+    console.error("Page bootstrap failed", error);
+  }
+}
+
+window.addEventListener("hashchange", bootCurrentRoute);
+registerServiceWorker();
+void preloadGameAssets();
+
+if (!window.location.hash) {
+  setRoute(DEFAULT_ROUTE);
+} else {
+  bootCurrentRoute();
+}

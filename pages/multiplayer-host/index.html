@@ -1,0 +1,43 @@
+<main class="page-shell">
+  <section class="card">
+    <p class="kicker">Multiplayer / Host</p>
+    <h1>Host a Session</h1>
+    <p id="hostStatus" class="host-status">Starting session…</p>
+  </section>
+
+  <section class="card">
+    <h2>Session ID</h2>
+    <p class="host-hint">Share this code with players who want to join.</p>
+    <div class="session-id-row">
+      <code id="hostSessionId" class="session-id-code">—</code>
+      <button id="copySessionIdBtn" class="copy-btn" type="button">Copy</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Connected Peers <span id="peerCount" class="peer-count">(0)</span></h2>
+    <ul id="peerList" class="peer-list" aria-label="Connected peers">
+      <li class="peer-item peer-item--empty">Waiting for players…</li>
+    </ul>
+  </section>
+
+  <section class="card chat-card" id="chatCard" hidden>
+    <h2>Session Chat</h2>
+    <ol id="messageLog" class="message-log" aria-live="polite" aria-label="Chat messages"></ol>
+    <form id="chatForm" class="chat-form" autocomplete="off">
+      <input
+        id="chatInput"
+        class="chat-input"
+        type="text"
+        placeholder="Type a message…"
+        maxlength="256"
+        required
+      />
+      <button class="chat-send-btn" type="submit">Send</button>
+    </form>
+  </section>
+
+  <section class="card actions-card">
+    <button id="goToSettingsBtn" class="primary-btn" type="button" disabled>Proceed to Game Settings</button>
+  </section>
+</main>

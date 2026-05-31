@@ -1,0 +1,57 @@
+body[data-page="menu"] {
+  background:
+    radial-gradient(circle at 88% 10%, rgba(255, 255, 255, 0.92), transparent 45%),
+    linear-gradient(145deg, #fff6e6 0%, #ffeecf 52%, #ffe4b9 100%);
+}
+
+.page-shell {
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding: 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.card {
+  border: 1px solid rgba(103, 68, 32, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 1rem;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6f4f34;
+}
+
+h1,
+h2 {
+  margin: 0.35rem 0;
+  font-family: "Syne", "Space Grotesk", sans-serif;
+}
+
+.menu-actions {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.menu-button {
+  text-decoration: none;
+  color: #143247;
+  border: 1px solid rgba(20, 50, 71, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.72rem 0.9rem;
+  font-weight: 700;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.menu-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(20, 50, 71, 0.12);
+}

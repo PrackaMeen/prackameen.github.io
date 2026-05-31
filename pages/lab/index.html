@@ -1,0 +1,46 @@
+<div class="bg-shape bg-shape-1" aria-hidden="true"></div>
+<div class="bg-shape bg-shape-2" aria-hidden="true"></div>
+
+<main class="app-shell">
+  <header class="hero">
+    <p class="eyebrow">Static PWA Playground</p>
+    <h1>G.A.M.E Mobile Test Lab</h1>
+    <p class="subtitle">
+      Pure HTML, CSS and JavaScript. Future .NET API endpoints are auto-mocked when hosted on GitHub.
+    </p>
+    <div class="hero-row">
+      <button id="refreshBtn" class="btn btn-primary" type="button">Refresh State</button>
+      <button id="checkLatestBtn" class="btn btn-ghost" type="button">Check Latest Version</button>
+      <button id="actionBtn" class="btn btn-ghost" type="button">Perform Sample Action</button>
+      <button id="updateBtn" class="btn btn-update hidden" type="button" aria-live="polite"></button>
+    </div>
+    <div class="status-row" id="statusRow">
+      <button id="installState" class="pill pill-button" type="button">Install: unavailable</button>
+      <span id="networkMode" class="pill">API: unknown</span>
+      <span id="appVersion" class="pill">Version: unknown</span>
+    </div>
+  </header>
+
+  <section class="panel" aria-labelledby="stateTitle">
+    <div class="panel-title-row">
+      <h2 id="stateTitle">Game Snapshot</h2>
+      <small id="lastUpdated">Waiting for data</small>
+    </div>
+    <div id="statsGrid" class="stats-grid" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="logTitle">
+    <div class="panel-title-row">
+      <h2 id="logTitle">Event Feed</h2>
+    </div>
+    <ul id="eventFeed" class="event-feed" aria-live="polite"></ul>
+  </section>
+</main>
+
+<template id="statCardTemplate">
+  <article class="stat-card">
+    <h3></h3>
+    <p class="value"></p>
+    <p class="caption"></p>
+  </article>
+</template>

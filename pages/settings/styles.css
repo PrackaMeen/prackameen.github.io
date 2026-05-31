@@ -1,0 +1,103 @@
+body[data-page="settings"] {
+  background:
+    radial-gradient(circle at 80% 12%, rgba(255, 255, 255, 0.9), transparent 44%),
+    linear-gradient(145deg, #e9f7ea 0%, #d3edd6 42%, #c4e2d1 100%);
+}
+
+.page-shell {
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding: 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.card {
+  border: 1px solid rgba(24, 91, 62, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.84);
+  padding: 1rem;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2f684d;
+}
+
+h1,
+h2 {
+  margin: 0.35rem 0;
+  font-family: "Syne", "Space Grotesk", sans-serif;
+}
+
+.settings-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #24543f;
+  letter-spacing: 0.02em;
+}
+
+.text-input,
+.select-input {
+  width: 100%;
+  border: 1px solid rgba(24, 91, 62, 0.24);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+}
+
+.text-input:focus,
+.select-input:focus {
+  outline: 2px solid rgba(54, 123, 89, 0.32);
+  outline-offset: 1px;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+.btn {
+  cursor: pointer;
+  font: inherit;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  min-height: 2.4rem;
+  padding: 0.55rem 0.85rem;
+  font-weight: 700;
+}
+
+.btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #2b8059 0%, #236549 100%);
+}
+
+.btn-secondary {
+  color: #234f3d;
+  border-color: rgba(24, 91, 62, 0.24);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.settings-feedback {
+  margin: 0.15rem 0 0;
+  color: #1f5b43;
+  font-size: 0.88rem;
+  min-height: 1.2rem;
+}

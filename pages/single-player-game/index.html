@@ -1,0 +1,35 @@
+<main class="page-shell">
+  <section class="card">
+    <p class="kicker">Single Player</p>
+    <h1>Game</h1>
+    <p>The game is running. Terrain loads as the base layer, with players and monsters rendered above it.</p>
+  </section>
+
+  <section class="card game-board-card" id="gameBoardCard">
+    <div class="game-board-card__header">
+      <div>
+        <p class="kicker">Battlefield</p>
+        <h2>Layered Tile Map</h2>
+      </div>
+      <p class="hint-text">The API can provide tile and entity kinds, and the client maps them to versioned PNG sprites.</p>
+    </div>
+    <div class="game-board-wrap">
+      <div id="gameBoard" class="game-board" role="grid" aria-label="Battlefield board"></div>
+    </div>
+    <ul class="game-legend" aria-label="Tile and entity legend">
+      <li><span class="game-legend__swatch game-legend__swatch--cross"></span>Cross-road</li>
+      <li><span class="game-legend__swatch game-legend__swatch--direct"></span>Direct road</li>
+      <li><span class="game-legend__swatch game-legend__swatch--chamber2"></span>Chamber with 2 entrances</li>
+      <li><span class="game-legend__swatch game-legend__swatch--chamber4"></span>Chamber with 4 entrances</li>
+      <li><span class="game-legend__swatch game-legend__swatch--player"></span>Player layer</li>
+      <li><span class="game-legend__swatch game-legend__swatch--monster"></span>Monster layer</li>
+    </ul>
+  </section>
+
+  <section class="card" id="gameRosterCard">
+    <h2>Players</h2>
+    <ol class="game-player-list" id="gamePlayerList" aria-label="Active players">
+      <!-- populated by page.js -->
+    </ol>
+  </section>
+</main>

@@ -1,0 +1,51 @@
+<main class="app-shell">
+  <header class="hero">
+    <p class="eyebrow">Administration Console</p>
+    <h1>Admin</h1>
+    <p class="subtitle">
+      Manage live rooms, check app updates, and clear inactive games.
+    </p>
+    <div class="hero-row">
+      <button id="seeGamesBtn" class="btn btn-primary" type="button">See All Games</button>
+      <button id="cleanInactiveBtn" class="btn btn-ghost" type="button">Clean Inactive Games</button>
+      <button id="checkLatestBtn" class="btn btn-ghost" type="button">Check Latest Version</button>
+      <button id="updateBtn" class="btn btn-update hidden" type="button" aria-live="polite"></button>
+    </div>
+    <div class="status-row" id="statusRow">
+      <button id="installState" class="pill pill-button" type="button">Install: unavailable</button>
+      <span id="networkMode" class="pill">API: unknown</span>
+      <span id="appVersion" class="pill">Version: unknown</span>
+    </div>
+  </header>
+
+  <section class="panel" aria-labelledby="backendTitle">
+    <div class="panel-title-row">
+      <h2 id="backendTitle">Backend API</h2>
+      <small id="backendState">Choosing backend...</small>
+    </div>
+    <p id="backendHint" class="panel-note">Local is shown only when the app runs from localhost or file://.</p>
+    <div id="backendOptionList" class="backend-options" role="radiogroup" aria-label="Backend API options"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="gamesTitle">
+    <div class="panel-title-row">
+      <h2 id="gamesTitle">Games</h2>
+      <small id="lastUpdated">Waiting for data</small>
+    </div>
+    <p id="cleanupStatus" class="panel-note">Load all games or clean inactive ones.</p>
+    <div class="table-wrap">
+      <table class="games-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Players</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="gamesTableBody"></tbody>
+      </table>
+      <p id="gamesEmptyState" class="empty-state">No games loaded yet.</p>
+    </div>
+  </section>
+</main>

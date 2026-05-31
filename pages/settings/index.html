@@ -1,0 +1,34 @@
+<main class="page-shell">
+  <section class="card">
+    <p class="kicker">Settings</p>
+    <h1>Player Profile</h1>
+    <p>Set your default nickname, character, and color for new game sessions.</p>
+  </section>
+
+  <section class="card">
+    <h2>Default Player Preferences</h2>
+    <form id="playerPrefsForm" class="settings-form" novalidate>
+      <label class="field">
+        <span class="field-label">Nickname</span>
+        <input id="nicknameInput" name="nickname" class="text-input" type="text" maxlength="24" autocomplete="nickname" placeholder="You" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Preferred Character</span>
+        <select id="characterSelect" name="preferredCharacterId" class="select-input"></select>
+      </label>
+
+      <label class="field">
+        <span class="field-label">Preferred Color</span>
+        <select id="colorSelect" name="preferredColorId" class="select-input"></select>
+      </label>
+
+      <div class="form-actions">
+        <button id="savePrefsBtn" class="btn btn-primary" type="submit">Save Preferences</button>
+        <button id="resetPrefsBtn" class="btn btn-secondary" type="button">Reset to Defaults</button>
+      </div>
+
+      <p id="settingsFeedback" class="settings-feedback" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+</main>

@@ -1,0 +1,323 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { buildGameBoardDrawPlan } from '../../renderer/game-board-draw-plan.js';
+
+const baseSession = {
+  boardWidth: 2,
+  boardHeight: 1,
+  board: [
+    { x: 0, y: 0, tileKind: 'road1', tileOrientation: 0 },
+    { x: 1, y: 0, tileKind: 'chamber4', tileOrientation: 3, entityKind: 'player', entityId: 2, tileAnimation: { frameNames: ['chamber4-0', 'chamber4-1'], elapsedMs: 125, frameDurationMs: 100 }, entityAnimation: { frameNames: ['player-0', 'player-1'], elapsedMs: 25, frameDurationMs: 50 } }
+  ]
+};
+
+test('orders hidden fills before revealed sprites and grid lines last', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: baseSession,
+    boardWidth: 2,
+    boardHeight: 1,
+    canvasWidth: 200,
+    canvasHeight: 100,
+    activePlayerId: 2,
+    selectedSource: { x: 1, y: 0 },
+    isTileRevealed: (_session, x) => x === 1,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}`, animation: kind === 'road0' ? { frameNames: ['road0-0', 'road0-1'], elapsedMs: 125, frameDurationMs: 100 } : null }),
+    getEntitySpriteSheetSource: (kind, options) => ({ imageUrl: `entity:${kind}:${options?.selected ? 'selected' : 'unselected'}:${options?.orientation ?? 0}` }),
+    getEntityOrientation: () => 2
+  });
+
+  assert.deepEqual(plan[0], {
+    type: 'fill-cell',
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+    fillStyle: 'rgba(255, 251, 245, 0.92)',
+    column: 0,
+    row: 0
+  });
+  assert.deepEqual(plan[1], {
+    type: 'tile-sprite',
+    frameName: 'chamber4-1',
+    animated: true,
+    source: { imageUrl: 'chamber4:3', animation: null },
+    x: 100,
+    y: 0,
+    width: 100,
+    height: 100,
+    column: 1,
+    row: 0,
+    tileKind: 'chamber4',
+    tileOrientation: 3
+  });
+  assert.deepEqual(plan[2], {
+    type: 'entity-sprite',
+    frameName: 'player-0',
+    animated: true,
+    source: { imageUrl: 'entity:player:selected:2' },
+    x: 114,
+    y: 14,
+    width: 72,
+    height: 72,
+    column: 1,
+    row: 0,
+    entityKind: 'player',
+    entityOrientation: 2
+  });
+  assert.equal(plan.at(-1).type, 'grid-line-vertical');
+});
+
+test('shifts cells into view when the board origin moves left', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 5,
+      boardHeight: 1,
+      boardOriginX: -1,
+      boardOriginY: 0,
+      board: [
+        { x: -1, y: 0, tileKind: 'road1', tileOrientation: 0 },
+        { x: 0, y: 0, tileKind: 'road1', tileOrientation: 0 }
+      ]
+    },
+    boardWidth: 5,
+    boardHeight: 1,
+    boardOriginX: -1,
+    boardOriginY: 0,
+    canvasWidth: 500,
+    canvasHeight: 100,
+    isTileRevealed: () => true,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}` }),
+    getEntitySpriteSheetSource: () => null
+  });
+
+  assert.deepEqual(plan[0], {
+    type: 'tile-sprite',
+    frameName: 'default',
+    animated: false,
+    source: { imageUrl: 'road1:0' },
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+    column: -1,
+    row: 0,
+    tileKind: 'road1',
+    tileOrientation: 0
+  });
+  assert.deepEqual(plan[1], {
+    type: 'tile-sprite',
+    frameName: 'default',
+    animated: false,
+    source: { imageUrl: 'road1:0' },
+    x: 100,
+    y: 0,
+    width: 100,
+    height: 100,
+    column: 0,
+    row: 0,
+    tileKind: 'road1',
+    tileOrientation: 0
+  });
+});
+
+test('keeps cell size fixed when a board grows', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 5,
+      boardHeight: 1,
+      board: [
+        { x: 0, y: 0, tileKind: 'road1', tileOrientation: 0 },
+        { x: 1, y: 0, tileKind: 'road1', tileOrientation: 0 }
+      ]
+    },
+    boardWidth: 5,
+    boardHeight: 1,
+    cellSize: 64,
+    canvasWidth: 320,
+    canvasHeight: 64,
+    isTileRevealed: () => true,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}` }),
+    getEntitySpriteSheetSource: () => null
+  });
+
+  assert.equal(plan[0].x, 0);
+  assert.equal(plan[0].width, 64);
+  assert.equal(plan[1].x, 64);
+  assert.equal(plan[1].width, 64);
+});
+
+test('shows the active player on hidden cells at game start', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 1,
+      boardHeight: 1,
+      board: [{ x: 0, y: 0, tileKind: 'road0', tileOrientation: 0, entityKind: 'player', entityId: 1 }]
+    },
+    boardWidth: 1,
+    boardHeight: 1,
+    canvasWidth: 128,
+    canvasHeight: 128,
+    activePlayerId: 1,
+    isTileRevealed: () => false,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: () => ({ imageUrl: 'tile' }),
+    getEntitySpriteSheetSource: (kind, options) => ({ imageUrl: `entity:${kind}:${options?.selected ? 'selected' : 'unselected'}:${options?.orientation ?? 0}` }),
+    getEntityOrientation: () => 0
+  });
+
+  assert.deepEqual(plan[0], {
+    type: 'fill-cell',
+    x: 0,
+    y: 0,
+    width: 128,
+    height: 128,
+    fillStyle: 'rgba(255, 251, 245, 0.92)',
+    column: 0,
+    row: 0
+  });
+  assert.deepEqual(plan[1], {
+    type: 'entity-sprite',
+    frameName: 'default',
+    animated: false,
+    source: { imageUrl: 'entity:player:unselected:0' },
+    x: 18,
+    y: 18,
+    width: 92,
+    height: 92,
+    column: 0,
+    row: 0,
+    entityKind: 'player',
+    entityOrientation: 0
+  });
+});
+
+test('inverts player orientation from movement direction', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 1,
+      boardHeight: 1,
+      board: [{ x: 0, y: 0, tileKind: 'road0', tileOrientation: 0, entityKind: 'player', entityId: 1 }]
+    },
+    boardWidth: 1,
+    boardHeight: 1,
+    canvasWidth: 128,
+    canvasHeight: 128,
+    activePlayerId: 1,
+    isTileRevealed: () => true,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: () => ({ imageUrl: 'tile' }),
+    getEntitySpriteSheetSource: (kind, options) => ({ imageUrl: `entity:${kind}:${options?.selected ? 'selected' : 'unselected'}:${options?.orientation ?? 0}` }),
+    getEntityOrientation: () => 3
+  });
+
+  assert.equal(plan.find((entry) => entry.type === 'entity-sprite').entityOrientation, 3);
+});
+
+test('uses the green move preview facing for the selected player sprite', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 1,
+      boardHeight: 1,
+      board: [{ x: 0, y: 0, tileKind: 'road0', tileOrientation: 0, entityKind: 'player', entityId: 1 }]
+    },
+    boardWidth: 1,
+    boardHeight: 1,
+    canvasWidth: 128,
+    canvasHeight: 128,
+    activePlayerId: 1,
+    selectedSource: { x: 0, y: 0, previewFacing: 3 },
+    isTileRevealed: () => true,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: () => ({ imageUrl: 'tile' }),
+    getEntitySpriteSheetSource: (kind, options) => ({ imageUrl: `entity:${kind}:${options?.selected ? 'selected' : 'unselected'}:${options?.orientation ?? 0}` }),
+    getEntityOrientation: () => 0
+  });
+
+  assert.deepEqual(plan.find((entry) => entry.type === 'entity-sprite').source, { imageUrl: 'entity:player:selected:3' });
+  assert.equal(plan.find((entry) => entry.type === 'entity-sprite').entityOrientation, 3);
+});
+
+test('uses tile definition animation when a frame is not provided on the cell', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 1,
+      boardHeight: 1,
+      board: [{ x: 0, y: 0, tileKind: 'road0', tileOrientation: 0 }]
+    },
+    boardWidth: 1,
+    boardHeight: 1,
+    canvasWidth: 128,
+    canvasHeight: 128,
+    currentTimeMs: 250,
+    isTileRevealed: () => true,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: () => ({
+      imageUrl: './assets/game/tiles/Road0/Road0_0.png',
+      animation: { frameNames: ['frame-0', 'frame-1', 'frame-2', 'frame-3'], frameDurationMs: 100, loop: true }
+    }),
+    getEntitySpriteSheetSource: () => ({ imageUrl: 'entity' })
+  });
+
+  assert.equal(plan[0].type, 'tile-sprite');
+  assert.equal(plan[0].frameName, 'frame-2');
+  assert.equal(plan[0].animated, true);
+});
+
+test('renders the pending discovered tile instead of the underlying map tile', () => {
+  const plan = buildGameBoardDrawPlan({
+    session: {
+      boardWidth: 2,
+      boardHeight: 1,
+      board: [
+        { x: 0, y: 0, tileKind: 'road2', tileOrientation: 2 },
+        { x: 1, y: 0, tileKind: 'road1', tileOrientation: 0 }
+      ],
+      pendingPlacement: {
+        sourceX: 0,
+        sourceY: 0,
+        targetX: 1,
+        targetY: 0,
+        tileKind: 'chamber1',
+        tileOrientation: 0,
+        currentOrientation: 0
+      }
+    },
+    boardWidth: 2,
+    boardHeight: 1,
+    canvasWidth: 200,
+    canvasHeight: 100,
+    isTileRevealed: (_session, x) => x === 1,
+    normalizeTileKind: (value) => value,
+    normalizeEntityKind: (value) => value,
+    getTileSpriteSheetSource: (kind, orientation) => ({ imageUrl: `${kind}:${orientation}` }),
+    getEntitySpriteSheetSource: () => null
+  });
+
+  const targetEntry = plan.find((entry) => entry.type === 'tile-sprite' && entry.column === 1 && entry.row === 0);
+
+  assert.deepEqual(targetEntry, {
+    type: 'tile-sprite',
+    frameName: 'default',
+    animated: false,
+    source: { imageUrl: 'chamber1:0' },
+    x: 100,
+    y: 0,
+    width: 100,
+    height: 100,
+    column: 1,
+    row: 0,
+    tileKind: 'chamber1',
+    tileOrientation: 0
+  });
+});
