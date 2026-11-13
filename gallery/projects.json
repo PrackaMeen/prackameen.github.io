@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Arcade Lab",
+    "description": "Excalibur.js arcade game with TypeScript, a menu scene, and a playable starter level.",
+    "path": "./arcade-lab/",
+    "repo": "https://github.com/PrackaMeen/prackameen.github.io"
+  },
+  {
+    "title": "OpenChess",
+    "description": "Chess trainer and board preview built with TypeScript and a tested chess core.",
+    "path": "./chess/",
+    "repo": "https://github.com/PrackaMeen/OpenChess"
+  }
+]
