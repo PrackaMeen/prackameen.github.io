@@ -92,6 +92,19 @@ jobs:
           sed -i 's#</title>#</title>\n    <link rel="icon" href="data:," />#' _site/chess/index.html
           grep -q 'rel="icon"' _site/chess/index.html
 
+      - name: Stamp /chess/ assets with the OpenChess commit (DEC-0007)
+        run: |
+          # Every asset URL carries the same ?v=<hash>, so a new OpenChess commit is never served from cache.
+          STAMP=$(git -C openchess rev-parse --short=12 HEAD)
+          echo "OpenChess version stamp: $STAMP"
+          sed -i "s#href=\"./styles.css\"#href=\"./styles.css?v=$STAMP\"#" _site/chess/index.html
+          sed -i "s#src=\"./dist/src/app.js\"#src=\"./dist/src/app.js?v=$STAMP\"#" _site/chess/index.html
+          # Relative imports inside the built modules (tsc emits single-quoted specifiers).
+          find _site/chess/dist/src -name '*.js' -print0 | xargs -0 sed -i -E "s#(from|import) '(\.[^']*\.js)'#\1 '\2?v=$STAMP'#g"
+          grep -q "styles.css?v=$STAMP" _site/chess/index.html
+          grep -q "dist/src/app.js?v=$STAMP" _site/chess/index.html
+          grep -rq "from './chess/engine.js?v=$STAMP'" _site/chess/dist/src
+
       - name: Verify artifact layout
         run: |
           set -e
