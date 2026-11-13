@@ -1,11 +1,23 @@
 name: Deploy prackameen.github.io
 
+# One Pages artifact holds the whole site:
+#   /                -> gallery (gallery/index.html + projects.json)
+#   /arcade-lab/     -> Excalibur game (app/ build)
+#   /chess/          -> OpenChess board build (PrackaMeen/OpenChess)
+
 on:
   push:
+    branches: [main]
     paths:
       - 'app/**'
+      - 'gallery/**'
       - '.github/workflows/deploy-prackameen-pages.yml'
+  repository_dispatch:
+    types: [openchess-updated]
   workflow_dispatch:
+  schedule:
+    # Daily, so OpenChess changes are picked up even without a dispatch.
+    - cron: '23 4 * * *'
 
 concurrency:
   group: pages-deploy
@@ -31,7 +43,7 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Install dependencies
+      - name: Install app dependencies
         working-directory: app
         run: npm ci
 
@@ -39,13 +51,72 @@ jobs:
         working-directory: app
         run: npm run build
 
+      - name: Assemble site root and arcade-lab
+        run: |
+          rm -rf _site
+          mkdir -p _site/arcade-lab
+          cp -R app/dist/. _site/arcade-lab/
+          cp gallery/index.html gallery/projects.json _site/
+
+      - name: Checkout OpenChess
+        uses: actions/checkout@v4
+        with:
+          repository: PrackaMeen/OpenChess
+          # Default branch with a buildable app. OpenChess main currently has no app code.
+          # Override with the OPENCHESS_REF repository variable once that changes.
+          ref: ${{ vars.OPENCHESS_REF || 'feature/poc-chess-core' }}
+          token: ${{ secrets.OPENCHESS_READ_TOKEN }}
+          path: openchess
+          persist-credentials: false
+
+      - name: Install OpenChess dependencies
+        working-directory: openchess
+        run: npm ci
+
+      - name: Build OpenChess
+        working-directory: openchess
+        # OpenChess is tsc + static HTML (no Vite, no base setting).
+        # tsc emits dist/src/*.js; public/ holds the static page.
+        run: npx tsc -p tsconfig.json
+
+      - name: Assemble /chess/
+        run: |
+          mkdir -p _site/chess/dist
+          cp -R openchess/public/. _site/chess/
+          cp -R openchess/dist/src _site/chess/dist/src
+          # public/index.html loads "../dist/src/app.js", which resolves to /dist/... under /chess/.
+          # Rewrite it to the in-directory path. Fail if the rewrite did not apply.
+          sed -i 's#\.\./dist/src/app\.js#./dist/src/app.js#' _site/chess/index.html
+          grep -q 'src="./dist/src/app.js"' _site/chess/index.html
+          # Without an icon link, browsers request /favicon.ico, which 404s on Pages.
+          sed -i 's#</title>#</title>\n    <link rel="icon" href="data:," />#' _site/chess/index.html
+          grep -q 'rel="icon"' _site/chess/index.html
+
+      - name: Verify artifact layout
+        run: |
+          set -e
+          for dir in _site _site/arcade-lab _site/chess; do
+            if [ ! -d "$dir" ]; then
+              echo "::error::Missing expected directory: $dir"
+              exit 1
+            fi
+          done
+          for file in _site/index.html _site/projects.json _site/arcade-lab/index.html _site/chess/index.html _site/chess/dist/src/app.js; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Missing expected file: $file"
+              exit 1
+            fi
+          done
+          echo "Artifact layout OK"
+          find _site -maxdepth 2 | sort
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: app/dist
+          path: _site
 
   deploy:
     needs: build

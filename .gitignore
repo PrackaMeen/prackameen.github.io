@@ -1,1 +1,6 @@
 **/node_modules/**
+app/dist/
+app/test-results/
+app/tmp/
+openchess/
+_site/
