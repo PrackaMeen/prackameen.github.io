@@ -16,7 +16,7 @@ on:
     types: [openchess-updated]
   workflow_dispatch:
   schedule:
-    # Daily, so OpenChess changes are picked up even without a dispatch.
+    # Backup only: OpenChess pushes trigger a rebuild immediately via repository_dispatch.
     - cron: '23 4 * * *'
 
 concurrency:
@@ -62,9 +62,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: PrackaMeen/OpenChess
-          # Default branch with a buildable app. OpenChess main currently has no app code.
-          # Override with the OPENCHESS_REF repository variable once that changes.
-          ref: ${{ vars.OPENCHESS_REF || 'feature/poc-chess-core' }}
+          # Track the OpenChess default branch, so every merge to main reaches the site.
+          # Set the OPENCHESS_REF repository variable only to build a different branch.
+          ref: ${{ vars.OPENCHESS_REF || 'main' }}
           token: ${{ secrets.OPENCHESS_READ_TOKEN }}
           path: openchess
           persist-credentials: false
