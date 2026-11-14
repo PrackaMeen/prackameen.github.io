@@ -101,6 +101,10 @@ jobs:
           sed -i "s#src=\"./dist/src/app.js\"#src=\"./dist/src/app.js?v=$STAMP\"#" _site/chess/index.html
           # Relative imports inside the built modules (tsc emits single-quoted specifiers).
           find _site/chess/dist/src -name '*.js' -print0 | xargs -0 sed -i -E "s#(from|import) '(\.[^']*\.js)'#\1 '\2?v=$STAMP'#g"
+          # The bundled engine's worker script (REQ-0021) is loaded by URL, not imported, so it is stamped separately.
+          # The vendored Mite files need no stamp: their folder name carries the Mite commit (OpenChess DEC-0010).
+          find _site/chess/dist/src -name '*.js' -print0 | xargs -0 sed -i "s#'\./engine/mite-worker\.js'#'./engine/mite-worker.js?v=$STAMP'#g"
+          grep -rq "mite-worker.js?v=$STAMP" _site/chess/dist/src
           grep -q "styles.css?v=$STAMP" _site/chess/index.html
           grep -q "dist/src/app.js?v=$STAMP" _site/chess/index.html
           grep -rq "from './chess/engine.js?v=$STAMP'" _site/chess/dist/src
@@ -114,7 +118,9 @@ jobs:
               exit 1
             fi
           done
-          for file in _site/index.html _site/projects.json _site/arcade-lab/index.html _site/chess/index.html _site/chess/dist/src/app.js; do
+          for file in _site/index.html _site/projects.json _site/arcade-lab/index.html _site/chess/index.html _site/chess/dist/src/app.js \
+                      _site/chess/engine/mite-worker.js _site/chess/engine/mite-2da3863/mite.wasm \
+                      _site/chess/engine/mite-2da3863/LICENSE; do
             if [ ! -f "$file" ]; then
               echo "::error::Missing expected file: $file"
               exit 1
